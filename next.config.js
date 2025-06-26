@@ -19,6 +19,20 @@ const nextConfig = {
   experimental: {
     forceSwcTransforms: false,
   },
+  // Remove standalone output for Vercel compatibility
+  // output: 'standalone',
+  // Ensure proper trailing slash handling
+  trailingSlash: false,
+  // Ensure proper redirects
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/jogos',
+        permanent: false,
+      },
+    ]
+  },
 };
 
 module.exports = nextConfig;
