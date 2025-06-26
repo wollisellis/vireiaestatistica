@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
@@ -11,11 +10,15 @@ const nextConfig: NextConfig = {
     // your project has TypeScript errors.
     ignoreBuildErrors: true,
   },
-  // Optimize for Vercel deployment
-  swcMinify: true,
+  // Disable SWC due to binary issues
+  swcMinify: false,
   images: {
     domains: [],
   },
+  // Use experimental features for better compatibility
+  experimental: {
+    forceSwcTransforms: false,
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
