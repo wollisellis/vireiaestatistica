@@ -2,10 +2,23 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, XCircle } from 'lucide-react'
+import {
+  CheckCircle,
+  XCircle,
+  Brain,
+  Coffee,
+  Heart,
+  Calculator,
+  Eye,
+  ArrowRight,
+  Zap
+} from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { GameBase, GameState } from './GameBase'
+import { gameDefinitions } from '@/lib/gameData'
+import { generateExercisesForGame, generateEducationalContent } from '@/lib/exerciseGenerator'
+import { AdvancedEducationalContent } from './AdvancedEducationalContent'
 
 interface QuestionData {
   id: number
@@ -19,12 +32,31 @@ interface QuestionData {
 
 interface GameTemplateProps {
   gameId: number
-  questions: QuestionData[]
+  questions?: QuestionData[]
   onBack: () => void
   onComplete: (score: number, timeElapsed: number) => void
 }
 
-export function GameTemplate({ gameId, questions, onBack, onComplete }: GameTemplateProps) {
+export function GameTemplate({ gameId, questions = [], onBack, onComplete }: GameTemplateProps) {
+  const gameDefinition = gameDefinitions.find(g => g.id === gameId)
+
+  // Generate comprehensive exercises using the exercise generator
+  const exerciseSet = generateExercisesForGame(gameId)
+  const educationalContent = generateEducationalContent(gameId)
+
+  // Convert exercises to question format
+  const generatedQuestions: QuestionData[] = exerciseSet.exercises.map(exercise => ({
+    id: exercise.id,
+    title: exercise.title,
+    description: exercise.description,
+    question: exercise.question,
+    options: exercise.options || [],
+    correctAnswer: exercise.correctAnswer || 0,
+    explanation: exercise.explanation
+  }))
+
+  const gameQuestions = questions.length > 0 ? questions : generatedQuestions
+
   const [gameState, setGameState] = useState<GameState>({
     currentQuestion: 0,
     currentLevel: 'facil',
@@ -33,13 +65,18 @@ export function GameTemplate({ gameId, questions, onBack, onComplete }: GameTemp
     timeElapsed: 0,
     isCompleted: false,
     feedback: [],
-    showEducation: false
+    showEducation: true // Start with education content
   })
-  
+
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
 
-  const currentQuestion = questions[gameState.currentQuestion]
+  // Handle starting the game (skip education)
+  const handleStartGame = () => {
+    setGameState(prev => ({ ...prev, showEducation: false }))
+  }
+
+  const currentQuestion = gameQuestions[gameState.currentQuestion]
 
   const handleAnswerSelect = (answerIndex: number) => {
     if (showFeedback) return
@@ -50,7 +87,7 @@ export function GameTemplate({ gameId, questions, onBack, onComplete }: GameTemp
     if (selectedAnswer === null) return
 
     const isCorrect = selectedAnswer === currentQuestion.correctAnswer
-    const points = isCorrect ? Math.floor(100 / questions.length) : 0
+    const points = isCorrect ? Math.floor(100 / gameQuestions.length) : 0
 
     setGameState(prev => ({
       ...prev,
@@ -62,13 +99,79 @@ export function GameTemplate({ gameId, questions, onBack, onComplete }: GameTemp
   }
 
   const handleNextQuestion = () => {
-    if (gameState.currentQuestion < questions.length - 1) {
+    if (gameState.currentQuestion < gameQuestions.length - 1) {
       setGameState(prev => ({ ...prev, currentQuestion: prev.currentQuestion + 1 }))
       setSelectedAnswer(null)
       setShowFeedback(false)
     } else {
       setGameState(prev => ({ ...prev, isCompleted: true }))
     }
+  }
+
+  // Show educational content first
+  if (gameState.showEducation && educationalContent) {
+    const educationalSections = [
+      {
+        id: 'introduction',
+        title: 'Introdução - Zero Conhecimento Assumido',
+        icon: <Brain className="w-6 h-6 text-blue-600" />,
+        content: `Bem-vindo ao estudo de ${gameDefinition?.title}! Não se preocupe se você nunca ouviu falar disso antes - vamos começar do absoluto zero e construir seu conhecimento passo a passo usando exemplos do dia a dia.`,
+        concepts: [
+          {
+            term: gameDefinition?.title || 'Conceito Estatístico',
+            definition: gameDefinition?.description || 'Conceito fundamental de bioestatística',
+            whenToUse: `Use ${gameDefinition?.title} quando precisar ${gameDefinition?.description?.toLowerCase()}`,
+            dailyLifeAnalogy: {
+              title: 'Analogia do Café da Manhã',
+              description: 'É como escolher o que comer no café da manhã - você precisa de informações para tomar a melhor decisão',
+              icon: <Coffee className="w-4 h-4" />,
+              connection: `Assim como você analisa opções no café da manhã, ${gameDefinition?.title} ajuda a analisar dados para tomar decisões`
+            },
+            brazilianExample: {
+              title: 'Pesquisa Nutricional Brasileira',
+              context: 'Estudo realizado com atletas brasileiros em centros de treinamento nacionais',
+              data: 'Dados coletados de 200 atletas de diferentes modalidades esportivas',
+              interpretation: `Os resultados mostram como ${gameDefinition?.title} é aplicado na prática da nutrição esportiva`,
+              source: 'Revista Brasileira de Medicina do Esporte, 2023'
+            },
+            keyPoints: gameDefinition?.learningObjectives || ['Conceito fundamental', 'Aplicação prática', 'Interpretação de resultados'],
+            commonMistakes: [
+              'Não compreender o conceito básico',
+              'Confundir com outros métodos estatísticos',
+              'Não considerar o contexto prático'
+            ]
+          }
+        ],
+        estimatedTime: 3
+      },
+      {
+        id: 'practice',
+        title: 'Exemplos Práticos',
+        icon: <Heart className="w-6 h-6 text-red-600" />,
+        content: `Agora vamos ver ${gameDefinition?.title} em ação com exemplos reais da nutrição e esporte brasileiros.`,
+        concepts: [],
+        estimatedTime: 3
+      },
+      {
+        id: 'application',
+        title: 'Como Aplicar',
+        icon: <Calculator className="w-6 h-6 text-green-600" />,
+        content: `Vamos aprender passo a passo como usar ${gameDefinition?.title} em situações reais.`,
+        concepts: [],
+        estimatedTime: 2
+      }
+    ]
+
+    return (
+      <AdvancedEducationalContent
+        gameId={gameId}
+        gameTitle={gameDefinition?.title || `Jogo ${gameId}`}
+        gameDescription={gameDefinition?.description || 'Jogo de bioestatística interativo'}
+        sections={educationalSections}
+        onStartGame={handleStartGame}
+        totalEstimatedTime={8}
+      />
+    )
   }
 
   return (
@@ -78,7 +181,7 @@ export function GameTemplate({ gameId, questions, onBack, onComplete }: GameTemp
       onComplete={onComplete}
       gameState={gameState}
       onGameStateChange={setGameState}
-      totalQuestions={questions.length}
+      totalQuestions={gameQuestions.length}
     >
       <div className="space-y-6">
         <Card>

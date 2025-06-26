@@ -124,6 +124,132 @@ const matchingScenarios: TestMatchingScenario[] = [
         dailyLifeAnalogy: 'Como contar quantas vezes você e seu amigo escolhem a mesma pizza'
       }
     ]
+  },
+  {
+    id: 3,
+    level: 'medio',
+    title: 'Testes Paramétricos vs Não-Paramétricos',
+    instruction: 'Conecte cada situação com o tipo de teste mais apropriado',
+    items: [
+      {
+        id: 'parametric',
+        content: 'Teste t (Paramétrico)',
+        type: 'concept',
+        matchId: 'normal-data',
+        explanation: 'Use quando os dados seguem distribuição normal',
+        dailyLifeAnalogy: 'Como usar uma receita específica quando você tem todos os ingredientes certos',
+        icon: <Calculator className="w-4 h-4" />
+      },
+      {
+        id: 'non-parametric',
+        content: 'Mann-Whitney (Não-paramétrico)',
+        type: 'concept',
+        matchId: 'non-normal-data',
+        explanation: 'Use quando os dados não seguem distribuição normal',
+        dailyLifeAnalogy: 'Como improvisar uma receita quando faltam alguns ingredientes',
+        icon: <TrendingUp className="w-4 h-4" />
+      },
+      {
+        id: 'normal-data',
+        content: 'Altura de 100 adultos brasileiros (dados seguem curva normal)',
+        type: 'example',
+        matchId: 'parametric',
+        explanation: 'Dados de altura geralmente seguem distribuição normal - use teste t',
+        dailyLifeAnalogy: 'Como medir a altura da turma - a maioria fica na média, poucos muito altos/baixos'
+      },
+      {
+        id: 'non-normal-data',
+        content: 'Renda familiar (poucos ganham muito, maioria ganha pouco)',
+        type: 'example',
+        matchId: 'non-parametric',
+        explanation: 'Dados de renda são assimétricos - use teste não-paramétrico',
+        dailyLifeAnalogy: 'Como a distribuição de dinheiro no país - poucos têm muito, maioria tem pouco'
+      }
+    ]
+  },
+  {
+    id: 4,
+    level: 'dificil',
+    title: 'Análise de Dados Longitudinais',
+    instruction: 'Identifique o método correto para cada tipo de estudo longitudinal',
+    items: [
+      {
+        id: 'repeated-measures',
+        content: 'ANOVA de Medidas Repetidas',
+        type: 'concept',
+        matchId: 'same-subjects',
+        explanation: 'Para comparar as mesmas pessoas em diferentes momentos',
+        dailyLifeAnalogy: 'Como acompanhar o crescimento das mesmas crianças ao longo dos anos',
+        icon: <Users className="w-4 h-4" />
+      },
+      {
+        id: 'mixed-effects',
+        content: 'Modelos Mistos',
+        type: 'concept',
+        matchId: 'missing-data',
+        explanation: 'Para dados longitudinais com observações faltantes',
+        dailyLifeAnalogy: 'Como analisar frequência escolar quando alguns alunos faltam às vezes',
+        icon: <Target className="w-4 h-4" />
+      },
+      {
+        id: 'same-subjects',
+        content: 'Peso de 50 atletas medido mensalmente por 1 ano (todos os dados completos)',
+        type: 'example',
+        matchId: 'repeated-measures',
+        explanation: 'Mesmos sujeitos, medições completas - ANOVA de medidas repetidas',
+        dailyLifeAnalogy: 'Como acompanhar o peso da mesma pessoa na balança todo mês'
+      },
+      {
+        id: 'missing-data',
+        content: 'Performance de atletas ao longo de 2 anos (alguns desistiram no meio)',
+        type: 'example',
+        matchId: 'mixed-effects',
+        explanation: 'Dados faltantes requerem modelos mistos que lidam com missing data',
+        dailyLifeAnalogy: 'Como analisar notas quando alguns alunos mudaram de escola'
+      }
+    ]
+  },
+  {
+    id: 5,
+    level: 'muito-dificil',
+    title: 'Análise Multivariada Avançada',
+    instruction: 'Escolha a técnica multivariada apropriada para cada objetivo de pesquisa',
+    items: [
+      {
+        id: 'pca',
+        content: 'Análise de Componentes Principais (PCA)',
+        type: 'concept',
+        matchId: 'reduce-variables',
+        explanation: 'Para reduzir muitas variáveis a poucas dimensões principais',
+        dailyLifeAnalogy: 'Como resumir um livro grosso em poucos capítulos principais',
+        icon: <CheckCircle className="w-4 h-4" />
+      },
+      {
+        id: 'cluster',
+        content: 'Análise de Clusters',
+        type: 'concept',
+        matchId: 'group-subjects',
+        explanation: 'Para agrupar indivíduos similares em grupos naturais',
+        dailyLifeAnalogy: 'Como organizar seus amigos em grupos por interesses similares',
+        icon: <Users className="w-4 h-4" />
+      },
+      {
+        id: 'reduce-variables',
+        content: 'Estudo com 50 medidas nutricionais - quer identificar padrões principais',
+        type: 'example',
+        matchId: 'pca',
+        explanation: 'PCA identifica quais combinações de variáveis explicam mais variação',
+        dailyLifeAnalogy: 'Como descobrir que "comer bem" resume várias medidas nutricionais'
+      },
+      {
+        id: 'group-subjects',
+        content: 'Classificar 200 atletas em perfis de treinamento similares',
+        type: 'example',
+        matchId: 'cluster',
+        explanation: 'Cluster analysis agrupa atletas com características de treino similares',
+        dailyLifeAnalogy: 'Como dividir atletas em "tipos" baseado em como treinam'
+      }
+    ]
   }
 ]
 

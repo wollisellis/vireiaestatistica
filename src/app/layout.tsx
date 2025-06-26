@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "BioEstat - Interactive Biostatistics Learning Platform",
-  description: "Learn biostatistics through interactive games and real-world examples from nutrition and sports science research.",
+  title: "AvaliaNutri - Jogos Educacionais para Avaliação Nutricional",
+  description: "Aprenda avaliação nutricional através de jogos interativos com dados reais brasileiros e abordagem ultra-iniciante.",
 };
 
 export default function RootLayout({

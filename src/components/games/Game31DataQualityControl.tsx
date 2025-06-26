@@ -90,6 +90,50 @@ const scenarios: DataQualityScenario[] = [
     correctAnswer: 0,
     explanation: "O IMC está ERRADO! Calculando: 65 ÷ (1,70)² = 65 ÷ 2,89 = 22,5. O valor 35 foi provavelmente um erro de digitação ou cálculo. Sempre verifique a consistência entre dados relacionados.",
     solution: "Recalcular o IMC correto (22,5) e verificar se outros cálculos derivados estão corretos."
+  },
+  {
+    id: 4,
+    level: 'dificil',
+    title: "Dados Inconsistentes - Pesquisa Nutricional",
+    description: "Dr. Silva está analisando dados de uma pesquisa sobre consumo alimentar",
+    dataExample: [
+      "Participante 1: Idade 25, Peso 70kg, Altura 1,75m, Calorias/dia: 5000",
+      "Participante 2: Idade 30, Peso 65kg, Altura 1,68m, Calorias/dia: 1800",
+      "Participante 3: Idade 28, Peso 80kg, Altura 1,82m, Calorias/dia: 2200"
+    ],
+    problem: "O consumo de 5000 calorias/dia do Participante 1 parece muito alto para uma pessoa sedentária",
+    question: "Como Dr. Silva deve proceder com esse dado suspeito?",
+    options: [
+      "Excluir automaticamente por ser muito alto",
+      "Manter o dado sem questionar",
+      "Verificar se é atleta de elite ou erro de coleta, e documentar a decisão",
+      "Alterar para 2500 calorias para ficar mais 'normal'"
+    ],
+    correctAnswer: 2,
+    explanation: "Dados aparentemente extremos podem ser válidos (ex: atletas de elite consomem muitas calorias). Sempre investigar antes de excluir.",
+    solution: "Verificar com o participante, checar se é atleta, confirmar método de coleta e documentar todas as decisões tomadas."
+  },
+  {
+    id: 5,
+    level: 'muito-dificil',
+    title: "Controle de Qualidade Avançado - Estudo Longitudinal",
+    description: "Pesquisa acompanha 500 atletas por 2 anos medindo performance e biomarcadores",
+    dataExample: [
+      "Atleta A: VO2max Ano 1: 65 ml/kg/min, Ano 2: 45 ml/kg/min (queda de 31%)",
+      "Atleta B: Peso Ano 1: 75kg, Ano 2: 75kg (estável)",
+      "Atleta C: Proteína C-reativa: 0,5 mg/L → 15 mg/L (aumento de 3000%)"
+    ],
+    problem: "Múltiplas inconsistências em dados longitudinais que podem indicar problemas metodológicos",
+    question: "Qual a melhor estratégia de controle de qualidade para este estudo complexo?",
+    options: [
+      "Excluir todos os dados com variações maiores que 20%",
+      "Aceitar todos os dados pois são medições reais",
+      "Implementar protocolo sistemático: verificar equipamentos, re-contactar participantes, validar com exames médicos",
+      "Usar apenas dados do primeiro ano para evitar problemas"
+    ],
+    correctAnswer: 2,
+    explanation: "Estudos longitudinais complexos requerem protocolos sistemáticos de controle de qualidade que considerem múltiplas fontes de variação.",
+    solution: "Protocolo estruturado: 1) Verificar calibração de equipamentos, 2) Re-contactar participantes para confirmar mudanças, 3) Validar com registros médicos, 4) Documentar todas as verificações."
   }
 ]
 

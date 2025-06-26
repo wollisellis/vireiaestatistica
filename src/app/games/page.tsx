@@ -22,6 +22,7 @@ import { Game35StatisticalTestMatching } from '@/components/games/Game35Statisti
 import { Game36InteractiveStatSimulation } from '@/components/games/Game36InteractiveStatSimulation'
 import { Game37ConceptRecognition } from '@/components/games/Game37ConceptRecognition'
 import { Game38KappaAgreementMatching } from '@/components/games/Game38KappaAgreementMatching'
+import { GameTemplate } from '@/components/games/GameTemplate'
 import { Layout } from '@/components/layout/Layout'
 
 export default function GamesPage() {
@@ -128,6 +129,22 @@ export default function GamesPage() {
             onComplete={handleGameComplete}
           />
         )
+      case 13:
+        return (
+          <GameTemplate
+            gameId={13}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 14:
+        return (
+          <GameTemplate
+            gameId={14}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
       case 15:
         return (
           <Game15BasicProbability
@@ -135,9 +152,137 @@ export default function GamesPage() {
             onComplete={handleGameComplete}
           />
         )
+      case 16:
+        return (
+          <GameTemplate
+            gameId={16}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 17:
+        return (
+          <GameTemplate
+            gameId={17}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 18:
+        return (
+          <GameTemplate
+            gameId={18}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 19:
+        return (
+          <GameTemplate
+            gameId={19}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 20:
+        return (
+          <GameTemplate
+            gameId={20}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 21:
+        return (
+          <GameTemplate
+            gameId={21}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 22:
+        return (
+          <GameTemplate
+            gameId={22}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 23:
+        return (
+          <GameTemplate
+            gameId={23}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 24:
+        return (
+          <GameTemplate
+            gameId={24}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 25:
+        return (
+          <GameTemplate
+            gameId={25}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 26:
+        return (
+          <GameTemplate
+            gameId={26}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 27:
+        return (
+          <GameTemplate
+            gameId={27}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 28:
+        return (
+          <GameTemplate
+            gameId={28}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 29:
+        return (
+          <GameTemplate
+            gameId={29}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 30:
+        return (
+          <GameTemplate
+            gameId={30}
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
       case 31:
         return (
           <Game31DataQualityControl
+            onBack={handleBackToSelection}
+            onComplete={handleGameComplete}
+          />
+        )
+      case 32:
+        return (
+          <GameTemplate
+            gameId={32}
             onBack={handleBackToSelection}
             onComplete={handleGameComplete}
           />

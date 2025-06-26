@@ -7,8 +7,21 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { useAuth } from '@/hooks/useSupabase'
-import { t } from '@/lib/translations'
+// Temporarily disabled for AvaliaNutri platform
+// import { useAuth } from '@/hooks/useSupabase'
+// import { t } from '@/lib/translations'
+
+// Mock translation function
+const t = (key: string) => {
+  const translations: Record<string, string> = {
+    'auth.validation.emailInvalid': 'Email inválido',
+    'auth.validation.passwordMinLength': 'Senha deve ter pelo menos 6 caracteres',
+    'auth.validation.fullNameMinLength': 'Nome deve ter pelo menos 2 caracteres',
+    'auth.validation.passwordsDoNotMatch': 'Senhas não coincidem',
+    'auth.validation.passwordsDontMatch': 'Senhas não coincidem'
+  }
+  return translations[key] || key
+}
 
 const signInSchema = z.object({
   email: z.string().email(t('auth.validation.emailInvalid')),
@@ -28,7 +41,17 @@ export function AuthForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [, setIsGuest] = useState(false)
-  const { signIn, signUp } = useAuth()
+
+  // Mock auth functions for AvaliaNutri platform
+  const signIn = async (email: string, password: string) => {
+    console.log('Mock sign in:', email, password)
+    return { error: null, success: true }
+  }
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    console.log('Mock sign up:', email, password, fullName)
+    return { error: null, success: true }
+  }
 
   const {
     register,

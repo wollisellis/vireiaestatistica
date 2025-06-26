@@ -188,6 +188,53 @@ const scenarios: CentralTendencyScenario[] = [
     correctAnswer: 2,
     explanation: "A moda (16h) é a melhor medida neste caso porque mostra que o valor mais frequente é exatamente o protocolo prescrito. Isso indica que a maioria dos participantes está seguindo corretamente o jejum de 16 horas. A média é ligeiramente inflacionada por alguns valores mais altos.",
     interpretation: "Excelente aderência ao protocolo 16:8, com a maioria dos participantes seguindo exatamente as 16 horas de jejum recomendadas."
+  },
+  {
+    id: 5,
+    title: "Hidratação de Maratonistas Brasileiros",
+    description: "Análise do consumo de água (litros) durante treinos de 25 maratonistas da equipe brasileira",
+    variable: "Hidratação",
+    unit: "litros/treino",
+    data: [
+      { participant: "M1", value: 2.5 },
+      { participant: "M2", value: 3.0 },
+      { participant: "M3", value: 2.8 },
+      { participant: "M4", value: 3.2 },
+      { participant: "M5", value: 2.7 },
+      { participant: "M6", value: 3.1 },
+      { participant: "M7", value: 2.9 },
+      { participant: "M8", value: 3.0 },
+      { participant: "M9", value: 2.6 },
+      { participant: "M10", value: 3.3 },
+      { participant: "M11", value: 2.8 },
+      { participant: "M12", value: 3.0 },
+      { participant: "M13", value: 2.9 },
+      { participant: "M14", value: 3.1 },
+      { participant: "M15", value: 2.7 },
+      { participant: "M16", value: 3.0 },
+      { participant: "M17", value: 2.8 },
+      { participant: "M18", value: 3.2 },
+      { participant: "M19", value: 2.9 },
+      { participant: "M20", value: 3.0 },
+      { participant: "M21", value: 2.8 },
+      { participant: "M22", value: 3.1 },
+      { participant: "M23", value: 2.9 },
+      { participant: "M24", value: 3.0 },
+      { participant: "M25", value: 2.8 }
+    ],
+    mean: 2.9,
+    median: 2.9,
+    mode: [3.0],
+    question: "Considerando que a recomendação é 2,5-3,5L por treino, qual medida de tendência central melhor representa o grupo?",
+    options: [
+      "Média (2,9L) - representa bem o centro da distribuição",
+      "Mediana (2,9L) - não é afetada por valores extremos",
+      "Moda (3,0L) - valor mais comum entre os atletas",
+      "Todas são igualmente válidas pois são muito próximas"
+    ],
+    correctAnswer: 3,
+    explanation: "Quando média, mediana e moda são próximas (2,9; 2,9; 3,0), indica distribuição simétrica. Todas as medidas são válidas e representam bem o grupo.",
+    interpretation: "Excelente hidratação da equipe brasileira, com consumo médio dentro da faixa recomendada e baixa variabilidade entre atletas."
   }
 ]
 
