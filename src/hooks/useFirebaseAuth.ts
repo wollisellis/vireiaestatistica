@@ -8,13 +8,18 @@ import {
   User as FirebaseUser
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
-import { auth, db, User } from '@/lib/firebase'
+import { auth, db, User, isFirebaseConfigured } from '@/lib/firebase'
 
 export function useFirebaseAuth() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!auth || !isFirebaseConfigured()) {
+      setLoading(false)
+      return
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user)
       setLoading(false)
@@ -24,9 +29,13 @@ export function useFirebaseAuth() {
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    if (!auth || !db || !isFirebaseConfigured()) {
+      throw new Error('Firebase not configured')
+    }
+
     try {
       setLoading(true)
-      
+
       // Create user with email and password
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password)
       
