@@ -21,7 +21,8 @@ import {
   Play,
   ChevronRight,
   Star,
-  Zap
+  Zap,
+  Lock
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -46,7 +47,8 @@ const nutritionalGames = [
     ],
     icon: <Scale className="w-6 h-6" />,
     color: 'bg-emerald-500',
-    topics: ['IMC', 'Peso/Altura', 'Circunferências', 'Dobras Cutâneas']
+    topics: ['IMC', 'Peso/Altura', 'Circunferências', 'Dobras Cutâneas'],
+    isLocked: false
   },
   {
     id: 2,
@@ -62,7 +64,9 @@ const nutritionalGames = [
     ],
     icon: <Activity className="w-6 h-6" />,
     color: 'bg-teal-500',
-    topics: ['Hemograma', 'Proteínas', 'Vitaminas', 'Minerais']
+    topics: ['Hemograma', 'Proteínas', 'Vitaminas', 'Minerais'],
+    isLocked: true,
+    lockMessage: 'Aguardando liberação do docente'
   },
   {
     id: 3,
@@ -78,7 +82,9 @@ const nutritionalGames = [
     ],
     icon: <Users className="w-6 h-6" />,
     color: 'bg-cyan-500',
-    topics: ['Renda', 'Educação', 'Acesso a Alimentos', 'Cultura Alimentar']
+    topics: ['Renda', 'Educação', 'Acesso a Alimentos', 'Cultura Alimentar'],
+    isLocked: true,
+    lockMessage: 'Aguardando liberação do docente'
   },
   {
     id: 4,
@@ -94,7 +100,8 @@ const nutritionalGames = [
     ],
     icon: <TrendingUp className="w-6 h-6" />,
     color: 'bg-indigo-500',
-    topics: ['Percentis', 'Plotagem', 'Crescimento Infantil', 'Padrões Brasileiros']
+    topics: ['Percentis', 'Plotagem', 'Crescimento Infantil', 'Padrões Brasileiros'],
+    isLocked: false
   }
 ]
 
@@ -298,10 +305,19 @@ export default function JogosNT600Page() {
                 transition={{ duration: 0.6, delay: 0.1 * index }}
                 className="group"
               >
-                <Card className="h-full hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200">
+                <Card className={`h-full transition-all duration-300 border-2 ${
+                  game.isLocked
+                    ? 'opacity-75 bg-gray-50 border-gray-200'
+                    : 'hover:shadow-xl hover:border-blue-200'
+                }`}>
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`p-3 rounded-lg ${game.color} text-white`}>
+                      <div className={`p-3 rounded-lg ${
+                        game.isLocked ? 'bg-gray-400' : game.color
+                      } text-white relative`}>
+                        {game.isLocked && (
+                          <Lock className="w-3 h-3 absolute -top-1 -right-1 bg-gray-600 rounded-full p-0.5" />
+                        )}
                         {game.icon}
                       </div>
                       <div className="text-right">
@@ -313,8 +329,21 @@ export default function JogosNT600Page() {
                       </div>
                     </div>
 
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{game.title}</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">{game.description}</p>
+                    <h3 className={`text-xl font-bold mb-2 ${
+                      game.isLocked ? 'text-gray-500' : 'text-gray-900'
+                    }`}>{game.title}</h3>
+                    <p className={`text-sm leading-relaxed ${
+                      game.isLocked ? 'text-gray-500' : 'text-gray-600'
+                    }`}>{game.description}</p>
+
+                    {game.isLocked && (
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <div className="flex items-center text-yellow-800 text-sm">
+                          <Lock className="w-4 h-4 mr-2" />
+                          {game.lockMessage}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between mt-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -367,15 +396,26 @@ export default function JogosNT600Page() {
                         </div>
                       </div>
 
-                      <Link href={`/jogos/${game.id}`}>
+                      {game.isLocked ? (
                         <Button
-                          className="w-full mt-4 group-hover:bg-blue-600 transition-colors"
+                          disabled
+                          className="w-full mt-4 bg-gray-300 text-gray-500 cursor-not-allowed"
                           size="lg"
                         >
-                          <Play className="w-4 h-4 mr-2" />
-                          Iniciar Jogo
+                          <Lock className="w-4 h-4 mr-2" />
+                          Módulo Bloqueado
                         </Button>
-                      </Link>
+                      ) : (
+                        <Link href={`/jogos/${game.id}`}>
+                          <Button
+                            className="w-full mt-4 group-hover:bg-blue-600 transition-colors"
+                            size="lg"
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            Iniciar Jogo
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

@@ -159,7 +159,7 @@ export default function InteractiveGrowthCurveChart({
 
     setPlottedPoints(prev => [...prev, newPoint])
     
-    const educationalFeedback = generateEducationalFeedback(newPoint, child)
+    const educationalFeedback = generateEducationalFeedback(newPoint, child || undefined)
     setFeedback(educationalFeedback)
 
     // Check if exercise is completed
@@ -230,8 +230,12 @@ export default function InteractiveGrowthCurveChart({
       Math.abs(curr.value - value) < Math.abs(prev.value - value) ? curr : prev
     )
 
-    // Only return the percentile if the click was close enough to the line (within 5% tolerance)
-    const tolerance = maxValue * 0.05
+    // Enhanced tolerance for P50 line (green line) - make it easier to click
+    let tolerance = maxValue * 0.05
+    if (closestPercentile.percentile === 50) {
+      tolerance = maxValue * 0.08 // Increased tolerance for P50 line
+    }
+
     if (Math.abs(closestPercentile.value - value) <= tolerance) {
       return closestPercentile.percentile
     }
@@ -266,6 +270,31 @@ export default function InteractiveGrowthCurveChart({
     setIsCompleted(false)
     setHoveredPercentile(null)
   }, [])
+
+  // Custom tooltip component that doesn't interfere with clicks
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length && interactionType !== 'click-to-identify') {
+      return (
+        <div
+          className="bg-white p-3 border rounded-lg shadow-lg pointer-events-none"
+          style={{
+            position: 'absolute',
+            top: '-60px',
+            left: '10px',
+            zIndex: 1000
+          }}
+        >
+          <p className="font-semibold">{`Idade: ${label} meses`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {`${entry.name}: ${entry.value.toFixed(1)} ${chartType === 'weight' ? 'kg' : 'cm'}`}
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
 
   // Handle mouse hover for percentile reading
   const handleMouseMove = useCallback((event: any) => {
@@ -413,13 +442,15 @@ export default function InteractiveGrowthCurveChart({
                     position: 'insideLeft' 
                   }}
                 />
-                <Tooltip 
-                  formatter={(value, name) => [
-                    `${value} ${chartType === 'weight' ? 'kg' : 'cm'}`,
-                    name
-                  ]}
-                  labelFormatter={(age) => `Idade: ${age} meses`}
-                />
+                {interactionType !== 'click-to-identify' && (
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    wrapperStyle={{
+                      pointerEvents: 'none',
+                      zIndex: 1000
+                    }}
+                  />
+                )}
                 <Legend />
                 
                 {/* Percentile Lines - Made thicker for better clickability */}

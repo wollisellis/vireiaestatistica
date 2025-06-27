@@ -128,12 +128,6 @@ export function NutritionalGame4GrowthCurves({ onBack, onComplete }: Nutritional
               'P50 é a mediana - metade das crianças está acima, metade abaixo',
               'P3 a P97 abrange 94% das crianças saudáveis',
               'Tendência de crescimento é mais importante que um ponto isolado'
-            ],
-            keyPoints: [
-              'Percentis mostram a posição da criança em relação a 100 crianças da mesma idade',
-              'P50 é a mediana - metade das crianças está acima, metade abaixo',
-              'P3 a P97 abrange 94% das crianças saudáveis',
-              'Tendência de crescimento é mais importante que um ponto isolado'
             ]
           }
         ],
@@ -161,12 +155,6 @@ export function NutritionalGame4GrowthCurves({ onBack, onComplete }: Nutritional
               interpretation: 'Cada caso reflete a realidade nutricional brasileira',
               source: 'Baseado em dados do SISVAN e pesquisas populacionais'
             },
-            keyPoints: [
-              'Encontre a idade no eixo horizontal (X)',
-              'Encontre o peso/altura no eixo vertical (Y)',
-              'O ponto de intersecção mostra o percentil',
-              'Compare com as linhas coloridas de referência'
-            ],
             keyPoints: [
               'Encontre a idade no eixo horizontal (X)',
               'Encontre o peso/altura no eixo vertical (Y)',
