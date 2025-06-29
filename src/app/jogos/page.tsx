@@ -24,6 +24,8 @@ import {
   Zap,
   Lock
 } from 'lucide-react'
+import RankingSidebar from '@/components/ranking/RankingSidebar'
+import MobileRanking from '@/components/ranking/MobileRanking'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StudentProgressDashboard } from '@/components/student-progress'
@@ -110,28 +112,30 @@ export default function JogosNT600Page() {
 
   return (
     <StudentProgressProvider>
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-                <Home className="w-5 h-5" />
-                <span>Início</span>
-              </Link>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900 font-medium">NT600 - Jogos Educacionais</span>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="bg-white shadow-sm border-b">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Link href="/" className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
+                    <Home className="w-5 h-5" />
+                    <span>Início</span>
+                  </Link>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-900 font-medium">NT600 - Jogos Educacionais</span>
+                </div>
+                <Link href="/games">
+                  <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    AvaliaNutri
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <Link href="/games">
-              <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                AvaliaNutri
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+          </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Course Introduction */}
@@ -484,10 +488,21 @@ export default function JogosNT600Page() {
             </CardContent>
           </Card>
         </motion.div>
+        </div>
+
+        {/* Footer */}
+        <Footer />
       </div>
 
-      {/* Footer */}
-      <Footer />
+      {/* Desktop Ranking Sidebar */}
+      <div className="hidden lg:block">
+        <RankingSidebar />
+      </div>
+
+      {/* Mobile Ranking */}
+      <div className="lg:hidden">
+        <MobileRanking />
+      </div>
     </div>
     </StudentProgressProvider>
   )

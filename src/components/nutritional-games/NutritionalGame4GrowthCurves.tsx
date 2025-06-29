@@ -104,30 +104,30 @@ export function NutritionalGame4GrowthCurves({ onBack, onComplete }: Nutritional
     const educationalSections = [
       {
         id: 'growth-curves-intro',
-        title: 'Curvas de Crescimento Interativas',
+        title: 'Avaliação do Crescimento Infantil: Aplicação Clínica das Curvas de Referência',
         icon: <TrendingUp className="w-6 h-6 text-emerald-600" />,
-        content: preGameEducationalContent.introduction,
+        content: `As curvas de crescimento representam ferramenta fundamental na prática da nutrição pediátrica, constituindo método padronizado para avaliação do estado nutricional e monitoramento do crescimento infantil. Como futuros nutricionistas, vocês aplicarão estes instrumentos na identificação precoce de agravos nutricionais, no acompanhamento de intervenções terapêuticas e na promoção da saúde nutricional infantil.`,
         concepts: [
           {
-            term: 'Curvas de Crescimento',
-            definition: 'Gráficos que mostram como crianças crescem ao longo do tempo, comparando com padrões de referência',
-            whenToUse: 'Para avaliar se o crescimento de uma criança está adequado para sua idade e sexo',
+            term: 'Curvas de Crescimento e Interpretação de Percentis',
+            definition: 'Instrumentos gráficos baseados em distribuições estatísticas que permitem comparar medidas antropométricas individuais com padrões populacionais de referência, expressos em percentis ou escores-z',
+            whenToUse: 'Consultas de puericultura, avaliação nutricional pediátrica, monitoramento de crescimento, identificação de riscos nutricionais, acompanhamento de tratamentos em nutrição infantil',
             dailyLifeAnalogy: preGameEducationalContent.analogies?.[0] || {
-              title: 'Analogia da Fila de Crianças',
-              description: 'Imagine 100 crianças da mesma idade organizadas por peso ou altura'
+              title: 'Sistema de Classificação Acadêmica',
+              description: 'Assim como as notas classificam estudantes em relação à turma, os percentis classificam crianças em relação à população de referência da mesma idade e sexo'
             },
             brazilianExample: {
-              title: 'Padrões Brasileiros de Crescimento',
-              context: 'O Ministério da Saúde adota as curvas da OMS adaptadas para a população brasileira',
-              data: 'Utilizadas em todas as Unidades Básicas de Saúde do SUS',
-              interpretation: 'Permitem identificar precocemente problemas nutricionais em crianças brasileiras',
+              title: 'Protocolo SISVAN para Avaliação Nutricional Infantil',
+              context: 'O Sistema de Vigilância Alimentar e Nutricional utiliza as curvas da OMS (2006/2007) como referência para avaliação do estado nutricional de crianças brasileiras',
+              data: 'Indicadores: peso/idade (0-60m), estatura/idade (0-19a), peso/estatura (0-60m), IMC/idade (0-19a). Pontos de corte: P3, P15, P85, P97',
+              interpretation: 'Permite diagnóstico nutricional padronizado: magreza acentuada (<P3), magreza (P3-P15), eutrofia (P15-P85), sobrepeso (P85-P97), obesidade (>P97)',
               source: `${growthCurvesCitation.authors} (${growthCurvesCitation.year})`
             },
             keyPoints: [
-              'Percentis mostram a posição da criança em relação a 100 crianças da mesma idade',
-              'P50 é a mediana - metade das crianças está acima, metade abaixo',
-              'P3 a P97 abrange 94% das crianças saudáveis',
-              'Tendência de crescimento é mais importante que um ponto isolado'
+              'Percentis indicam a posição relativa da criança na distribuição populacional de referência',
+              'P50 representa a mediana populacional - valor que divide a população em duas metades iguais',
+              'Faixa P3-P97 engloba 94% da população de referência considerada saudável',
+              'Velocidade de crescimento e tendência temporal são mais relevantes que valores pontuais isolados'
             ]
           }
         ],
@@ -135,31 +135,30 @@ export function NutritionalGame4GrowthCurves({ onBack, onComplete }: Nutritional
       },
       {
         id: 'interactive-plotting',
-        title: 'Plotagem Interativa de Medições',
+        title: 'Técnicas de Plotagem e Interpretação Clínica',
         icon: <Target className="w-6 h-6 text-teal-600" />,
-        content: `Neste módulo, você aprenderá a plotar medições reais de crianças brasileiras nas curvas de crescimento. 
-                 É como marcar pontos em um mapa - cada ponto conta uma história sobre o crescimento da criança.`,
+        content: `Este módulo desenvolve habilidades práticas essenciais para a aplicação clínica das curvas de crescimento. Você praticará a plotagem precisa de dados antropométricos e a interpretação clínica dos resultados, utilizando casos reais de crianças brasileiras atendidas em serviços de saúde.`,
         concepts: [
           {
-            term: 'Plotagem de Pontos',
-            definition: 'Processo de marcar a idade e medição da criança no gráfico para encontrar o percentil',
-            whenToUse: 'Sempre que avaliar o crescimento de uma criança em consultas de puericultura',
+            term: 'Plotagem Antropométrica e Interpretação Clínica',
+            definition: 'Técnica de marcação precisa de dados antropométricos nas curvas de referência, seguida de interpretação clínica baseada na posição percentílica e análise de tendências de crescimento',
+            whenToUse: 'Consultas nutricionais pediátricas, avaliação de crescimento, monitoramento de intervenções nutricionais, elaboração de planos terapêuticos em nutrição infantil',
             dailyLifeAnalogy: preGameEducationalContent.analogies?.[1] || {
-              title: 'Semáforo Nutricional',
-              description: 'Use as cores como um semáforo para interpretação nutricional'
+              title: 'Sistema de Coordenadas GPS Nutricional',
+              description: 'Assim como o GPS localiza sua posição exata no mapa usando coordenadas, a plotagem localiza a posição nutricional da criança usando idade e medida antropométrica'
             },
             brazilianExample: {
-              title: 'Casos Reais Brasileiros',
-              context: 'Utilizaremos dados de 15 crianças de diferentes regiões do Brasil',
-              data: 'Idades de 6 a 54 meses, representando diversidade regional',
-              interpretation: 'Cada caso reflete a realidade nutricional brasileira',
-              source: 'Baseado em dados do SISVAN e pesquisas populacionais'
+              title: 'Casos Clínicos da Atenção Básica Brasileira',
+              context: 'Dados antropométricos de crianças atendidas em Unidades Básicas de Saúde de diferentes regiões brasileiras, representando a diversidade socioeconômica e nutricional do país',
+              data: 'Amostra de 15 crianças (6-54 meses) com diferentes perfis nutricionais: eutrofia, risco nutricional, sobrepeso e déficits de crescimento',
+              interpretation: 'Cada caso permite aplicação prática dos critérios diagnósticos do SISVAN e desenvolvimento de raciocínio clínico nutricional',
+              source: 'Baseado em protocolos do SISVAN e dados de vigilância nutricional do Ministério da Saúde'
             },
             keyPoints: [
-              'Encontre a idade no eixo horizontal (X)',
-              'Encontre o peso/altura no eixo vertical (Y)',
-              'O ponto de intersecção mostra o percentil',
-              'Compare com as linhas coloridas de referência'
+              'Localização precisa: idade (eixo X) e medida antropométrica (eixo Y)',
+              'Identificação do percentil através da intersecção com as curvas de referência',
+              'Interpretação clínica baseada nos pontos de corte do SISVAN',
+              'Análise de tendências: comparação com medições anteriores quando disponíveis'
             ]
           }
         ],
@@ -171,8 +170,8 @@ export function NutritionalGame4GrowthCurves({ onBack, onComplete }: Nutritional
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
         <AdvancedEducationalContent
           gameId={4}
-          gameTitle="Curvas de Crescimento Interativas"
-          gameDescription="Aprenda a plotar e interpretar medições antropométricas usando dados reais de crianças brasileiras"
+          gameTitle="Avaliação do Crescimento Infantil: Aplicação Clínica das Curvas de Referência"
+          gameDescription="Desenvolva competências em avaliação nutricional pediátrica através da plotagem e interpretação clínica de dados antropométricos, utilizando casos reais de crianças brasileiras e protocolos do SISVAN"
           sections={educationalSections}
           onStartGame={handleStartGame}
           totalEstimatedTime={8}

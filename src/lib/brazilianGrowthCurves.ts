@@ -531,23 +531,23 @@ export function generateEducationalFeedback(
   targetChild?: ChildMeasurement
 ): string {
   const percentile = point.percentile
-  let feedback = `Ponto plotado no percentil ${percentile.toFixed(1)}. `
+  let feedback = `Plotagem realizada: Percentil ${percentile.toFixed(1)}. `
 
   if (percentile < 3) {
-    feedback += 'Este valor está abaixo do P3, indicando possível desnutrição severa. '
-    feedback += 'É importante investigar causas nutricionais e de saúde.'
+    feedback += '⚠️ Diagnóstico nutricional: Magreza acentuada. Percentil <P3 segundo critérios SISVAN indica déficit ponderal grave. '
+    feedback += 'Requer avaliação nutricional completa e intervenção terapêutica imediata.'
   } else if (percentile < 10) {
-    feedback += 'Este valor está entre P3-P10, indicando baixo peso/altura. '
-    feedback += 'Requer acompanhamento nutricional cuidadoso.'
+    feedback += '⚠️ Diagnóstico nutricional: Magreza/Risco nutricional. Faixa P3-P10 indica necessidade de monitoramento nutricional intensivo. '
+    feedback += 'Considerar intervenção dietoterápica preventiva.'
   } else if (percentile <= 85) {
-    feedback += 'Este valor está na faixa de normalidade (P10-P85). '
-    feedback += 'Indica crescimento adequado para a idade.'
+    feedback += '✅ Diagnóstico nutricional: Eutrofia. Faixa P10-P85 caracteriza estado nutricional adequado segundo padrões de referência da OMS/SISVAN. '
+    feedback += 'Manter acompanhamento nutricional de rotina.'
   } else if (percentile <= 97) {
-    feedback += 'Este valor está entre P85-P97, indicando sobrepeso/altura elevada. '
-    feedback += 'Pode necessitar de orientação nutricional.'
+    feedback += '⚠️ Diagnóstico nutricional: Sobrepeso. Faixa P85-P97 indica excesso de peso. '
+    feedback += 'Requer orientação nutricional para prevenção de obesidade e complicações cardiometabólicas.'
   } else {
-    feedback += 'Este valor está acima do P97, indicando obesidade/altura muito elevada. '
-    feedback += 'Requer intervenção nutricional especializada.'
+    feedback += '🔴 Diagnóstico nutricional: Obesidade. Percentil >P97 caracteriza obesidade infantil. '
+    feedback += 'Demanda intervenção nutricional multidisciplinar e acompanhamento especializado.'
   }
 
   if (targetChild) {
@@ -578,17 +578,17 @@ export function getPercentileColor(percentile: number): string {
 export const interactiveExercises = [
   {
     id: 1,
-    title: 'Identificação de Linhas de Percentil',
-    description: 'Aprenda a identificar as diferentes linhas de percentil no gráfico',
+    title: 'Identificação de Percentis de Referência',
+    description: 'Desenvolva habilidades de reconhecimento visual dos percentis nas curvas de crescimento',
     type: 'click-to-identify' as const,
     difficulty: 'Muito Fácil',
-    instructions: 'Clique na linha do P50 (mediana) no gráfico de peso-por-idade para meninos',
+    instructions: 'Identifique e clique na linha do P50 (mediana populacional) no gráfico peso-por-idade masculino. Esta linha representa o percentil de referência central utilizado na avaliação nutricional.',
     targetPercentile: 50,
     chartType: 'weight' as const,
     gender: 'M' as const,
     maxAttempts: 3,
     points: 10,
-    educationalContent: 'O P50 representa a mediana - metade das crianças está acima e metade abaixo desta linha.'
+    educationalContent: 'O P50 constitui a mediana populacional, dividindo a distribuição de referência em duas metades iguais. Na prática clínica, representa o valor central esperado para a idade e sexo.'
   },
   {
     id: 2,
@@ -685,12 +685,13 @@ export const interactiveExercises = [
 
 // Pre-game educational content for interactive module
 export const preGameEducationalContent = {
-  title: 'Curvas de Crescimento Interativas',
-  subtitle: 'Aprenda a plotar e interpretar medições antropométricas',
+  title: 'Avaliação do Crescimento Infantil: Aplicação Clínica das Curvas de Referência',
+  subtitle: 'Desenvolva competências em avaliação nutricional pediátrica através da aplicação prática de curvas de crescimento',
   introduction: `
-    As curvas de crescimento são ferramentas fundamentais para avaliar o desenvolvimento infantil.
-    Neste módulo interativo, você aprenderá a plotar medições reais de crianças brasileiras e
-    interpretar os resultados usando os padrões do Ministério da Saúde.
+    As curvas de crescimento constituem instrumento fundamental na prática da nutrição pediátrica,
+    permitindo avaliação objetiva do estado nutricional e monitoramento do crescimento infantil.
+    Este módulo desenvolve competências práticas para aplicação clínica das curvas de referência,
+    utilizando casos reais de crianças brasileiras e protocolos padronizados do SISVAN.
   `,
   analogies: [
     {
@@ -717,10 +718,10 @@ export const preGameEducationalContent = {
     }
   ],
   keyLearningObjectives: [
-    'Identificar linhas de percentil em gráficos de crescimento',
-    'Plotar medições de peso e altura corretamente',
-    'Calcular e interpretar percentis de crescimento',
-    'Classificar estado nutricional baseado em percentis',
-    'Aplicar conhecimentos em casos reais brasileiros'
+    'Identificar e interpretar percentis de referência nas curvas de crescimento infantil',
+    'Aplicar técnicas de plotagem antropométrica com precisão clínica',
+    'Interpretar percentis segundo critérios diagnósticos do SISVAN',
+    'Classificar estado nutricional infantil baseado em pontos de corte padronizados',
+    'Desenvolver raciocínio clínico através de casos reais da atenção básica brasileira'
   ]
 }

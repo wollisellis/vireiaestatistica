@@ -36,6 +36,7 @@ import {
   preGameEducationalContent
 } from '@/lib/brazilianGrowthCurves'
 import { useStudentProgress } from '@/contexts/StudentProgressContext'
+import ScoreFeedback from '@/components/ranking/ScoreFeedback'
 
 interface Exercise {
   id: number
@@ -55,39 +56,39 @@ interface Exercise {
 const exercises: Exercise[] = [
   {
     id: 1,
-    title: 'Cálculo de IMC - Conceito Básico',
-    description: 'Aprenda a calcular e interpretar o Índice de Massa Corporal usando dados reais brasileiros',
-    scenario: 'Maria, estudante de 25 anos de São Paulo, participou da Pesquisa de Orçamentos Familiares (POF). Seus dados: Peso = 65,2 kg, Altura = 1,62 m',
-    question: 'Qual é o IMC de Maria e como classificá-lo?',
+    title: 'Avaliação Antropométrica: Cálculo e Interpretação do IMC',
+    description: 'Aplique os fundamentos da avaliação nutricional antropométrica utilizando dados da POF-IBGE',
+    scenario: 'Durante um atendimento nutricional ambulatorial, você recebe Maria, adulta de 25 anos, residente em São Paulo. Dados antropométricos coletados: Peso = 65,2 kg, Estatura = 1,62 m. Estes dados fazem parte do banco da Pesquisa de Orçamentos Familiares (POF-IBGE 2017-2018).',
+    question: 'Calcule o IMC de Maria e classifique seu estado nutricional segundo os critérios da OMS adotados pelo Ministério da Saúde:',
     options: [
-      'IMC = 24,8 kg/m² - Eutrófico (peso normal)',
-      'IMC = 26,1 kg/m² - Sobrepeso',
-      'IMC = 22,3 kg/m² - Baixo peso',
-      'IMC = 28,5 kg/m² - Obesidade grau I'
+      'IMC = 24,8 kg/m² - Estado nutricional: Eutrofia',
+      'IMC = 26,1 kg/m² - Estado nutricional: Sobrepeso',
+      'IMC = 22,3 kg/m² - Estado nutricional: Baixo peso',
+      'IMC = 28,5 kg/m² - Estado nutricional: Obesidade grau I'
     ],
     correctAnswer: 0,
-    explanation: 'IMC = Peso ÷ Altura² = 65,2 ÷ (1,62)² = 65,2 ÷ 2,62 = 24,8 kg/m². Segundo a OMS, IMC entre 18,5-24,9 é classificado como eutrófico (peso normal).',
+    explanation: 'Cálculo: IMC = 65,2 ÷ (1,62)² = 24,8 kg/m². Classificação segundo OMS/MS: IMC 18,5-24,9 kg/m² = Eutrofia. Maria apresenta estado nutricional adequado, dentro dos parâmetros de normalidade para adultos. Este resultado indica adequação entre peso e estatura, sem risco nutricional aparente.',
     difficulty: 'muito-facil',
-    learningObjective: 'Calcular e interpretar o IMC corretamente',
+    learningObjective: 'Aplicar técnicas de avaliação antropométrica e classificação do estado nutricional',
     realData: anthropometricDataset.data[0],
     calculation: 'IMC = 65,2 ÷ (1,62)² = 24,8 kg/m²'
   },
   {
     id: 2,
-    title: 'Relação Cintura-Quadril (RCQ)',
-    description: 'Avalie o risco cardiovascular através da distribuição de gordura corporal',
-    scenario: 'João, homem de 42 anos do Sul do Brasil, tem: Circunferência da cintura = 95 cm, Circunferência do quadril = 102 cm',
-    question: 'Qual é a RCQ de João e o risco cardiovascular associado?',
+    title: 'Indicadores de Distribuição de Gordura: Relação Cintura-Quadril',
+    description: 'Avalie o risco cardiometabólico através da análise da distribuição regional de gordura corporal',
+    scenario: 'Em consulta de avaliação nutricional, João, homem de 42 anos da região Sul, apresenta os seguintes dados antropométricos: Circunferência da cintura = 95 cm, Circunferência do quadril = 102 cm. Você deve avaliar seu perfil de risco cardiometabólico.',
+    question: 'Calcule a Relação Cintura-Quadril (RCQ) de João e classifique o risco cardiometabólico segundo os pontos de corte estabelecidos pela OMS:',
     options: [
-      'RCQ = 0,93 - Risco cardiovascular moderado',
-      'RCQ = 0,85 - Baixo risco cardiovascular',
-      'RCQ = 1,07 - Alto risco cardiovascular',
-      'RCQ = 0,78 - Risco muito baixo'
+      'RCQ = 0,93 - Risco cardiometabólico moderado (limítrofe)',
+      'RCQ = 0,85 - Risco cardiometabólico baixo',
+      'RCQ = 1,07 - Risco cardiometabólico muito elevado',
+      'RCQ = 0,78 - Risco cardiometabólico baixo (distribuição ginoide)'
     ],
     correctAnswer: 0,
-    explanation: 'RCQ = Cintura ÷ Quadril = 95 ÷ 102 = 0,93. Para homens: RCQ < 0,90 = baixo risco, 0,90-0,95 = risco moderado, > 0,95 = alto risco.',
+    explanation: 'Cálculo: RCQ = 95 ÷ 102 = 0,93. Classificação: Para homens adultos, RCQ 0,90-0,95 indica risco cardiometabólico moderado. Este padrão caracteriza distribuição androide de gordura (concentração abdominal), associada a maior risco de síndrome metabólica, diabetes tipo 2 e doenças cardiovasculares.',
     difficulty: 'facil',
-    learningObjective: 'Calcular RCQ e avaliar risco cardiovascular',
+    learningObjective: 'Aplicar indicadores antropométricos de distribuição de gordura na avaliação do risco cardiometabólico',
     realData: anthropometricDataset.data[1],
     calculation: 'RCQ = 95 ÷ 102 = 0,93'
   },
@@ -164,7 +165,10 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
   const [showInteractiveExercises, setShowInteractiveExercises] = useState(false)
   const [currentInteractiveExercise, setCurrentInteractiveExercise] = useState(0)
   const [interactiveScore, setInteractiveScore] = useState(0)
-  const { updateGameScore } = useStudentProgress()
+  const [showScoreFeedback, setShowScoreFeedback] = useState(false)
+  const [gameScore, setGameScore] = useState<any>(null)
+  const [previousRank, setPreviousRank] = useState<number | undefined>()
+  const { updateGameScore, getCurrentRank } = useStudentProgress()
 
   // Total exercises: 5 traditional + 8 interactive = 13 exercises
   const totalExercises = exercises.length + interactiveExercises.length
@@ -219,19 +223,29 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
     } else {
       // All exercises completed
       const finalScore = score + interactiveScore + exerciseScore
-      setIsCompleted(true)
 
-      // Update student progress when game is completed
-      updateGameScore({
+      // Calculate exercises completed correctly (based on score)
+      const correctExercises = Math.round((finalScore / maxScore) * totalExercises)
+
+      // Store previous rank for comparison
+      setPreviousRank(getCurrentRank())
+
+      // Create game score object
+      const newGameScore = {
         gameId: 1,
         score: finalScore,
         maxScore: maxScore,
         timeElapsed: timeElapsed,
         completedAt: new Date(),
-        exercisesCompleted: totalExercises,
+        exercisesCompleted: correctExercises,
         totalExercises: totalExercises,
         difficulty: 'Variada'
-      })
+      }
+
+      // Update progress
+      updateGameScore(newGameScore)
+      setGameScore(newGameScore)
+      setShowScoreFeedback(true)
     }
   }
 
@@ -256,25 +270,25 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
     const educationalSections = [
       {
         id: 'introduction',
-        title: 'Introdução aos Indicadores Antropométricos',
+        title: 'Fundamentos da Avaliação Antropométrica em Nutrição',
         icon: <Scale className="w-6 h-6 text-blue-600" />,
-        content: `A antropometria é como "medir o corpo humano" para entender se uma pessoa está bem nutrida. É como quando você vai ao médico e ele mede sua altura e peso - mas aqui vamos além, aprendendo a interpretar esses números para avaliar a saúde nutricional.`,
+        content: `A antropometria constitui um dos pilares fundamentais da avaliação nutricional, fornecendo dados objetivos sobre a composição corporal e o estado nutricional. Como futuros nutricionistas, vocês utilizarão essas técnicas na prática clínica, em saúde coletiva e em pesquisa para diagnosticar, monitorar e intervir em questões nutricionais.`,
         concepts: [
           {
-            term: 'Antropometria',
-            definition: 'Ciência que estuda as medidas do corpo humano para avaliar crescimento, desenvolvimento e estado nutricional',
-            whenToUse: 'Use para avaliar estado nutricional individual ou populacional, monitorar crescimento e identificar riscos à saúde',
+            term: 'Avaliação Antropométrica',
+            definition: 'Método de avaliação nutricional baseado na mensuração das dimensões físicas e composição corporal, utilizando medidas como peso, estatura, circunferências e dobras cutâneas',
+            whenToUse: 'Aplicada na triagem nutricional, diagnóstico do estado nutricional, monitoramento de intervenções nutricionais e estudos epidemiológicos populacionais',
             dailyLifeAnalogy: {
-              title: 'Medindo Roupas',
-              description: 'É como quando você mede suas roupas para saber se servem bem - a antropometria mede o corpo para saber se a nutrição está adequada',
+              title: 'Diagnóstico Médico Completo',
+              description: 'Assim como um médico utiliza diversos exames para diagnosticar uma doença, o nutricionista usa múltiplas medidas antropométricas para avaliar o estado nutricional',
               icon: <Ruler className="w-4 h-4" />,
-              connection: 'Assim como medidas de roupa indicam se ela serve, medidas corporais indicam se a nutrição está adequada'
+              connection: 'Cada medida antropométrica fornece informações específicas que, em conjunto, permitem uma avaliação nutricional abrangente'
             },
             brazilianExample: {
-              title: 'Pesquisa de Orçamentos Familiares (POF)',
-              context: 'O IBGE realiza pesquisas nacionais medindo peso, altura e outras medidas de brasileiros',
-              data: 'Em 2017-2018, foram avaliados 46.164 adultos em todo o Brasil',
-              interpretation: 'Os dados mostram que 55,4% dos adultos brasileiros têm excesso de peso',
+              title: 'Sistema de Vigilância Alimentar e Nutricional (SISVAN)',
+              context: 'O Ministério da Saúde utiliza dados antropométricos para monitorar o estado nutricional da população brasileira atendida pelo SUS',
+              data: 'Em 2023, foram registrados mais de 14 milhões de acompanhamentos antropométricos no SISVAN',
+              interpretation: 'Os dados revelam a transição nutricional brasileira: redução da desnutrição e aumento da obesidade em todas as faixas etárias',
               source: formatNutritionalCitation(anthropometricDataset.citation)
             },
             keyPoints: [
@@ -294,33 +308,33 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
       },
       {
         id: 'imc-calculation',
-        title: 'Índice de Massa Corporal (IMC)',
+        title: 'Índice de Massa Corporal (IMC) na Prática Clínica',
         icon: <Calculator className="w-6 h-6 text-green-600" />,
-        content: `O IMC é como uma "nota" que o corpo recebe baseada no peso e altura. É o indicador mais usado no mundo para saber se alguém está com peso adequado, baixo peso, sobrepeso ou obesidade.`,
+        content: `O IMC representa o indicador antropométrico mais amplamente utilizado na prática nutricional para triagem do estado nutricional. Embora apresente limitações, constitui ferramenta fundamental para avaliação populacional e individual, sendo adotado pela OMS e pelo Ministério da Saúde brasileiro como padrão de referência.`,
         concepts: [
           {
-            term: 'IMC (Índice de Massa Corporal)',
-            definition: 'Relação entre peso e altura que indica se o peso está adequado para a altura da pessoa',
-            symbol: 'IMC = Peso (kg) ÷ Altura² (m)',
-            whenToUse: 'Para triagem inicial do estado nutricional em adultos saudáveis',
+            term: 'Índice de Massa Corporal (IMC)',
+            definition: 'Indicador antropométrico que expressa a relação entre peso corporal e estatura, utilizado para classificação do estado nutricional e identificação de riscos à saúde associados ao peso',
+            symbol: 'IMC = Peso (kg) ÷ Estatura² (m²)',
+            whenToUse: 'Triagem nutricional inicial, monitoramento de intervenções, estudos epidemiológicos, avaliação de risco cardiometabólico em adultos não atletas',
             dailyLifeAnalogy: {
-              title: 'Nota da Prova',
-              description: 'É como uma nota que mostra se você está indo bem - o IMC mostra se seu peso está adequado para sua altura',
+              title: 'Termômetro Nutricional',
+              description: 'Assim como o termômetro indica febre através da temperatura, o IMC indica alterações nutricionais através da relação peso-estatura',
               icon: <Target className="w-4 h-4" />,
-              connection: 'Assim como notas têm faixas (0-10), o IMC tem faixas que indicam diferentes estados nutricionais'
+              connection: 'Ambos são instrumentos de triagem que sinalizam a necessidade de investigação mais aprofundada'
             },
             brazilianExample: {
-              title: 'IMC da População Brasileira',
-              context: 'Dados da POF 2017-2018 mostram o perfil nutricional dos brasileiros',
-              data: 'IMC médio: Homens 26,8 kg/m², Mulheres 26,5 kg/m²',
-              interpretation: 'Ambos os sexos estão na faixa de sobrepeso (IMC 25-29,9 kg/m²)',
+              title: 'Perfil Nutricional da População Brasileira (POF 2017-2018)',
+              context: 'Inquérito nacional representativo conduzido pelo IBGE para caracterizar o estado nutricional dos brasileiros',
+              data: 'Prevalência de excesso de peso: 55,4% dos adultos (60,3% homens, 62,6% mulheres). Obesidade: 25,9% dos adultos',
+              interpretation: 'Evidencia a transição nutricional brasileira, com predominância do excesso de peso sobre a desnutrição, configurando dupla carga de má nutrição',
               source: formatNutritionalCitation(anthropometricDataset.citation)
             },
             keyPoints: [
-              'Faixas: <18,5 (baixo peso), 18,5-24,9 (normal), 25-29,9 (sobrepeso), ≥30 (obesidade)',
-              'Método simples e barato para grandes populações',
-              'Não distingue massa muscular de gordura',
-              'Pode não ser adequado para atletas ou idosos'
+              'Classificação OMS/MS: <18,5 (baixo peso), 18,5-24,9 (eutrofia), 25-29,9 (sobrepeso), ≥30 (obesidade)',
+              'Limitações: não diferencia massa magra de massa gorda, não avalia distribuição de gordura',
+              'Vantagens: baixo custo, facilidade de aplicação, comparabilidade internacional',
+              'Considerações especiais: idosos, atletas, gestantes, crianças requerem interpretação diferenciada'
             ],
             commonMistakes: [
               'Aplicar em crianças sem ajustar para idade',
@@ -372,25 +386,25 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
       },
       {
         id: 'growth-curves',
-        title: 'Curvas de Crescimento Infantil',
+        title: 'Avaliação do Crescimento Infantil: Curvas de Referência',
         icon: <TrendingUp className="w-6 h-6 text-green-600" />,
-        content: `As curvas de crescimento são como "mapas do crescimento" que mostram se uma criança está crescendo adequadamente. É como comparar o crescimento da criança com milhares de outras da mesma idade e sexo.`,
+        content: `As curvas de crescimento constituem ferramenta essencial na avaliação nutricional pediátrica, permitindo o monitoramento do crescimento e desenvolvimento infantil. Na prática clínica nutricional, são utilizadas para identificar desvios do padrão de crescimento esperado, orientar intervenções e acompanhar a efetividade de tratamentos nutricionais.`,
         concepts: [
           {
-            term: 'Curvas de Crescimento',
-            definition: 'Gráficos que mostram como peso, altura e outras medidas variam com a idade, baseados em padrões populacionais',
-            whenToUse: 'Para avaliar se o crescimento de uma criança está adequado para sua idade e sexo',
+            term: 'Curvas de Crescimento e Percentis',
+            definition: 'Representações gráficas da distribuição de medidas antropométricas (peso, estatura, perímetro cefálico) segundo idade e sexo, baseadas em populações de referência, expressas em percentis ou escores-z',
+            whenToUse: 'Avaliação nutricional pediátrica, monitoramento do crescimento, identificação de riscos nutricionais, acompanhamento de intervenções em nutrição infantil',
             dailyLifeAnalogy: {
-              title: 'Régua de Crescimento na Parede',
-              description: 'É como a régua que os pais fazem na parede para marcar a altura dos filhos, mas comparando com todas as crianças do Brasil',
+              title: 'Mapa de Navegação do Crescimento',
+              description: 'Assim como um mapa mostra se você está no caminho certo para chegar ao destino, as curvas mostram se a criança está no caminho adequado de crescimento',
               icon: <Ruler className="w-4 h-4" />,
-              connection: 'Assim como a régua mostra se a criança cresceu, as curvas mostram se está crescendo como esperado'
+              connection: 'Ambos fornecem referências para avaliar se o progresso está dentro do esperado e quando é necessário ajustar a rota'
             },
             brazilianExample: {
-              title: 'Curvas de Crescimento Brasileiras',
-              context: 'Ministério da Saúde adota padrões da OMS adaptados para crianças brasileiras',
-              data: 'Baseadas em milhares de crianças saudáveis de 0 a 5 anos',
-              interpretation: 'Permitem identificar precocemente problemas de crescimento e nutrição',
+              title: 'Protocolo SISVAN - Vigilância Nutricional Infantil',
+              context: 'O Ministério da Saúde brasileiro adota as curvas da OMS (2006/2007) para avaliação do estado nutricional de crianças e adolescentes no SUS',
+              data: 'Indicadores: peso/idade, estatura/idade, peso/estatura, IMC/idade. Pontos de corte: percentis 3, 15, 85 e 97',
+              interpretation: 'Permite identificação precoce de desnutrição, sobrepeso e obesidade infantil, orientando ações de promoção da saúde nutricional',
               source: `${growthCurvesCitation.authors}. ${growthCurvesCitation.title}. ${growthCurvesCitation.year}.`
             },
             keyPoints: [
@@ -413,12 +427,44 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
     return (
       <AdvancedEducationalContent
         gameId={1}
-        gameTitle="Indicadores Antropométricos"
-        gameDescription="Aprenda a avaliar o estado nutricional através de medidas corporais como peso, altura, IMC e circunferências usando dados reais da população brasileira"
+        gameTitle="Avaliação Antropométrica em Nutrição Clínica"
+        gameDescription="Desenvolva competências em avaliação nutricional antropométrica aplicando técnicas de mensuração, cálculo de indicadores e interpretação de dados populacionais brasileiros na prática clínica nutricional"
         sections={educationalSections}
         onStartGame={handleStartGame}
         totalEstimatedTime={18}
       />
+    )
+  }
+
+  if (showScoreFeedback && gameScore) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
+        <ScoreFeedback
+          gameScore={gameScore}
+          currentRank={getCurrentRank()}
+          previousRank={previousRank}
+          onPlayAgain={() => {
+            // Reset game state
+            setShowEducation(true)
+            setCurrentExercise(0)
+            setSelectedAnswer(null)
+            setShowFeedback(false)
+            setScore(0)
+            setTimeElapsed(0)
+            setIsCompleted(false)
+            setShowInteractiveExercises(false)
+            setCurrentInteractiveExercise(0)
+            setInteractiveScore(0)
+            setShowScoreFeedback(false)
+            setGameScore(null)
+            setPreviousRank(undefined)
+          }}
+          onContinue={() => {
+            setShowScoreFeedback(false)
+            setIsCompleted(true)
+          }}
+        />
+      </div>
     )
   }
 

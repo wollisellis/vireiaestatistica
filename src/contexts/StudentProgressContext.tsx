@@ -11,10 +11,15 @@ export interface GameScore {
   exercisesCompleted: number
   totalExercises: number
   difficulty: string
+  normalizedScore: number // 0-100 based on completion rate
+  isPersonalBest: boolean
+  previousBestScore?: number
+  attempt: number
 }
 
 export interface StudentProgress {
   studentId: string
+  studentName: string
   totalScore: number
   totalPossibleScore: number
   gamesCompleted: number
@@ -24,11 +29,23 @@ export interface StudentProgress {
   gameScores: GameScore[]
   achievements: string[]
   lastActivity: Date
+  rankingScore: number // Total normalized score (0-200 for 2 games)
+  currentRank: number
+  improvementStreak: number
+}
+
+export interface RankingEntry {
+  studentId: string
+  studentName: string
+  rankingScore: number
+  gamesCompleted: number
+  averageScore: number
+  lastActivity: Date
 }
 
 interface StudentProgressContextType {
   progress: StudentProgress
-  updateGameScore: (gameScore: GameScore) => void
+  updateGameScore: (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => void
   resetProgress: () => void
   getGameProgress: (gameId: number) => GameScore | null
   calculateOverallPerformance: () => {
@@ -36,12 +53,22 @@ interface StudentProgressContextType {
     color: string
     recommendation: string
   }
+  getRankingData: () => RankingEntry[]
+  getCurrentRank: () => number
+  getTopPerformers: (limit?: number) => RankingEntry[]
+  calculateNormalizedScore: (exercisesCompleted: number, totalExercises: number) => number
 }
 
 const StudentProgressContext = createContext<StudentProgressContextType | undefined>(undefined)
 
+const generateStudentName = () => {
+  const names = ['Ana Silva', 'João Santos', 'Maria Oliveira', 'Pedro Costa', 'Carla Souza', 'Lucas Lima', 'Fernanda Alves', 'Rafael Pereira']
+  return names[Math.floor(Math.random() * names.length)]
+}
+
 const initialProgress: StudentProgress = {
   studentId: 'student-' + Date.now(),
+  studentName: generateStudentName(),
   totalScore: 0,
   totalPossibleScore: 0,
   gamesCompleted: 0,
@@ -50,7 +77,10 @@ const initialProgress: StudentProgress = {
   totalTimeSpent: 0,
   gameScores: [],
   achievements: [],
-  lastActivity: new Date()
+  lastActivity: new Date(),
+  rankingScore: 0,
+  currentRank: 0,
+  improvementStreak: 0
 }
 
 export function StudentProgressProvider({ children }: { children: React.ReactNode }) {
@@ -80,18 +110,53 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
     localStorage.setItem('nt600-student-progress', JSON.stringify(progress))
   }, [progress])
 
-  const updateGameScore = (gameScore: GameScore) => {
+  const calculateNormalizedScore = (exercisesCompleted: number, totalExercises: number): number => {
+    return Math.round((exercisesCompleted / totalExercises) * 100)
+  }
+
+  const updateGameScore = (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => {
     setProgress(prev => {
       const existingScoreIndex = prev.gameScores.findIndex(score => score.gameId === gameScore.gameId)
-      let newGameScores: GameScore[]
-      
+      const normalizedScore = calculateNormalizedScore(gameScore.exercisesCompleted, gameScore.totalExercises)
+
+      let isPersonalBest = true
+      let previousBestScore: number | undefined
+      let attempt = 1
+
       if (existingScoreIndex >= 0) {
-        // Update existing score
-        newGameScores = [...prev.gameScores]
-        newGameScores[existingScoreIndex] = gameScore
+        const existingScore = prev.gameScores[existingScoreIndex]
+        previousBestScore = existingScore.normalizedScore
+        isPersonalBest = normalizedScore > existingScore.normalizedScore
+        attempt = existingScore.attempt + 1
+      }
+
+      const enhancedGameScore: GameScore = {
+        ...gameScore,
+        normalizedScore,
+        isPersonalBest,
+        previousBestScore,
+        attempt
+      }
+
+      let newGameScores: GameScore[]
+
+      if (existingScoreIndex >= 0) {
+        // Only update if it's a better score
+        if (isPersonalBest) {
+          newGameScores = [...prev.gameScores]
+          newGameScores[existingScoreIndex] = enhancedGameScore
+        } else {
+          // Keep the existing better score but update attempt count
+          newGameScores = [...prev.gameScores]
+          newGameScores[existingScoreIndex] = {
+            ...newGameScores[existingScoreIndex],
+            attempt: attempt
+          }
+          return prev // Don't update if score didn't improve
+        }
       } else {
         // Add new score
-        newGameScores = [...prev.gameScores, gameScore]
+        newGameScores = [...prev.gameScores, enhancedGameScore]
       }
 
       // Calculate new totals
@@ -101,27 +166,48 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
       const gamesCompleted = newGameScores.length
       const averageScore = gamesCompleted > 0 ? (totalScore / totalPossibleScore) * 100 : 0
 
+      // Calculate ranking score (sum of normalized scores)
+      const rankingScore = newGameScores.reduce((sum, score) => sum + score.normalizedScore, 0)
+
+      // Calculate improvement streak
+      let improvementStreak = prev.improvementStreak
+      if (isPersonalBest) {
+        improvementStreak += 1
+      } else if (existingScoreIndex >= 0) {
+        improvementStreak = 0 // Reset streak if no improvement
+      }
+
       // Check for achievements
       const newAchievements = [...prev.achievements]
-      
+
       // First game completed
       if (gamesCompleted === 1 && !newAchievements.includes('first-game')) {
         newAchievements.push('first-game')
       }
-      
-      // All games completed
-      if (gamesCompleted === 3 && !newAchievements.includes('all-games')) {
+
+      // All unlocked games completed
+      if (gamesCompleted === 2 && !newAchievements.includes('all-games')) {
         newAchievements.push('all-games')
       }
-      
-      // Perfect score on any game
-      if (gameScore.score === gameScore.maxScore && !newAchievements.includes('perfect-score')) {
+
+      // Perfect score on any game (100% completion)
+      if (normalizedScore === 100 && !newAchievements.includes('perfect-score')) {
         newAchievements.push('perfect-score')
       }
-      
+
       // High average (>85%)
       if (averageScore >= 85 && !newAchievements.includes('high-performer')) {
         newAchievements.push('high-performer')
+      }
+
+      // Improvement streak
+      if (improvementStreak >= 3 && !newAchievements.includes('improvement-streak')) {
+        newAchievements.push('improvement-streak')
+      }
+
+      // Quick learner (completed in less than 10 minutes)
+      if (gameScore.timeElapsed < 600 && normalizedScore >= 80 && !newAchievements.includes('quick-learner')) {
+        newAchievements.push('quick-learner')
       }
 
       return {
@@ -133,7 +219,9 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
         totalTimeSpent,
         gameScores: newGameScores,
         achievements: newAchievements,
-        lastActivity: new Date()
+        lastActivity: new Date(),
+        rankingScore,
+        improvementStreak
       }
     })
   }
@@ -185,13 +273,65 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
     }
   }
 
+  // Generate mock ranking data for demonstration
+  const generateMockRankingData = (): RankingEntry[] => {
+    const mockStudents = [
+      { name: 'Ana Silva', score: 185, games: 2, avg: 92.5 },
+      { name: 'João Santos', score: 178, games: 2, avg: 89.0 },
+      { name: 'Maria Oliveira', score: 172, games: 2, avg: 86.0 },
+      { name: 'Pedro Costa', score: 165, games: 2, avg: 82.5 },
+      { name: 'Carla Souza', score: 158, games: 2, avg: 79.0 },
+      { name: 'Lucas Lima', score: 145, games: 2, avg: 72.5 },
+      { name: 'Fernanda Alves', score: 138, games: 2, avg: 69.0 },
+      { name: 'Rafael Pereira', score: 125, games: 1, avg: 62.5 }
+    ]
+
+    return mockStudents.map((student, index) => ({
+      studentId: `mock-${index}`,
+      studentName: student.name,
+      rankingScore: student.score,
+      gamesCompleted: student.games,
+      averageScore: student.avg,
+      lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
+    }))
+  }
+
+  const getRankingData = (): RankingEntry[] => {
+    const mockData = generateMockRankingData()
+    const currentStudent: RankingEntry = {
+      studentId: progress.studentId,
+      studentName: progress.studentName,
+      rankingScore: progress.rankingScore,
+      gamesCompleted: progress.gamesCompleted,
+      averageScore: progress.averageScore,
+      lastActivity: progress.lastActivity
+    }
+
+    const allStudents = [...mockData, currentStudent]
+    return allStudents.sort((a, b) => b.rankingScore - a.rankingScore)
+  }
+
+  const getCurrentRank = (): number => {
+    const rankings = getRankingData()
+    const currentIndex = rankings.findIndex(entry => entry.studentId === progress.studentId)
+    return currentIndex + 1
+  }
+
+  const getTopPerformers = (limit: number = 5): RankingEntry[] => {
+    return getRankingData().slice(0, limit)
+  }
+
   return (
     <StudentProgressContext.Provider value={{
       progress,
       updateGameScore,
       resetProgress,
       getGameProgress,
-      calculateOverallPerformance
+      calculateOverallPerformance,
+      getRankingData,
+      getCurrentRank,
+      getTopPerformers,
+      calculateNormalizedScore
     }}>
       {children}
     </StudentProgressContext.Provider>
