@@ -7,9 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-// Temporarily disabled for AvaliaNutri platform
-// import { useAuth } from '@/hooks/useSupabase'
-// import { t } from '@/lib/translations'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
 
 // Mock translation function
 const t = (key: string) => {
@@ -18,7 +17,21 @@ const t = (key: string) => {
     'auth.validation.passwordMinLength': 'Senha deve ter pelo menos 6 caracteres',
     'auth.validation.fullNameMinLength': 'Nome deve ter pelo menos 2 caracteres',
     'auth.validation.passwordsDoNotMatch': 'Senhas não coincidem',
-    'auth.validation.passwordsDontMatch': 'Senhas não coincidem'
+    'auth.validation.passwordsDontMatch': 'Senhas não coincidem',
+    'auth.email': 'Email',
+    'auth.password': 'Senha',
+    'auth.fullName': 'Nome Completo',
+    'auth.confirmPassword': 'Confirmar Senha',
+    'auth.signIn': 'Entrar',
+    'auth.signUp': 'Cadastrar',
+    'auth.enterEmail': 'Digite seu email',
+    'auth.enterPassword': 'Digite sua senha',
+    'auth.enterFullName': 'Digite seu nome completo',
+    'auth.confirmYourPassword': 'Confirme sua senha',
+    'auth.continueAsGuest': 'Continuar como Visitante',
+    'auth.guestModeDescription': 'Acesso limitado para demonstração',
+    'auth.alreadyHaveAccount': 'Já tem uma conta? Faça login',
+    'auth.dontHaveAccount': 'Não tem uma conta? Cadastre-se'
   }
   return translations[key] || key
 }
@@ -31,27 +44,28 @@ const signInSchema = z.object({
 const signUpSchema = signInSchema.extend({
   fullName: z.string().min(2, t('auth.validation.fullNameMinLength')),
   confirmPassword: z.string(),
+  role: z.enum(['student', 'professor']),
+  courseCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: t('auth.validation.passwordsDontMatch'),
   path: ["confirmPassword"],
+}).refine((data) => {
+  // Course code is required for students
+  if (data.role === 'student' && !data.courseCode) {
+    return false
+  }
+  return true
+}, {
+  message: 'Código do curso é obrigatório para estudantes',
+  path: ["courseCode"],
 })
 
 export function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [, setIsGuest] = useState(false)
-
-  // Mock auth functions for AvaliaNutri platform
-  const signIn = async (email: string, password: string) => {
-    console.log('Mock sign in:', email, password)
-    return { error: null, success: true }
-  }
-
-  const signUp = async (email: string, password: string, fullName: string) => {
-    console.log('Mock sign up:', email, password, fullName)
-    return { error: null, success: true }
-  }
+  const [selectedRole, setSelectedRole] = useState<'student' | 'professor'>('student')
+  const { signIn, signUp } = useFirebaseAuth()
 
   const {
     register,
@@ -68,14 +82,26 @@ export function AuthForm() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(data.email, data.password, data.fullName)
-        if (error) throw error
+        const { error } = await signUp(
+          data.email,
+          data.password,
+          data.fullName,
+          data.role || selectedRole,
+          data.courseCode
+        )
+        if (error) throw new Error(error.message)
+
+        // Redirect to dashboard after successful registration
+        window.location.reload()
       } else {
         const { error } = await signIn(data.email, data.password)
-        if (error) throw error
+        if (error) throw new Error(error.message)
+
+        // Redirect to dashboard after successful login
+        window.location.reload()
       }
     } catch (err: unknown) {
-      setError((err as Error).message || t('auth.errors.unknownError'))
+      setError((err as Error).message || 'Erro desconhecido')
     } finally {
       setLoading(false)
     }
@@ -167,20 +193,58 @@ export function AuthForm() {
               </div>
 
               {isSignUp && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('auth.confirmPassword')}
-                  </label>
-                  <input
-                    {...register('confirmPassword')}
-                    type="password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('auth.confirmYourPassword')}
-                  />
-                  {errors.confirmPassword && (
-                    <p className="text-red-500 text-sm mt-1">{String(errors.confirmPassword.message)}</p>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tipo de Usuário
+                    </label>
+                    <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as 'student' | 'professor')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo de usuário" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="student">Estudante</SelectItem>
+                        <SelectItem value="professor">Professor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <input type="hidden" {...register('role')} value={selectedRole} />
+                  </div>
+
+                  {selectedRole === 'student' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Código do Curso
+                      </label>
+                      <input
+                        {...register('courseCode')}
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: NT600"
+                      />
+                      {errors.courseCode && (
+                        <p className="text-red-500 text-sm mt-1">{String(errors.courseCode.message)}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Solicite o código do curso ao seu professor
+                      </p>
+                    </div>
                   )}
-                </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirmar Senha
+                    </label>
+                    <input
+                      {...register('confirmPassword')}
+                      type="password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Confirme sua senha"
+                    />
+                    {errors.confirmPassword && (
+                      <p className="text-red-500 text-sm mt-1">{String(errors.confirmPassword.message)}</p>
+                    )}
+                  </div>
+                </>
               )}
 
               {error && (

@@ -7,8 +7,8 @@ import {
   updateProfile,
   User as FirebaseUser
 } from 'firebase/auth'
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
-import { auth, db, User, isFirebaseConfigured } from '@/lib/firebase'
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
+import { auth, db, User, isFirebaseConfigured, generateAnonymousId } from '@/lib/firebase'
 
 export function useFirebaseAuth() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
@@ -28,7 +28,13 @@ export function useFirebaseAuth() {
     return () => unsubscribe()
   }, [])
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    role: 'professor' | 'student' = 'student',
+    courseCode?: string
+  ) => {
     if (!auth || !db || !isFirebaseConfigured()) {
       throw new Error('Firebase not configured')
     }
@@ -36,22 +42,36 @@ export function useFirebaseAuth() {
     try {
       setLoading(true)
 
+      // Validate email domain for students (should be @dac.unicamp.br)
+      if (role === 'student' && !email.endsWith('@dac.unicamp.br')) {
+        throw new Error('Estudantes devem usar email @dac.unicamp.br')
+      }
+
       // Create user with email and password
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password)
-      
+
       // Update the user's display name
       await updateProfile(firebaseUser, {
         displayName: fullName
       })
+
+      // Generate anonymous ID for students
+      const anonymousId = role === 'student' ? generateAnonymousId() : undefined
 
       // Create user profile in Firestore
       const userProfile: User = {
         id: firebaseUser.uid,
         email: firebaseUser.email!,
         fullName,
+        role,
+        anonymousId,
+        institutionId: 'unicamp', // Default institution
         totalScore: 0,
         levelReached: 1,
         gamesCompleted: 0,
+        collaborationHistory: [],
+        preferredPartners: [],
+        achievements: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -62,7 +82,12 @@ export function useFirebaseAuth() {
         updatedAt: serverTimestamp()
       })
 
-      return { data: { user: firebaseUser }, error: null }
+      // If student with course code, enroll in course
+      if (role === 'student' && courseCode) {
+        await enrollStudentInCourse(firebaseUser.uid, courseCode)
+      }
+
+      return { data: { user: firebaseUser, profile: userProfile }, error: null }
     } catch (error: unknown) {
       console.error('Sign up error:', error)
       return { data: null, error: { message: (error as Error).message } }
@@ -94,12 +119,65 @@ export function useFirebaseAuth() {
     }
   }
 
+  // Helper function to enroll student in course
+  const enrollStudentInCourse = async (studentId: string, courseCode: string) => {
+    if (!db) return
+
+    try {
+      // Find course by code
+      const coursesRef = collection(db, 'courses')
+      const q = query(coursesRef, where('code', '==', courseCode))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        throw new Error('Código do curso não encontrado')
+      }
+
+      const courseDoc = querySnapshot.docs[0]
+      const courseData = courseDoc.data()
+
+      // Add student to course
+      const updatedStudentIds = [...(courseData.studentIds || []), studentId]
+      await setDoc(courseDoc.ref, {
+        ...courseData,
+        studentIds: updatedStudentIds,
+        updatedAt: serverTimestamp()
+      }, { merge: true })
+
+    } catch (error) {
+      console.error('Error enrolling student in course:', error)
+      throw error
+    }
+  }
+
+  // Get user by email (for partner validation)
+  const getUserByEmail = async (email: string) => {
+    if (!db) return null
+
+    try {
+      const usersRef = collection(db, 'users')
+      const q = query(usersRef, where('email', '==', email))
+      const querySnapshot = await getDocs(q)
+
+      if (querySnapshot.empty) {
+        return null
+      }
+
+      const userDoc = querySnapshot.docs[0]
+      return { id: userDoc.id, ...userDoc.data() } as User
+    } catch (error) {
+      console.error('Error getting user by email:', error)
+      return null
+    }
+  }
+
   return {
     user,
     loading,
     signIn,
     signUp,
     signOut,
+    getUserByEmail,
   }
 }
 
@@ -124,9 +202,15 @@ export function useFirebaseProfile(userId: string) {
             id: docSnap.id,
             email: data.email,
             fullName: data.fullName,
+            role: data.role || 'student',
+            anonymousId: data.anonymousId,
+            institutionId: data.institutionId || 'unicamp',
             totalScore: data.totalScore || 0,
             levelReached: data.levelReached || 1,
             gamesCompleted: data.gamesCompleted || 0,
+            collaborationHistory: data.collaborationHistory || [],
+            preferredPartners: data.preferredPartners || [],
+            achievements: data.achievements || [],
             createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
             updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
           })

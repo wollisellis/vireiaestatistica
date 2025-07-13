@@ -58,12 +58,47 @@ export { auth, db }
 export interface User {
   id: string
   email: string
-  fullName?: string
+  fullName: string
+  role: 'professor' | 'student'
+  anonymousId?: string // For students only
+  institutionId: string
   totalScore: number
   levelReached: number
   gamesCompleted: number
+  collaborationHistory: CollaborationRecord[]
+  preferredPartners: string[] // Student IDs
+  achievements: string[]
   createdAt: string
   updatedAt: string
+}
+
+export interface CollaborationRecord {
+  sessionId: string
+  partnerId: string
+  partnerName: string
+  caseStudyId: string
+  score: number
+  completedAt: string
+  collaborationRating: number
+}
+
+export interface Course {
+  id: string
+  code: string // "NT600"
+  title: string
+  description: string
+  professorId: string
+  studentIds: string[]
+  moduleSettings: ModuleSettings[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ModuleSettings {
+  moduleId: number
+  isLocked: boolean
+  unlockedAt?: string
+  prerequisites: number[]
 }
 
 export interface GameProgress {
@@ -73,23 +108,69 @@ export interface GameProgress {
   level: number
   score: number
   maxScore: number
+  normalizedScore: number
   completed: boolean
   attempts: number
   bestTime?: number
   lastAttemptAt: string
   completedAt?: string
+  difficulty: string
+  isPersonalBest: boolean
+  isCollaborative?: boolean
+  partnerId?: string
+  partnerName?: string
+  collaborationNotes?: string[]
   createdAt: string
 }
 
 export interface Achievement {
   id: string
   userId: string
-  achievementType: string
+  achievementType: 'milestone' | 'performance' | 'engagement' | 'mastery' | 'collaboration'
   title: string
   description: string
   icon: string
   points: number
+  rarity: 'common' | 'rare' | 'epic' | 'legendary'
+  criteria: AchievementCriteria
   earnedAt: string
+}
+
+export interface AchievementCriteria {
+  trigger: 'score_threshold' | 'completion_time' | 'streak' | 'perfect_score' | 'collaboration'
+  value: number
+  gameId?: number
+  moduleId?: number
+}
+
+export interface CollaborativeSession {
+  id: string
+  primaryStudentId: string
+  partnerStudentId: string
+  caseStudyId: string
+  startedAt: string
+  completedAt?: string
+  sharedScore: number
+  collaborationNotes: string[]
+  discussionPrompts: DiscussionPrompt[]
+  status: 'active' | 'completed' | 'abandoned'
+}
+
+export interface DiscussionPrompt {
+  id: string
+  text: string
+  phase: 'analysis' | 'hypothesis' | 'decision' | 'reflection'
+  completed: boolean
+}
+
+export interface LeaderboardEntry {
+  userId: string
+  anonymousId: string
+  totalScore: number
+  gamesCompleted: number
+  averageScore: number
+  lastUpdated: string
+  rank: number
 }
 
 export interface Game {
@@ -132,6 +213,35 @@ export interface GameSession {
   feedback: Record<string, unknown>
 }
 
+// RBAC Permissions Matrix
+export const RBAC_PERMISSIONS = {
+  professor: {
+    modules: ['create', 'read', 'update', 'delete', 'unlock', 'lock'],
+    students: ['read', 'monitor', 'message'],
+    collaboration: ['view_all_sessions', 'moderate', 'assign_partners'],
+    analytics: ['view_class', 'export_data', 'generate_reports'],
+    content: ['create_cases', 'edit_cases', 'manage_questions']
+  },
+  student: {
+    modules: ['read_unlocked'],
+    collaboration: ['create_session', 'join_session', 'invite_partner'],
+    progress: ['read_own', 'update_own'],
+    achievements: ['view_own', 'share_public']
+  }
+} as const
 
+// Utility functions
+export const generateAnonymousId = (): string => {
+  return `Aluno${Math.floor(Math.random() * 90000) + 10000}`
+}
+
+export const hasPermission = (
+  userRole: 'professor' | 'student',
+  resource: keyof typeof RBAC_PERMISSIONS.professor,
+  action: string
+): boolean => {
+  const permissions = RBAC_PERMISSIONS[userRole]
+  return permissions[resource]?.includes(action) || false
+}
 
 export default app

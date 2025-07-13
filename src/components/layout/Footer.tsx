@@ -100,15 +100,15 @@ export function Footer() {
                       Mestrando em Nutrição, Esporte e Metabolismo - UNICAMP
                     </p>
                     <div className="flex items-center space-x-3">
-                      <a 
-                        href="mailto:elliswollismalta@gmail.com" 
+                      <a
+                        href="mailto:e165905@dac.unicamp.br"
                         className="text-gray-400 hover:text-emerald-600 transition-colors"
                         title="Email"
                       >
                         <Mail className="w-4 h-4" />
                       </a>
-                      <a 
-                        href="https://github.com/wollisellis" 
+                      <a
+                        href="https://github.com/wollisellis/"
                         className="text-gray-400 hover:text-emerald-600 transition-colors"
                         title="GitHub"
                         target="_blank"
@@ -116,8 +116,8 @@ export function Footer() {
                       >
                         <Github className="w-4 h-4" />
                       </a>
-                      <a 
-                        href="https://linkedin.com/in/elliswollis" 
+                      <a
+                        href="https://www.linkedin.com/in/%C3%A9llis-wollis/"
                         className="text-gray-400 hover:text-emerald-600 transition-colors"
                         title="LinkedIn"
                         target="_blank"
@@ -244,21 +244,30 @@ export function AboutModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Contato</h3>
               <div className="flex items-center space-x-4">
-                <a 
-                  href="mailto:elliswollismalta@gmail.com"
+                <a
+                  href="mailto:e165905@dac.unicamp.br"
                   className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700"
                 >
                   <Mail className="w-4 h-4" />
-                  <span>elliswollismalta@gmail.com</span>
+                  <span>e165905@dac.unicamp.br</span>
                 </a>
-                <a 
-                  href="https://github.com/wollisellis"
+                <a
+                  href="https://github.com/wollisellis/"
                   className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Github className="w-4 h-4" />
                   <span>GitHub</span>
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/%C3%A9llis-wollis/"
+                  className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  <span>LinkedIn</span>
                 </a>
               </div>
             </div>
