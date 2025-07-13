@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useRBAC } from '@/hooks/useRBAC'
 import {
   BookOpen,
   Target,
@@ -109,6 +110,44 @@ const nutritionalGames = [
 
 export default function JogosNT600Page() {
   const [selectedGame, setSelectedGame] = useState<number | null>(null)
+  const { user, loading } = useRBAC()
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-700">Verificando acesso...</h2>
+          <p className="text-gray-500 mt-2">Carregando AvaliaNutri</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show access denied if user is not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            Acesso Restrito
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Você precisa estar logado para acessar os jogos educacionais do AvaliaNutri.
+          </p>
+          <Link href="/">
+            <Button className="bg-emerald-600 hover:bg-emerald-700">
+              Fazer Login
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <StudentProgressProvider>

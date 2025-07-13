@@ -23,16 +23,7 @@ const nextConfig = {
   // output: 'standalone',
   // Ensure proper trailing slash handling
   trailingSlash: false,
-  // Ensure proper redirects
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/jogos',
-        permanent: false,
-      },
-    ]
-  },
+  // Redirects are now handled by middleware for proper authentication checks
 };
 
 module.exports = nextConfig;

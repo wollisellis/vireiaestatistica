@@ -10,6 +10,33 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db, User, isFirebaseConfigured, generateAnonymousId } from '@/lib/firebase'
 
+// Cookie management functions
+const setCookie = (name: string, value: string, days: number = 7) => {
+  if (typeof window === 'undefined') return
+
+  const expires = new Date()
+  expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000))
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`
+}
+
+const getCookie = (name: string): string | null => {
+  if (typeof window === 'undefined') return null
+
+  const nameEQ = name + "="
+  const ca = document.cookie.split(';')
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i]
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length)
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length)
+  }
+  return null
+}
+
+const deleteCookie = (name: string) => {
+  if (typeof window === 'undefined') return
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`
+}
+
 export function useFirebaseAuth() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [loading, setLoading] = useState(true)
@@ -20,7 +47,17 @@ export function useFirebaseAuth() {
       return
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Set authentication cookie when user is authenticated
+        const token = await user.getIdToken()
+        setCookie('auth-token', token, 7) // 7 days
+        deleteCookie('guest-mode') // Remove guest mode if user logs in
+      } else {
+        // Remove authentication cookie when user logs out
+        deleteCookie('auth-token')
+      }
+
       setUser(user)
       setLoading(false)
     })
@@ -117,11 +154,19 @@ export function useFirebaseAuth() {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth)
+      // Clear authentication cookies
+      deleteCookie('auth-token')
+      deleteCookie('guest-mode')
       return { error: null }
     } catch (error: unknown) {
       console.error('Sign out error:', error)
       return { error: { message: (error as Error).message } }
     }
+  }
+
+  const enableGuestMode = () => {
+    setCookie('guest-mode', 'true', 1) // 1 day for guest mode
+    deleteCookie('auth-token') // Remove any existing auth token
   }
 
   // Helper function to enroll student in course
@@ -182,6 +227,7 @@ export function useFirebaseAuth() {
     signIn,
     signUp,
     signOut,
+    enableGuestMode,
     getUserByEmail,
   }
 }

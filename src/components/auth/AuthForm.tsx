@@ -74,7 +74,7 @@ export function AuthForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [selectedRole, setSelectedRole] = useState<'student' | 'professor'>('student')
-  const { signIn, signUp } = useFirebaseAuth()
+  const { signIn, signUp, enableGuestMode } = useFirebaseAuth()
 
   const {
     register,
@@ -118,10 +118,15 @@ export function AuthForm() {
 
   const handleGuestAccess = () => {
     setIsGuest(true)
-    // This will trigger the parent component to show the dashboard with mock data
-    // We'll handle this in the main page component
-    localStorage.setItem('guest-mode', 'true')
-    window.location.reload()
+    setLoading(true)
+
+    // Enable guest mode using the new cookie system
+    enableGuestMode()
+
+    // Redirect to games page
+    setTimeout(() => {
+      window.location.href = '/jogos'
+    }, 500)
   }
 
   const toggleMode = () => {
