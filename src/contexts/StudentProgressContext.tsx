@@ -1,6 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { evaluateAchievements, calculateAchievementPoints } from '@/lib/achievementSystem'
+import { useAchievementNotifications } from '@/components/achievements/AchievementNotification'
 
 export interface GameScore {
   gameId: number
@@ -15,6 +17,9 @@ export interface GameScore {
   isPersonalBest: boolean
   previousBestScore?: number
   attempt: number
+  isCollaborative?: boolean
+  partnerId?: string
+  partnerName?: string
 }
 
 export interface StudentProgress {
@@ -48,6 +53,8 @@ interface StudentProgressContextType {
   updateGameScore: (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => void
   resetProgress: () => void
   getGameProgress: (gameId: number) => GameScore | null
+  newAchievements: string[]
+  clearNewAchievements: () => void
   calculateOverallPerformance: () => {
     performance: 'Excelente' | 'Bom' | 'Regular' | 'Precisa Melhorar'
     color: string
@@ -85,6 +92,7 @@ const initialProgress: StudentProgress = {
 
 export function StudentProgressProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<StudentProgress>(initialProgress)
+  const [newAchievements, setNewAchievements] = useState<string[]>([])
 
   // Load progress from localStorage on mount
   useEffect(() => {
@@ -177,37 +185,37 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
         improvementStreak = 0 // Reset streak if no improvement
       }
 
-      // Check for achievements
-      const newAchievements = [...prev.achievements]
-
-      // First game completed
-      if (gamesCompleted === 1 && !newAchievements.includes('first-game')) {
-        newAchievements.push('first-game')
+      // Evaluate achievements using the comprehensive system
+      const currentProgress = {
+        totalScore,
+        averageScore,
+        gamesCompleted: prev.gamesCompleted,
+        gameScores: prev.gameScores.map(score => ({
+          gameId: score.gameId,
+          score: score.score,
+          maxScore: score.maxScore,
+          timeElapsed: score.timeElapsed,
+          isCollaborative: score.isCollaborative,
+          partnerId: score.partnerId
+        })),
+        achievements: prev.achievements,
+        improvementStreak
       }
 
-      // All unlocked games completed
-      if (gamesCompleted === 2 && !newAchievements.includes('all-games')) {
-        newAchievements.push('all-games')
-      }
+      const earnedAchievements = evaluateAchievements(currentProgress, {
+        gameId: gameScore.gameId,
+        score: gameScore.score,
+        maxScore: gameScore.maxScore,
+        timeElapsed: gameScore.timeElapsed,
+        isCollaborative: gameScore.isCollaborative,
+        partnerId: gameScore.partnerId
+      })
 
-      // Perfect score on any game (100% completion)
-      if (normalizedScore === 100 && !newAchievements.includes('perfect-score')) {
-        newAchievements.push('perfect-score')
-      }
+      const updatedAchievements = [...prev.achievements, ...earnedAchievements]
 
-      // High average (>85%)
-      if (averageScore >= 85 && !newAchievements.includes('high-performer')) {
-        newAchievements.push('high-performer')
-      }
-
-      // Improvement streak
-      if (improvementStreak >= 3 && !newAchievements.includes('improvement-streak')) {
-        newAchievements.push('improvement-streak')
-      }
-
-      // Quick learner (completed in less than 10 minutes)
-      if (gameScore.timeElapsed < 600 && normalizedScore >= 80 && !newAchievements.includes('quick-learner')) {
-        newAchievements.push('quick-learner')
+      // Set new achievements for notifications
+      if (earnedAchievements.length > 0) {
+        setNewAchievements(earnedAchievements)
       }
 
       return {
@@ -218,7 +226,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
         averageScore,
         totalTimeSpent,
         gameScores: newGameScores,
-        achievements: newAchievements,
+        achievements: updatedAchievements,
         lastActivity: new Date(),
         rankingScore,
         improvementStreak
@@ -321,6 +329,10 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
     return getRankingData().slice(0, limit)
   }
 
+  const clearNewAchievements = () => {
+    setNewAchievements([])
+  }
+
   return (
     <StudentProgressContext.Provider value={{
       progress,
@@ -331,7 +343,9 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
       getRankingData,
       getCurrentRank,
       getTopPerformers,
-      calculateNormalizedScore
+      calculateNormalizedScore,
+      newAchievements,
+      clearNewAchievements
     }}>
       {children}
     </StudentProgressContext.Provider>

@@ -50,6 +50,15 @@ const signUpSchema = signInSchema.extend({
   message: t('auth.validation.passwordsDontMatch'),
   path: ["confirmPassword"],
 }).refine((data) => {
+  // Students must use @dac.unicamp.br email
+  if (data.role === 'student' && !data.email.endsWith('@dac.unicamp.br')) {
+    return false
+  }
+  return true
+}, {
+  message: 'Estudantes devem usar email institucional @dac.unicamp.br',
+  path: ["email"],
+}).refine((data) => {
   // Course code is required for students
   if (data.role === 'student' && !data.courseCode) {
     return false
@@ -154,10 +163,15 @@ export function AuthForm() {
                     {...register('fullName')}
                     type="text"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('auth.enterFullName')}
+                    placeholder={isSignUp ? "exemplo@dac.unicamp.br" : t('auth.enterFullName')}
                   />
                   {errors.fullName && (
                     <p className="text-red-500 text-sm mt-1">{String(errors.fullName.message)}</p>
+                  )}
+                  {isSignUp && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Estudantes devem usar email institucional @dac.unicamp.br
+                    </p>
                   )}
                 </div>
               )}
@@ -286,7 +300,7 @@ export function AuthForm() {
               </p>
             </div>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-3">
               <button
                 onClick={toggleMode}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
@@ -296,6 +310,16 @@ export function AuthForm() {
                   : t('auth.dontHaveAccount')
                 }
               </button>
+
+              <div className="border-t border-gray-200 pt-3">
+                <p className="text-xs text-gray-500 mb-2">Você é professor?</p>
+                <a
+                  href="/professor"
+                  className="text-green-600 hover:text-green-700 text-sm font-medium"
+                >
+                  Cadastre-se como Professor
+                </a>
+              </div>
             </div>
           </CardContent>
         </Card>
