@@ -11,14 +11,12 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import Link from 'next/link'
 
-// Validation schema for professor registration
+// Simplified validation schema for professor registration - ONLY 3 required fields
 const professorRegistrationSchema = z.object({
+  fullName: z.string().min(2, 'Nome completo deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string(),
-  fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  institution: z.string().min(2, 'Instituição é obrigatória'),
-  department: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Senhas não coincidem',
   path: ["confirmPassword"],
@@ -53,15 +51,15 @@ export function ProfessorRegistration() {
         data.fullName,
         'professor' // Always professor role
       )
-      
+
       if (error) throw new Error(error.message)
-      
+
       setSuccess(true)
       // Redirect to dashboard after successful registration
       setTimeout(() => {
-        window.location.href = '/'
+        window.location.href = '/jogos'
       }, 2000)
-      
+
     } catch (err: unknown) {
       setError((err as Error).message || 'Erro desconhecido')
     } finally {
@@ -113,7 +111,7 @@ export function ProfessorRegistration() {
               Cadastro de Professor
             </h1>
             <p className="text-gray-600 mt-2">
-              Crie sua conta para gerenciar turmas no AvaliaNutri
+              Cadastro rápido e simples para professores
             </p>
           </CardHeader>
 
@@ -142,13 +140,13 @@ export function ProfessorRegistration() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Institucional
+                  Email Profissional
                 </label>
                 <input
                   {...register('email')}
                   type="email"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="professor@unicamp.br"
+                  placeholder="professor@exemplo.com"
                 />
                 {errors.email && (
                   <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
@@ -156,34 +154,6 @@ export function ProfessorRegistration() {
                 <p className="text-xs text-gray-500 mt-1">
                   Use seu email institucional ou profissional
                 </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Instituição
-                </label>
-                <input
-                  {...register('institution')}
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ex: UNICAMP"
-                  defaultValue="UNICAMP"
-                />
-                {errors.institution && (
-                  <p className="text-red-500 text-sm mt-1">{errors.institution.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Departamento (Opcional)
-                </label>
-                <input
-                  {...register('department')}
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ex: Faculdade de Ciências Aplicadas"
-                />
               </div>
 
               <div>

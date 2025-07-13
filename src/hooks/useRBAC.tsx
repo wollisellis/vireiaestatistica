@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useFirebaseProfile } from './useFirebaseAuth'
 import { hasPermission, User } from '@/lib/firebase'
 
@@ -21,21 +21,20 @@ export function useRBAC(userId?: string): RBACHookReturn {
     }
   }, [user])
 
-  const loadModuleAccess = async (studentId: string) => {
-    // This will be implemented when we add course management
-    // For now, default access pattern
-    const defaultAccess = {
-      1: true,  // Anthropometric indicators - always unlocked
-      2: false, // Clinical indicators - locked by default
-      3: false, // Socioeconomic factors - locked by default
-      4: true,  // Growth curves - unlocked for demo
+  const loadModuleAccess = async (userId: string) => {
+    // Mock implementation - in real app, this would check enrollment status
+    const mockAccess = {
+      1: true, // Anthropometric Assessment
+      2: true, // Clinical Assessment
+      3: true, // Socioeconomic Assessment
+      4: true, // Growth Curves
     }
-    setModuleAccess(defaultAccess)
+    setModuleAccess(mockAccess)
   }
 
   const checkPermission = (resource: string, action: string): boolean => {
     if (!user) return false
-    return hasPermission(user.role, resource as any, action)
+    return hasPermission(user, resource, action)
   }
 
   const isAuthorized = (requiredRole?: 'professor' | 'student'): boolean => {
@@ -46,7 +45,7 @@ export function useRBAC(userId?: string): RBACHookReturn {
 
   const canAccessModule = (moduleId: number): boolean => {
     if (!user) return false
-    if (user.role === 'professor') return true // Professors can access all modules
+    if (user.role === 'professor') return true
     return moduleAccess[moduleId] || false
   }
 
@@ -55,11 +54,11 @@ export function useRBAC(userId?: string): RBACHookReturn {
     loading,
     hasPermission: checkPermission,
     isAuthorized,
-    canAccessModule,
+    canAccessModule
   }
 }
 
-// Higher-order component for route protection
+// Higher-Order Component for route protection
 export function withRBAC<T extends object>(
   Component: React.ComponentType<T>,
   requiredRole?: 'professor' | 'student'
@@ -90,7 +89,7 @@ export function withRBAC<T extends object>(
       )
     }
 
-    if (!isAuthorized(requiredRole)) {
+    if (requiredRole && !isAuthorized(requiredRole)) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
@@ -99,9 +98,6 @@ export function withRBAC<T extends object>(
             </h2>
             <p className="text-gray-600">
               Você não tem permissão para acessar esta página.
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Perfil atual: {user.role === 'professor' ? 'Professor' : 'Estudante'}
             </p>
           </div>
         </div>
@@ -112,16 +108,45 @@ export function withRBAC<T extends object>(
   }
 }
 
-// Hook for checking module access in components
-export function useModuleAccess(moduleId: number) {
-  const { user, canAccessModule } = useRBAC()
+// Permission checking utilities
+export const PermissionGate: React.FC<{
+  resource: string
+  action: string
+  children: React.ReactNode
+  fallback?: React.ReactNode
+}> = ({ resource, action, children, fallback = null }) => {
+  const { hasPermission } = useRBAC()
   
-  return {
-    canAccess: canAccessModule(moduleId),
-    isLocked: !canAccessModule(moduleId),
-    userRole: user?.role,
-    lockMessage: user?.role === 'student' 
-      ? 'Aguardando liberação do docente' 
-      : 'Módulo bloqueado para estudantes'
+  if (hasPermission(resource, action)) {
+    return <>{children}</>
   }
+  
+  return <>{fallback}</>
+}
+
+// Role-based component rendering
+export const RoleGate: React.FC<{
+  allowedRoles: ('professor' | 'student')[]
+  children: React.ReactNode
+  fallback?: React.ReactNode
+}> = ({ allowedRoles, children, fallback = null }) => {
+  const { user } = useRBAC()
+  
+  if (user && allowedRoles.includes(user.role)) {
+    return <>{children}</>
+  }
+  
+  return <>{fallback}</>
+}
+
+// Hook for checking specific permissions
+export function usePermission(resource: string, action: string): boolean {
+  const { hasPermission } = useRBAC()
+  return hasPermission(resource, action)
+}
+
+// Hook for checking user role
+export function useRole(): 'professor' | 'student' | null {
+  const { user } = useRBAC()
+  return user?.role || null
 }
