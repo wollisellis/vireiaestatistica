@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  TrendingUp, 
+import {
+  TrendingUp,
   ArrowLeft,
   Clock,
   Target,
@@ -13,12 +13,16 @@ import {
   BarChart3,
   Users,
   Ruler,
-  Scale
+  Scale,
+  Calculator
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { AdvancedEducationalContent } from '@/components/games/AdvancedEducationalContent'
 import InteractiveGrowthCurveChart from '@/components/growth-curves/InteractiveGrowthCurveChart'
+import { GrowthCurveChart } from '@/components/interactive/GrowthCurveChart'
+import { NutritionalDataGrid } from '@/components/interactive/NutritionalDataGrid'
+import { MacronutrientClassification } from '@/components/interactive/DragDropExercise'
 import {
   interactiveExercises,
   preGameEducationalContent,
@@ -40,6 +44,8 @@ export function NutritionalGame4GrowthCurves({ onBack, onComplete }: Nutritional
   const [isCompleted, setIsCompleted] = useState(false)
   const [exerciseScores, setExerciseScores] = useState<number[]>([])
   const [showFinalScore, setShowFinalScore] = useState(false)
+  const [exerciseMode, setExerciseMode] = useState<'traditional' | 'interactive-charts' | 'data-analysis' | 'classification'>('traditional')
+  const [interactiveScore, setInteractiveScore] = useState(0)
   const { updateGameScore } = useStudentProgress()
 
   const maxScore = interactiveExercises.reduce((sum, ex) => sum + ex.points, 0)
@@ -97,6 +103,40 @@ export function NutritionalGame4GrowthCurves({ onBack, onComplete }: Nutritional
     if (percentage >= 70) return { level: 'Bom', color: 'text-blue-600', icon: '✅' }
     if (percentage >= 60) return { level: 'Regular', color: 'text-yellow-600', icon: '⚠️' }
     return { level: 'Precisa Melhorar', color: 'text-red-600', icon: '📚' }
+  }
+
+  // Interactive component handlers
+  const handleGrowthCurveComplete = (interpretation: string) => {
+    setInteractiveScore(prev => prev + 25) // 25 points for correct interpretation
+  }
+
+  const handleDataAnalysisComplete = (results: any) => {
+    setInteractiveScore(prev => prev + 30) // 30 points for data analysis
+  }
+
+  const handleClassificationComplete = (score: number, timeElapsed: number) => {
+    setInteractiveScore(prev => prev + score) // Variable points based on accuracy
+  }
+
+  const completeInteractiveMode = () => {
+    const finalScore = Math.min(100, interactiveScore)
+    const percentage = (finalScore / 100) * 100
+
+    setScore(finalScore)
+    setShowFinalScore(true)
+    setIsCompleted(true)
+
+    // Update progress with interactive mode bonus
+    updateGameScore({
+      gameId: 4,
+      score: finalScore,
+      maxScore: 100,
+      timeElapsed: timeElapsed,
+      completedAt: new Date(),
+      exercisesCompleted: 3, // Interactive exercises completed
+      totalExercises: 3,
+      difficulty: 'Interativo'
+    })
   }
 
   // Educational content for Game 4
@@ -401,19 +441,177 @@ export function NutritionalGame4GrowthCurves({ onBack, onComplete }: Nutritional
         </div>
       </div>
 
-      {/* Interactive Exercise Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <InteractiveGrowthCurveChart
-          exerciseId={currentEx.id}
-          chartType={currentEx.chartType}
-          gender={currentEx.gender}
-          targetChild={currentEx.targetChild}
-          interactionType={currentEx.type}
-          onComplete={handleExerciseComplete}
-          maxAttempts={currentEx.maxAttempts}
-          targetPercentile={currentEx.targetPercentile}
-        />
-      </div>
+      {/* Mode Selection */}
+      {exerciseMode === 'traditional' && currentExercise === 0 && (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card>
+            <CardHeader>
+              <h2 className="text-xl font-semibold text-center">Escolha o Modo de Exercício</h2>
+              <p className="text-gray-600 text-center">
+                Selecione como você gostaria de praticar com curvas de crescimento
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Button
+                  onClick={() => setCurrentExercise(1)}
+                  className="h-24 flex flex-col items-center justify-center space-y-2 bg-blue-600 hover:bg-blue-700"
+                >
+                  <BookOpen className="w-6 h-6" />
+                  <span>Exercícios Tradicionais</span>
+                </Button>
+
+                <Button
+                  onClick={() => setExerciseMode('interactive-charts')}
+                  className="h-24 flex flex-col items-center justify-center space-y-2 bg-green-600 hover:bg-green-700"
+                >
+                  <TrendingUp className="w-6 h-6" />
+                  <span>Gráficos Interativos</span>
+                </Button>
+
+                <Button
+                  onClick={() => setExerciseMode('data-analysis')}
+                  className="h-24 flex flex-col items-center justify-center space-y-2 bg-purple-600 hover:bg-purple-700"
+                >
+                  <Calculator className="w-6 h-6" />
+                  <span>Análise de Dados</span>
+                </Button>
+
+                <Button
+                  onClick={() => setExerciseMode('classification')}
+                  className="h-24 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700"
+                >
+                  <Target className="w-6 h-6" />
+                  <span>Classificação</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Interactive Charts Mode */}
+      {exerciseMode === 'interactive-charts' && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Plotagem Interativa de Curvas de Crescimento</h2>
+              <Button
+                onClick={() => setExerciseMode('traditional')}
+                variant="outline"
+                size="sm"
+              >
+                Voltar aos Modos
+              </Button>
+            </div>
+
+            <GrowthCurveChart
+              chartType="weight-for-age"
+              gender="male"
+              onInterpretationComplete={handleGrowthCurveComplete}
+              interactive={true}
+              showInstructions={true}
+            />
+
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={completeInteractiveMode}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={interactiveScore < 25}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Concluir Exercícios Interativos ({interactiveScore} pontos)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Data Analysis Mode */}
+      {exerciseMode === 'data-analysis' && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Análise de Dados Nutricionais</h2>
+              <Button
+                onClick={() => setExerciseMode('traditional')}
+                variant="outline"
+                size="sm"
+              >
+                Voltar aos Modos
+              </Button>
+            </div>
+
+            <NutritionalDataGrid
+              onCalculationComplete={handleDataAnalysisComplete}
+              editable={true}
+              showCalculations={true}
+              showValidation={true}
+            />
+
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={completeInteractiveMode}
+                className="bg-purple-600 hover:bg-purple-700"
+                disabled={interactiveScore < 30}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Concluir Análise de Dados ({interactiveScore} pontos)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Classification Mode */}
+      {exerciseMode === 'classification' && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Classificação de Alimentos</h2>
+              <Button
+                onClick={() => setExerciseMode('traditional')}
+                variant="outline"
+                size="sm"
+              >
+                Voltar aos Modos
+              </Button>
+            </div>
+
+            <MacronutrientClassification
+              onComplete={handleClassificationComplete}
+              showFeedback={true}
+            />
+
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={completeInteractiveMode}
+                className="bg-orange-600 hover:bg-orange-700"
+                disabled={interactiveScore < 70}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Concluir Classificação ({interactiveScore} pontos)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Traditional Mode - Interactive Exercise Content */}
+      {exerciseMode === 'traditional' && currentExercise > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <InteractiveGrowthCurveChart
+            exerciseId={currentEx.id}
+            chartType={currentEx.chartType}
+            gender={currentEx.gender}
+            targetChild={currentEx.targetChild}
+            interactionType={currentEx.type}
+            onComplete={handleExerciseComplete}
+            maxAttempts={currentEx.maxAttempts}
+            targetPercentile={currentEx.targetPercentile}
+          />
+        </div>
+      )}
     </div>
   )
 }
