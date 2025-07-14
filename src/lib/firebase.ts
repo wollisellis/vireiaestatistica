@@ -2,52 +2,79 @@ import { initializeApp, FirebaseApp } from 'firebase/app'
 import { getAuth, Auth } from 'firebase/auth'
 import { getFirestore, Firestore } from 'firebase/firestore'
 
-// Helper function to check if Firebase is configured
+// Helper function to check if Firebase is configured with real credentials
 export const isFirebaseConfigured = (): boolean => {
-  // VALIDAÇÃO SIMPLES - apenas verificar se as variáveis principais existem
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
+  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+
+  // Check if all required variables exist and are not placeholder values
   const isConfigured = !!(
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+    apiKey &&
+    authDomain &&
+    projectId &&
+    appId &&
+    !apiKey.includes('COLE_SUA') &&
+    !apiKey.includes('SUA_API_KEY') &&
+    !authDomain.includes('seu-projeto') &&
+    !authDomain.includes('COLE_SEU') &&
+    !projectId.includes('seu-projeto') &&
+    !projectId.includes('COLE_SEU') &&
+    !appId.includes('abcdef123456') &&
+    !appId.includes('COLE_SEU')
   )
 
-  console.log('🔥 Firebase Configuration:', {
+  const getConfigStatus = (value: string | undefined) => {
+    if (!value) return 'MISSING'
+    if (value.includes('COLE_SUA') || value.includes('SUA_API_KEY') ||
+        value.includes('seu-projeto') || value.includes('COLE_SEU') ||
+        value.includes('abcdef123456')) {
+      return 'PLACEHOLDER'
+    }
+    return 'CONFIGURED'
+  }
+
+  console.log('🔥 Firebase Configuration Status:', {
     configured: isConfigured,
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'SET' : 'MISSING',
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? 'SET' : 'MISSING',
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? 'SET' : 'MISSING',
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ? 'SET' : 'MISSING'
+    apiKey: getConfigStatus(apiKey),
+    authDomain: getConfigStatus(authDomain),
+    projectId: getConfigStatus(projectId),
+    appId: getConfigStatus(appId)
   })
 
   return isConfigured
 }
 
+// Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'demo-project.firebaseapp.com',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-project',
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'demo-project.appspot.com',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:123456789:web:abcdef123456'
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 }
 
-// Initialize Firebase only if configured or use mock
+// Initialize Firebase only if credentials are properly configured
 let app: FirebaseApp | null = null
 let auth: Auth | null = null
 let db: Firestore | null = null
 
 try {
   if (isFirebaseConfigured()) {
+    console.log('🔥 Initializing Firebase with configured credentials...')
     app = initializeApp(firebaseConfig)
     auth = getAuth(app)
     db = getFirestore(app)
+    console.log('✅ Firebase initialized successfully!')
   } else {
-    // Mock Firebase for development/demo
-    console.warn('Firebase not configured, using mock mode')
+    console.warn('⚠️ Firebase not configured - using fallback mode')
+    console.warn('📝 To use Firebase, configure NEXT_PUBLIC_FIREBASE_* variables in .env.local')
   }
 } catch (error) {
-  console.warn('Firebase initialization failed, using mock mode:', error)
+  console.error('❌ Firebase initialization failed:', error)
+  console.warn('🔄 Using fallback mode')
 }
 
 export { auth, db }

@@ -45,20 +45,24 @@ export function useFirebaseAuth() {
 
   useEffect(() => {
     if (!auth || !isFirebaseConfigured()) {
+      console.warn('🔥 Firebase não configurado ou credenciais inválidas - usando modo mock')
       setLoading(false)
       return
     }
-
-
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('🔄 Auth state changed:', user?.email || 'null')
 
       if (user) {
-        // Set authentication cookie when user is authenticated
-        const token = await user.getIdToken()
-        setCookie('auth-token', token, 7) // 7 days
-        deleteCookie('guest-mode') // Remove guest mode if user logs in
+        try {
+          // Set authentication cookie when user is authenticated
+          const token = await user.getIdToken()
+          setCookie('auth-token', token, 7) // 7 days
+          deleteCookie('guest-mode') // Remove guest mode if user logs in
+        } catch (error) {
+          console.error('❌ Erro ao obter token de autenticação:', error)
+          // Continue mesmo com erro no token
+        }
       } else {
         // Remove authentication cookie when user logs out
         deleteCookie('auth-token')
@@ -197,7 +201,14 @@ export function useFirebaseAuth() {
       console.log('✅ Domínio de email validado')
 
       // Check if user already exists in Firestore
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+      let userDoc
+      try {
+        userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+      } catch (firestoreError) {
+        console.error('❌ Erro ao acessar Firestore:', firestoreError)
+        await firebaseSignOut(auth)
+        throw new Error('Erro de conexão com o banco de dados. Verifique sua conexão com a internet.')
+      }
 
       if (!userDoc.exists()) {
         console.log('👤 Criando novo usuário...')

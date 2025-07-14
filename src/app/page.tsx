@@ -2,9 +2,12 @@
 
 import React, { useEffect, useState } from 'react'
 import { AuthForm } from '@/components/auth/AuthForm'
+import FirebaseConfigWarning from '@/components/FirebaseConfigWarning'
+import { isFirebaseConfigured } from '@/lib/firebase'
 
 export default function LoginPage() {
   const [isCleared, setIsCleared] = useState(false)
+  const [showFirebaseWarning, setShowFirebaseWarning] = useState(false)
 
   // Clear any authentication state when accessing login page to ensure clean state
   useEffect(() => {
@@ -45,6 +48,10 @@ export default function LoginPage() {
       // Force a small delay to ensure all state is cleared before rendering
       setTimeout(() => {
         setIsCleared(true)
+        // Check Firebase configuration after clearing state
+        if (!isFirebaseConfigured()) {
+          setShowFirebaseWarning(true)
+        }
       }, 100)
     } else {
       setIsCleared(true)
@@ -65,5 +72,14 @@ export default function LoginPage() {
   }
 
   // Always show the login form - no automatic redirections
-  return <AuthForm />
+  return (
+    <>
+      <AuthForm />
+      {showFirebaseWarning && (
+        <FirebaseConfigWarning
+          onDismiss={() => setShowFirebaseWarning(false)}
+        />
+      )}
+    </>
+  )
 }

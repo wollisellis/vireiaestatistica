@@ -113,7 +113,22 @@ export function AuthForm() {
         window.location.reload()
       }
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erro desconhecido')
+      const errorMessage = (err as Error).message || 'Erro desconhecido'
+
+      // Provide more helpful error messages for common Firebase issues
+      if (errorMessage.includes('offline') || errorMessage.includes('client is offline')) {
+        setError('Erro de conexão com o banco de dados. Verifique se o Firebase está configurado corretamente ou use o modo demo.')
+      } else if (errorMessage.includes('network-request-failed')) {
+        setError('Erro de rede. Verifique sua conexão com a internet.')
+      } else if (errorMessage.includes('auth/invalid-email')) {
+        setError('Email inválido. Verifique o formato do email.')
+      } else if (errorMessage.includes('auth/user-not-found')) {
+        setError('Usuário não encontrado. Verifique o email ou crie uma nova conta.')
+      } else if (errorMessage.includes('auth/wrong-password')) {
+        setError('Senha incorreta. Tente novamente.')
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
