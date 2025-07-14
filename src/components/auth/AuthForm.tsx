@@ -175,21 +175,37 @@ export function AuthForm() {
     setError('')
 
     try {
+      console.log('🚀 Iniciando Google Sign In para:', selectedRole)
       const { data, error } = await signInWithGoogle(selectedRole)
-      if (error) throw new Error(error.message)
+
+      if (error) {
+        console.log('❌ Erro no Google Sign In:', error.message)
+        throw new Error(error.message)
+      }
+
+      // Se data for null, significa que foi redirecionado
+      if (!data) {
+        console.log('🔄 Redirecionamento em andamento...')
+        // Não fazer nada, o redirect está acontecendo
+        return
+      }
 
       // Redirect based on role and whether it's a new user
       if (data?.isNewUser) {
-        console.log('New Google user created:', data.profile)
+        console.log('✅ Novo usuário Google criado:', data.profile)
+      } else {
+        console.log('✅ Usuário Google existente:', data.profile)
       }
 
       // Redirect to appropriate dashboard
+      console.log('🔄 Redirecionando para dashboard...')
       if (selectedRole === 'professor') {
         window.location.href = '/professor'
       } else {
         window.location.href = '/jogos'
       }
     } catch (err: unknown) {
+      console.log('❌ Erro final:', err)
       setError((err as Error).message || 'Erro ao fazer login com Google')
     } finally {
       setLoading(false)

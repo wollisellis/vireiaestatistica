@@ -49,7 +49,25 @@ export function useFirebaseAuth() {
       return
     }
 
+    // Verificar se há resultado de redirect do Google OAuth
+    const checkRedirectResult = async () => {
+      try {
+        const { getRedirectResult } = await import('firebase/auth')
+        const result = await getRedirectResult(auth)
+        if (result) {
+          console.log('✅ Redirect result obtido:', result.user.email)
+          // O onAuthStateChanged vai capturar automaticamente
+        }
+      } catch (error) {
+        console.log('ℹ️ Nenhum redirect result ou erro:', error)
+      }
+    }
+
+    checkRedirectResult()
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('🔄 Auth state changed:', user?.email || 'null')
+
       if (user) {
         // Set authentication cookie when user is authenticated
         const token = await user.getIdToken()
@@ -170,21 +188,52 @@ export function useFirebaseAuth() {
         prompt: 'select_account'
       })
 
-      const result = await signInWithPopup(auth, provider)
+      console.log('🔄 Iniciando autenticação Google...')
+      // Usar redirect ao invés de popup para evitar problemas COOP
+      const result = await signInWithPopup(auth, provider).catch(async (popupError) => {
+        console.log('⚠️ Popup falhou, tentando redirect...', popupError)
+        // Se popup falhar, usar redirect
+        const { signInWithRedirect, getRedirectResult } = await import('firebase/auth')
+        await signInWithRedirect(auth, provider)
+        // O resultado será obtido na próxima carga da página
+        return null
+      })
+
+      // Se result for null (redirect), retornar early
+      if (!result) {
+        console.log('🔄 Redirecionando para Google OAuth...')
+        return { data: null, error: null } // Não é erro, apenas redirecionamento
+      }
+
       const firebaseUser = result.user
       const email = firebaseUser.email!
 
-      // Validate email domain for students
-      if (role === 'student' && !email.endsWith('@dac.unicamp.br')) {
-        // Sign out the user since they don't meet the requirements
+      console.log('✅ Autenticação Google bem-sucedida:', { email, role })
+
+      // VALIDAÇÃO RESTRITA DE DOMÍNIO
+      const allowedDomains = ['@dac.unicamp.br', '@unicamp.br']
+      const isValidDomain = allowedDomains.some(domain => email.endsWith(domain))
+
+      if (role === 'student' && !isValidDomain) {
+        console.log('❌ Email não autorizado para estudante:', email)
         await firebaseSignOut(auth)
-        throw new Error('Estudantes devem usar email institucional @dac.unicamp.br')
+        throw new Error('Estudantes devem usar email institucional @dac.unicamp.br ou @unicamp.br')
       }
+
+      // Para professores, também vamos restringir (opcional - remova se quiser flexibilidade)
+      if (role === 'professor' && !isValidDomain) {
+        console.log('❌ Email não autorizado para professor:', email)
+        await firebaseSignOut(auth)
+        throw new Error('Professores devem usar email institucional @dac.unicamp.br ou @unicamp.br')
+      }
+
+      console.log('✅ Domínio de email validado')
 
       // Check if user already exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
 
       if (!userDoc.exists()) {
+        console.log('👤 Criando novo usuário...')
         // Create new user profile
         const anonymousId = role === 'student' ? generateAnonymousId() : undefined
 
@@ -212,19 +261,23 @@ export function useFirebaseAuth() {
           updatedAt: serverTimestamp()
         })
 
+        console.log('✅ Usuário criado com sucesso:', userProfile)
         return { data: { user: firebaseUser, profile: userProfile, isNewUser: true }, error: null }
       } else {
+        console.log('👤 Usuário existente encontrado')
         // Existing user - verify role matches
         const existingProfile = userDoc.data() as User
         if (existingProfile.role !== role) {
+          console.log('❌ Role não confere:', { expected: role, actual: existingProfile.role })
           await firebaseSignOut(auth)
           throw new Error(`Esta conta está registrada como ${existingProfile.role === 'student' ? 'estudante' : 'professor'}`)
         }
 
+        console.log('✅ Login bem-sucedido:', existingProfile)
         return { data: { user: firebaseUser, profile: existingProfile, isNewUser: false }, error: null }
       }
     } catch (error: unknown) {
-      console.error('Google sign in error:', error)
+      console.error('❌ Erro no Google sign in:', error)
       return { data: null, error: { message: (error as Error).message } }
     } finally {
       setLoading(false)

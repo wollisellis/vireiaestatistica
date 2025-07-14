@@ -4,14 +4,28 @@ import { getFirestore, Firestore } from 'firebase/firestore'
 
 // Helper function to check if Firebase is configured
 export const isFirebaseConfigured = (): boolean => {
-  return !!(
+  const isConfigured = !!(
     process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
     process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
     process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+    process.env.NEXT_PUBLIC_FIREBASE_APP_ID &&
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'demo-api-key' &&
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'demo-project' &&
+    !process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.includes('Demo')
   )
+
+  console.log('🔥 Firebase Configuration Check:', {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?
+      `${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 10)}...` : 'MISSING',
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    isConfigured,
+    environment: process.env.NODE_ENV
+  })
+
+  return isConfigured
 }
 
 const firebaseConfig = {
