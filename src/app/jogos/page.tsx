@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/Button'
 import { StudentProgressDashboard } from '@/components/student-progress'
 import { StudentProgressProvider } from '@/contexts/StudentProgressContext'
 import { Footer } from '@/components/layout'
+// Professor dashboard removed - professors should access root route (/) instead
 import Link from 'next/link'
 
 // Game definitions for NT600 - Nutritional Status Assessment
@@ -112,6 +113,28 @@ export default function JogosNT600Page() {
   const [selectedGame, setSelectedGame] = useState<number | null>(null)
   const { user, loading } = useRBAC()
 
+  // Check if user is an authenticated professor (not guest)
+  const isAuthenticatedProfessor = user?.role === 'professor' && user?.id !== 'professor-guest-user'
+
+  // Check for professor guest mode cookie directly
+  const isProfessorGuest = typeof window !== 'undefined' &&
+    document.cookie.split(';').some(cookie => cookie.trim().startsWith('professor-guest-mode=true'))
+
+  // Only redirect authenticated professors (not professor guests) to professor dashboard
+  if (isAuthenticatedProfessor) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/professor'
+    }
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-700">Redirecionando para Dashboard do Professor...</h2>
+        </div>
+      </div>
+    )
+  }
+
   // Show loading state while checking authentication
   if (loading) {
     return (
@@ -125,8 +148,12 @@ export default function JogosNT600Page() {
     )
   }
 
-  // Show access denied if user is not authenticated
-  if (!user) {
+  // Check for student guest mode
+  const isStudentGuest = typeof window !== 'undefined' &&
+    document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
+
+  // Show access denied if user is not authenticated and not in any guest mode
+  if (!user && !isStudentGuest && !isProfessorGuest) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">

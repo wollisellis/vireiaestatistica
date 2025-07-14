@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  Trophy, 
-  Target, 
-  Clock, 
+import {
+  Trophy,
+  Target,
+  Clock,
   TrendingUp,
   Award,
   Users,
@@ -13,12 +13,16 @@ import {
   Star,
   Medal,
   Zap,
-  Calendar
+  Calendar,
+  RefreshCw,
+  Database,
+  WifiOff
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useRBAC } from '@/hooks/useRBAC'
 import { useStudentProgress } from '@/contexts/StudentProgressContext'
+import { useFirebaseDataWithFallback } from '@/contexts/FirebaseDataContext'
 
 interface PersonalProgress {
   overallScore: number
@@ -59,27 +63,73 @@ interface NextStep {
 export function StudentDashboard() {
   const { user, loading } = useRBAC()
   const { progress } = useStudentProgress()
+  const {
+    gameProgress,
+    loading: dataLoading,
+    progressLoading,
+    refreshProgress,
+    isUsingRealData,
+    isUsingDemoData
+  } = useFirebaseDataWithFallback()
+
   const [personalProgress, setPersonalProgress] = useState<PersonalProgress | null>(null)
   const [nextSteps, setNextSteps] = useState<NextStep[]>([])
   const [recentAchievements, setRecentAchievements] = useState<Achievement[]>([])
 
   useEffect(() => {
-    if (user && user.role === 'student') {
+    if (user && (user.role === 'student' || user.role === undefined)) {
       loadPersonalData()
     }
-  }, [user, progress])
+  }, [user, progress, gameProgress])
 
   const loadPersonalData = async () => {
-    // Mock data for now - will be replaced with real Firestore queries
-    const mockProgress: PersonalProgress = {
-      overallScore: progress.totalScore,
-      moduleProgress: [
+    // Use Firebase data when available, fallback to mock data
+    let moduleProgress: ModuleProgress[]
+    let overallScore: number
+    let achievements: Achievement[]
+
+    if (isUsingRealData && gameProgress.length > 0) {
+      // Calculate module progress from real Firebase data
+      moduleProgress = [1, 2, 3, 4].map(moduleId => {
+        const moduleGameProgress = gameProgress.filter(gp => gp.gameId === moduleId)
+        const isCompleted = moduleGameProgress.some(gp => gp.completed)
+        const bestScore = moduleGameProgress.length > 0
+          ? Math.max(...moduleGameProgress.map(gp => gp.score))
+          : 0
+        const completionDate = moduleGameProgress.find(gp => gp.completed)?.completedAt
+
+        return {
+          moduleId,
+          moduleName: getModuleName(moduleId),
+          isCompleted,
+          isLocked: false, // TODO: Implement module locking logic
+          score: bestScore,
+          maxScore: 100,
+          completionDate: completionDate ? new Date(completionDate).toISOString().split('T')[0] : undefined
+        }
+      })
+
+      overallScore = user?.totalScore || 0
+      achievements = user?.achievements?.map(achievementId => ({
+        id: achievementId,
+        title: getAchievementTitle(achievementId),
+        description: getAchievementDescription(achievementId),
+        icon: getAchievementIcon(achievementId),
+        rarity: getAchievementRarity(achievementId),
+        earnedAt: '2024-01-15', // TODO: Get real earned date
+        points: getAchievementPoints(achievementId)
+      })) || []
+    } else {
+      // Fallback to mock data
+      moduleProgress = [
         { moduleId: 1, moduleName: 'Indicadores Antropométricos', isCompleted: true, isLocked: false, score: 85, maxScore: 100, completionDate: '2024-01-15' },
         { moduleId: 2, moduleName: 'Indicadores Clínicos', isCompleted: false, isLocked: true, score: 0, maxScore: 100 },
         { moduleId: 3, moduleName: 'Fatores Socioeconômicos', isCompleted: false, isLocked: true, score: 0, maxScore: 100 },
         { moduleId: 4, moduleName: 'Curvas de Crescimento', isCompleted: progress.gamesCompleted >= 2, isLocked: false, score: progress.gamesCompleted >= 2 ? 78 : 0, maxScore: 100, completionDate: progress.gamesCompleted >= 2 ? '2024-01-20' : undefined },
-      ],
-      achievements: user.achievements.map(achievementId => ({
+      ]
+
+      overallScore = progress.totalScore
+      achievements = user?.achievements?.map(achievementId => ({
         id: achievementId,
         title: getAchievementTitle(achievementId),
         description: getAchievementDescription(achievementId),
@@ -87,12 +137,18 @@ export function StudentDashboard() {
         rarity: getAchievementRarity(achievementId),
         earnedAt: '2024-01-15',
         points: getAchievementPoints(achievementId)
-      })),
-      rankingPosition: progress.currentRank,
-      totalStudents: 45
+      })) || []
     }
 
-    const mockNextSteps: NextStep[] = [
+    const personalProgressData: PersonalProgress = {
+      overallScore,
+      moduleProgress,
+      achievements,
+      rankingPosition: progress.currentRank,
+      totalStudents: 45 // TODO: Get real total from Firebase
+    }
+
+    const nextStepsData: NextStep[] = [
       {
         type: 'module',
         title: 'Continuar Curvas de Crescimento',
@@ -109,7 +165,7 @@ export function StudentDashboard() {
       }
     ]
 
-    const mockRecentAchievements: Achievement[] = progress.achievements.slice(-3).map(achievementId => ({
+    const recentAchievementsData: Achievement[] = progress.achievements.slice(-3).map(achievementId => ({
       id: achievementId,
       title: getAchievementTitle(achievementId),
       description: getAchievementDescription(achievementId),
@@ -119,9 +175,9 @@ export function StudentDashboard() {
       points: getAchievementPoints(achievementId)
     }))
 
-    setPersonalProgress(mockProgress)
-    setNextSteps(mockNextSteps)
-    setRecentAchievements(mockRecentAchievements)
+    setPersonalProgress(personalProgressData)
+    setNextSteps(nextStepsData)
+    setRecentAchievements(recentAchievementsData)
   }
 
   // Helper functions for achievements
@@ -199,10 +255,15 @@ export function StudentDashboard() {
     return colors[priority] || 'border-gray-200 bg-gray-50'
   }
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {isUsingRealData ? 'Carregando progresso do Firebase...' : 'Carregando dados de demonstração...'}
+          </p>
+        </div>
       </div>
     )
   }
@@ -223,12 +284,41 @@ export function StudentDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Meu Painel de Aprendizagem
-          </h1>
-          <p className="text-gray-600">
-            Olá, {user.fullName}! • ID: {user.anonymousId} • NT600 - Avaliação Nutricional
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Meu Painel de Aprendizagem
+              </h1>
+              <div className="flex items-center gap-4">
+                <p className="text-gray-600">
+                  Olá, {user.fullName}! • ID: {user.anonymousId} • NT600 - Avaliação Nutricional
+                </p>
+                <div className="flex items-center gap-2 text-sm">
+                  {isUsingRealData ? (
+                    <>
+                      <Database className="h-4 w-4 text-green-600" />
+                      <span className="text-green-600 font-medium">Dados Reais (Firebase)</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-4 w-4 text-orange-600" />
+                      <span className="text-orange-600 font-medium">Dados de Demonstração</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshProgress}
+              disabled={progressLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${progressLoading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         {/* Progress Overview */}
@@ -419,4 +509,15 @@ export function StudentDashboard() {
       </div>
     </div>
   )
+}
+
+// Helper function to get module names
+const getModuleName = (moduleId: number): string => {
+  const moduleNames = {
+    1: 'Indicadores Antropométricos',
+    2: 'Indicadores Clínicos e Bioquímicos',
+    3: 'Fatores Socioeconômicos',
+    4: 'Curvas de Crescimento'
+  }
+  return moduleNames[moduleId as keyof typeof moduleNames] || `Módulo ${moduleId}`
 }

@@ -73,6 +73,7 @@ export function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isGuest, setIsGuest] = useState(false)
   const [selectedRole, setSelectedRole] = useState<'student' | 'professor'>('student')
   const { signIn, signUp, enableGuestMode } = useFirebaseAuth()
 
@@ -117,15 +118,34 @@ export function AuthForm() {
   }
 
   const handleGuestAccess = () => {
+    console.log('Student guest access initiated')
     setIsGuest(true)
     setLoading(true)
 
-    // Enable guest mode using the new cookie system
+    // Enable student guest mode using the cookie system
     enableGuestMode()
+    console.log('Student guest mode enabled, redirecting to /jogos')
 
     // Redirect to games page
     setTimeout(() => {
       window.location.href = '/jogos'
+    }, 500)
+  }
+
+  const handleProfessorGuestAccess = () => {
+    console.log('Professor guest access initiated')
+    setIsGuest(true)
+    setLoading(true)
+
+    // Enable professor guest mode with specific cookie
+    if (typeof window !== 'undefined') {
+      document.cookie = 'professor-guest-mode=true;path=/;SameSite=Lax;max-age=86400' // 24 hours
+      console.log('Professor guest mode enabled, redirecting to /')
+    }
+
+    // Redirect to professor dashboard
+    setTimeout(() => {
+      window.location.href = '/professor'
     }, 500)
   }
 
@@ -297,11 +317,19 @@ export function AuthForm() {
                 className="w-full mt-4"
                 onClick={handleGuestAccess}
               >
-                {t('auth.continueAsGuest')}
+                Continuar como Visitante (Estudante)
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full mt-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                onClick={handleProfessorGuestAccess}
+              >
+                Continuar como Professor Visitante
               </Button>
 
               <p className="text-center text-xs text-gray-500 mt-2">
-                {t('auth.guestModeDescription')}
+                Acesso completo para demonstração - sem necessidade de cadastro
               </p>
             </div>
 
@@ -319,7 +347,7 @@ export function AuthForm() {
               <div className="border-t border-gray-200 pt-3">
                 <p className="text-xs text-gray-500 mb-2">Você é professor?</p>
                 <a
-                  href="/professor"
+                  href="/professor/registro"
                   className="text-green-600 hover:text-green-700 text-sm font-medium"
                 >
                   Cadastre-se como Professor

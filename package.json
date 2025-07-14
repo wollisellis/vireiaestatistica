@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3000",
+    "development": "next dev --port 3000",
+    "serve": "next dev --port 3000",
+    "start-dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -18,7 +21,7 @@
     "highcharts": "^12.3.0",
     "highcharts-react-official": "^3.2.2",
     "lucide-react": "^0.400.0",
-    "next": "14.2.5",
+    "next": "^15.3.5",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.3.1",

@@ -10,15 +10,14 @@ const nextConfig = {
     // your project has TypeScript errors.
     ignoreBuildErrors: true,
   },
-  // Disable SWC due to binary issues
-  swcMinify: false,
+  // Next.js 15 configuration
+  experimental: {
+    // Add any experimental features here if needed
+  },
   images: {
     domains: [],
   },
-  // Use experimental features for better compatibility
-  experimental: {
-    forceSwcTransforms: false,
-  },
+
   // Remove standalone output for Vercel compatibility
   // output: 'standalone',
   // Ensure proper trailing slash handling

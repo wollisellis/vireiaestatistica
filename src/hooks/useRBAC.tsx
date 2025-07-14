@@ -13,13 +13,42 @@ export interface RBACHookReturn {
 export function useRBAC(userId?: string): RBACHookReturn {
   const { profile: user, loading } = useFirebaseProfile(userId || '')
   const [moduleAccess, setModuleAccess] = useState<Record<number, boolean>>({})
+  const [isStudentGuest, setIsStudentGuest] = useState(false)
+  const [isProfessorGuest, setIsProfessorGuest] = useState(false)
+
+  useEffect(() => {
+    // Check for guest modes
+    if (typeof window !== 'undefined') {
+      const studentGuestCookie = document.cookie.split(';').find(cookie => cookie.trim().startsWith('guest-mode='))
+      const professorGuestCookie = document.cookie.split(';').find(cookie => cookie.trim().startsWith('professor-guest-mode='))
+
+      setIsStudentGuest(studentGuestCookie?.split('=')[1] === 'true')
+      setIsProfessorGuest(professorGuestCookie?.split('=')[1] === 'true')
+    }
+  }, [])
 
   useEffect(() => {
     if (user && user.role === 'student') {
       // Load module access permissions for students
       loadModuleAccess(user.id)
+    } else if (user && user.role === 'professor') {
+      // Professors have access to all modules
+      setModuleAccess({
+        1: true, // Anthropometric Assessment
+        2: true, // Clinical Assessment
+        3: true, // Socioeconomic Assessment
+        4: true, // Growth Curves
+      })
+    } else if (isStudentGuest || isProfessorGuest) {
+      // Grant access to all modules for guest users
+      setModuleAccess({
+        1: true, // Anthropometric Assessment
+        2: true, // Clinical Assessment
+        3: true, // Socioeconomic Assessment
+        4: true, // Growth Curves
+      })
     }
-  }, [user])
+  }, [user, isStudentGuest, isProfessorGuest])
 
   const loadModuleAccess = async (userId: string) => {
     // Mock implementation - in real app, this would check enrollment status
@@ -33,25 +62,71 @@ export function useRBAC(userId?: string): RBACHookReturn {
   }
 
   const checkPermission = (resource: string, action: string): boolean => {
-    if (!user) return false
-    return hasPermission(user, resource, action)
+    if (!user && !isStudentGuest && !isProfessorGuest) return false
+
+    if (isStudentGuest) {
+      // Student guest users have limited permissions - can read modules and play games
+      return resource === 'modules' && action === 'read_unlocked'
+    }
+
+    if (isProfessorGuest) {
+      // Professor guest users have full professor permissions
+      return hasPermission({ role: 'professor' } as any, resource, action)
+    }
+
+    return hasPermission(user!, resource, action)
   }
 
   const isAuthorized = (requiredRole?: 'professor' | 'student'): boolean => {
-    if (!user) return false
+    if (!user && !isStudentGuest && !isProfessorGuest) return false
+
+    if (isStudentGuest) {
+      // Student guest users are treated as students for authorization purposes
+      return !requiredRole || requiredRole === 'student'
+    }
+
+    if (isProfessorGuest) {
+      // Professor guest users are treated as professors for authorization purposes
+      return !requiredRole || requiredRole === 'professor'
+    }
+
     if (!requiredRole) return true
-    return user.role === requiredRole
+    return user!.role === requiredRole
   }
 
   const canAccessModule = (moduleId: number): boolean => {
-    if (!user) return false
-    if (user.role === 'professor') return true
+    if (!user && !isStudentGuest && !isProfessorGuest) return false
+
+    if (isStudentGuest || isProfessorGuest) {
+      // Guest users can access all modules
+      return moduleAccess[moduleId] || false
+    }
+
+    if (user!.role === 'professor') return true
     return moduleAccess[moduleId] || false
   }
 
+  // Create a mock guest user for display purposes
+  const effectiveUser = (isStudentGuest || isProfessorGuest) && !user ? {
+    id: isProfessorGuest ? 'professor-guest-user' : 'guest-user',
+    email: isProfessorGuest ? 'professor.visitante@avalianutri.com' : 'visitante@avalianutri.com',
+    fullName: isProfessorGuest ? 'Professor Visitante' : 'Usuário Visitante',
+    role: (isProfessorGuest ? 'professor' : 'student') as const,
+    anonymousId: isProfessorGuest ? 'ProfVisitante001' : 'Visitante001',
+    institutionId: 'demo',
+    totalScore: 0,
+    levelReached: 1,
+    gamesCompleted: 0,
+    collaborationHistory: [],
+    preferredPartners: [],
+    achievements: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  } : user
+
   return {
-    user,
-    loading,
+    user: effectiveUser,
+    loading: loading && !isStudentGuest && !isProfessorGuest,
     hasPermission: checkPermission,
     isAuthorized,
     canAccessModule

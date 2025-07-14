@@ -73,50 +73,117 @@ const generateStudentName = () => {
   return names[Math.floor(Math.random() * names.length)]
 }
 
-const initialProgress: StudentProgress = {
-  studentId: 'student-' + Date.now(),
-  studentName: generateStudentName(),
-  totalScore: 0,
-  totalPossibleScore: 0,
-  gamesCompleted: 0,
-  totalGames: 4, // AvaliaNutri has 4 games
-  averageScore: 0,
-  totalTimeSpent: 0,
-  gameScores: [],
-  achievements: [],
-  lastActivity: new Date(),
-  rankingScore: 0,
-  currentRank: 0,
-  improvementStreak: 0
+const getInitialProgress = (): StudentProgress => {
+  // Check if in guest mode
+  const isGuestMode = typeof window !== 'undefined' &&
+    document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
+
+  return {
+    studentId: isGuestMode ? 'guest-user' : 'student-default',
+    studentName: isGuestMode ? 'Usuário Visitante' : 'Estudante',
+    totalScore: isGuestMode ? 850 : 0,
+    totalPossibleScore: isGuestMode ? 1000 : 0,
+    gamesCompleted: isGuestMode ? 2 : 0,
+    totalGames: 4, // AvaliaNutri has 4 games
+    averageScore: isGuestMode ? 85 : 0,
+    totalTimeSpent: isGuestMode ? 1800 : 0, // 30 minutes for demo
+    gameScores: isGuestMode ? [
+      {
+        gameId: 1,
+        score: 85,
+        maxScore: 100,
+        timeElapsed: 900,
+        completedAt: new Date('2024-01-01'), // Fixed date for SSR consistency
+        exercisesCompleted: 5,
+        totalExercises: 5,
+        difficulty: 'intermediate',
+        normalizedScore: 85,
+        isPersonalBest: true,
+        attempt: 1
+      },
+      {
+        gameId: 2,
+        score: 92,
+        maxScore: 100,
+        timeElapsed: 720,
+        completedAt: new Date('2024-01-02'), // Fixed date for SSR consistency
+        exercisesCompleted: 4,
+        totalExercises: 5,
+        difficulty: 'intermediate',
+        normalizedScore: 92,
+        isPersonalBest: true,
+        attempt: 1
+      }
+    ] : [],
+    achievements: isGuestMode ? ['first-game', 'quick-learner'] : [],
+    lastActivity: new Date('2024-01-02'),
+    rankingScore: isGuestMode ? 850 : 0,
+    currentRank: isGuestMode ? 3 : 0,
+    improvementStreak: isGuestMode ? 2 : 0
+  }
 }
 
 export function StudentProgressProvider({ children }: { children: React.ReactNode }) {
-  const [progress, setProgress] = useState<StudentProgress>(initialProgress)
+  const [progress, setProgress] = useState<StudentProgress>(() => {
+    // Initialize with safe defaults for SSR
+    return {
+      studentId: 'student-default',
+      studentName: 'Estudante',
+      totalScore: 0,
+      totalPossibleScore: 0,
+      gamesCompleted: 0,
+      totalGames: 4,
+      averageScore: 0,
+      totalTimeSpent: 0,
+      gameScores: [],
+      achievements: [],
+      lastActivity: new Date('2024-01-01'),
+      rankingScore: 0,
+      currentRank: 0,
+      improvementStreak: 0
+    }
+  })
   const [newAchievements, setNewAchievements] = useState<string[]>([])
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  // Load progress from localStorage on mount
+  // Load progress from localStorage on mount (skip for guest mode)
   useEffect(() => {
-    const savedProgress = localStorage.getItem('nt600-student-progress')
-    if (savedProgress) {
-      try {
-        const parsed = JSON.parse(savedProgress)
-        // Convert date strings back to Date objects
-        parsed.lastActivity = new Date(parsed.lastActivity)
-        parsed.gameScores = parsed.gameScores.map((score: any) => ({
-          ...score,
-          completedAt: new Date(score.completedAt)
-        }))
-        setProgress(parsed)
-      } catch (error) {
-        console.error('Error loading student progress:', error)
+    const isGuestMode = document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
+
+    if (isGuestMode) {
+      // Set guest mode progress
+      setProgress(getInitialProgress())
+    } else {
+      // Load from localStorage for regular users
+      const savedProgress = localStorage.getItem('nt600-student-progress')
+      if (savedProgress) {
+        try {
+          const parsed = JSON.parse(savedProgress)
+          // Convert date strings back to Date objects
+          parsed.lastActivity = new Date(parsed.lastActivity)
+          parsed.gameScores = parsed.gameScores.map((score: any) => ({
+            ...score,
+            completedAt: new Date(score.completedAt)
+          }))
+          setProgress(parsed)
+        } catch (error) {
+          console.error('Error loading student progress:', error)
+        }
       }
     }
+
+    setIsInitialized(true)
   }, [])
 
-  // Save progress to localStorage whenever it changes
+  // Save progress to localStorage whenever it changes (skip for guest mode)
   useEffect(() => {
+    if (!isInitialized) return // Don't save until initialized
+
+    const isGuestMode = document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
+    if (isGuestMode) return // Don't save progress for guests
+
     localStorage.setItem('nt600-student-progress', JSON.stringify(progress))
-  }, [progress])
+  }, [progress, isInitialized])
 
   const calculateNormalizedScore = (exercisesCompleted: number, totalExercises: number): number => {
     return Math.round((exercisesCompleted / totalExercises) * 100)
@@ -300,7 +367,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
       rankingScore: student.score,
       gamesCompleted: student.games,
       averageScore: student.avg,
-      lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
+      lastActivity: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000) // Fixed calculation for SSR consistency
     }))
   }
 

@@ -2,23 +2,27 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  Users, 
-  BookOpen, 
-  TrendingUp, 
-  Award, 
+import {
+  Users,
+  BookOpen,
+  TrendingUp,
+  Award,
   Clock,
   BarChart3,
   Settings,
   Unlock,
   Lock,
   Eye,
-  Download
+  Download,
+  RefreshCw,
+  Database,
+  WifiOff
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useRBAC } from '@/hooks/useRBAC'
 import { User } from '@/lib/firebase'
+import { useFirebaseDataWithFallback } from '@/contexts/FirebaseDataContext'
 
 interface ClassOverview {
   totalStudents: number
@@ -47,31 +51,27 @@ interface StudentSummary {
 
 export function ProfessorDashboard() {
   const { user, loading } = useRBAC()
-  const [classOverview, setClassOverview] = useState<ClassOverview | null>(null)
+  const {
+    classAnalytics,
+    courses,
+    loading: dataLoading,
+    analyticsLoading,
+    refreshAnalytics,
+    isUsingRealData,
+    isUsingDemoData
+  } = useFirebaseDataWithFallback()
+
   const [topPerformers, setTopPerformers] = useState<StudentSummary[]>([])
   const [strugglingStudents, setStrugglingStudents] = useState<StudentSummary[]>([])
-  const [moduleSettings, setModuleSettings] = useState<ModuleCompletionRate[]>([])
 
   useEffect(() => {
     if (user && user.role === 'professor') {
-      loadClassData()
+      loadMockStudentData() // Still using mock data for individual students
     }
   }, [user])
 
-  const loadClassData = async () => {
-    // Mock data for now - will be replaced with real Firestore queries
-    const mockOverview: ClassOverview = {
-      totalStudents: 45,
-      activeStudents: 38,
-      averageProgress: 67,
-      completionRates: [
-        { moduleId: 1, moduleName: 'Indicadores Antropométricos', completionRate: 89, averageScore: 82, isLocked: false },
-        { moduleId: 2, moduleName: 'Indicadores Clínicos', completionRate: 0, averageScore: 0, isLocked: true },
-        { moduleId: 3, moduleName: 'Fatores Socioeconômicos', completionRate: 0, averageScore: 0, isLocked: true },
-        { moduleId: 4, moduleName: 'Curvas de Crescimento', completionRate: 67, averageScore: 78, isLocked: false },
-      ]
-    }
-
+  const loadMockStudentData = async () => {
+    // Mock student data - individual student details not yet implemented in Firebase
     const mockTopPerformers: StudentSummary[] = [
       { id: '1', name: 'Ana Silva', anonymousId: 'Aluno12345', totalScore: 385, gamesCompleted: 2, lastActivity: '2 horas atrás', averageScore: 96 },
       { id: '2', name: 'Carlos Santos', anonymousId: 'Aluno23456', totalScore: 372, gamesCompleted: 2, lastActivity: '1 dia atrás', averageScore: 93 },
@@ -83,27 +83,24 @@ export function ProfessorDashboard() {
       { id: '5', name: 'Lucia Ferreira', anonymousId: 'Aluno56789', totalScore: 132, gamesCompleted: 1, lastActivity: '3 dias atrás', averageScore: 52 },
     ]
 
-    setClassOverview(mockOverview)
     setTopPerformers(mockTopPerformers)
     setStrugglingStudents(mockStrugglingStudents)
-    setModuleSettings(mockOverview.completionRates)
   }
 
   const toggleModuleLock = async (moduleId: number) => {
-    setModuleSettings(prev => 
-      prev.map(module => 
-        module.moduleId === moduleId 
-          ? { ...module, isLocked: !module.isLocked }
-          : module
-      )
-    )
-    // TODO: Update Firestore with new module settings
+    // TODO: Implement module locking in Firebase
+    console.log('Toggle module lock for module:', moduleId)
   }
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {isUsingRealData ? 'Carregando dados do Firebase...' : 'Carregando dados de demonstração...'}
+          </p>
+        </div>
       </div>
     )
   }
@@ -124,16 +121,55 @@ export function ProfessorDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Painel do Professor
-          </h1>
-          <p className="text-gray-600">
-            Bem-vindo, Prof. {user.fullName} • NT600 - Avaliação Nutricional
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Painel do Professor
+              </h1>
+              <div className="flex items-center gap-4">
+                <p className="text-gray-600">
+                  Bem-vindo, Prof. {user.fullName} • NT600 - Avaliação Nutricional
+                </p>
+                <div className="flex items-center gap-2 text-sm">
+                  {isUsingRealData ? (
+                    <>
+                      <Database className="h-4 w-4 text-green-600" />
+                      <span className="text-green-600 font-medium">Dados Reais (Firebase)</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-4 w-4 text-orange-600" />
+                      <span className="text-orange-600 font-medium">Dados de Demonstração</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshAnalytics}
+                disabled={analyticsLoading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Exportar
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Overview Cards */}
-        {classOverview && (
+        {classAnalytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -146,7 +182,7 @@ export function ProfessorDashboard() {
                     <Users className="h-8 w-8 text-blue-600" />
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Total de Alunos</p>
-                      <p className="text-2xl font-bold text-gray-900">{classOverview.totalStudents}</p>
+                      <p className="text-2xl font-bold text-gray-900">{classAnalytics.totalStudents}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -164,7 +200,7 @@ export function ProfessorDashboard() {
                     <TrendingUp className="h-8 w-8 text-green-600" />
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Alunos Ativos</p>
-                      <p className="text-2xl font-bold text-gray-900">{classOverview.activeStudents}</p>
+                      <p className="text-2xl font-bold text-gray-900">{classAnalytics.activeStudents}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -182,7 +218,7 @@ export function ProfessorDashboard() {
                     <BarChart3 className="h-8 w-8 text-purple-600" />
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Progresso Médio</p>
-                      <p className="text-2xl font-bold text-gray-900">{classOverview.averageProgress}%</p>
+                      <p className="text-2xl font-bold text-gray-900">{classAnalytics.averageProgress}%</p>
                     </div>
                   </div>
                 </CardContent>
@@ -201,7 +237,7 @@ export function ProfessorDashboard() {
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Módulos Ativos</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {moduleSettings.filter(m => !m.isLocked).length}
+                        {classAnalytics.completionRates?.filter(m => !m.isLocked).length || 0}
                       </p>
                     </div>
                   </div>
@@ -212,17 +248,18 @@ export function ProfessorDashboard() {
         )}
 
         {/* Module Management */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <Card>
-            <CardHeader>
-              <h3 className="text-xl font-semibold flex items-center">
-                <Settings className="w-5 h-5 mr-2" />
-                Gerenciamento de Módulos
-              </h3>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {moduleSettings.map((module) => (
+        {classAnalytics && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <Card>
+              <CardHeader>
+                <h3 className="text-xl font-semibold flex items-center">
+                  <Settings className="w-5 h-5 mr-2" />
+                  Gerenciamento de Módulos
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(classAnalytics.completionRates || []).map((module) => (
                   <div key={module.moduleId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{module.moduleName}</h4>
@@ -284,7 +321,8 @@ export function ProfessorDashboard() {
               </div>
             </CardContent>
           </Card>
-        </div>
+          </div>
+        )}
 
         {/* Students Needing Attention */}
         <Card>

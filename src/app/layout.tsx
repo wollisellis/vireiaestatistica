@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+// Providers moved to individual pages to avoid hydration issues
 
 const inter = Inter({ subsets: ["latin"] });
 

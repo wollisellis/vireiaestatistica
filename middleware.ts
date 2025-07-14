@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server'
 // Define protected routes that require authentication
 const protectedRoutes = [
   '/jogos',
+  '/professor',
   '/dashboard',
   '/profile',
   '/settings'
@@ -12,7 +13,7 @@ const protectedRoutes = [
 // Define public routes that don't require authentication
 const publicRoutes = [
   '/',
-  '/professor',
+  '/professor/registro',
   '/login',
   '/register'
 ]
@@ -29,9 +30,10 @@ export function middleware(request: NextRequest) {
   // Get authentication token from cookies
   const authToken = request.cookies.get('auth-token')?.value
   const guestMode = request.cookies.get('guest-mode')?.value
-  
-  // Check if user is authenticated (has valid token or is in guest mode)
-  const isAuthenticated = !!(authToken || guestMode === 'true')
+  const professorGuestMode = request.cookies.get('professor-guest-mode')?.value
+
+  // Check if user is authenticated (has valid token or is in any guest mode)
+  const isAuthenticated = !!(authToken || guestMode === 'true' || professorGuestMode === 'true')
   
   // Check if the current path is protected
   const isProtectedRoute = protectedRoutes.some(route => 
@@ -55,14 +57,14 @@ export function middleware(request: NextRequest) {
   // Handle auth routes when user is already authenticated
   if (isAuthRoute && isAuthenticated) {
     // Redirect to dashboard or intended destination
-    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/jogos'
+    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/'
     return NextResponse.redirect(new URL(redirectTo, request.url))
   }
-  
-  // Handle root path redirection
-  if (pathname === '/' && isAuthenticated) {
-    // Redirect authenticated users to games page
-    return NextResponse.redirect(new URL('/jogos', request.url))
+
+  // Handle root path - allow access for login page
+  if (pathname === '/') {
+    // Root is now the login page, allow access for everyone
+    return NextResponse.next()
   }
   
   // Allow the request to continue
