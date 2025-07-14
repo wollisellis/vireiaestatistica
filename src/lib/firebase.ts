@@ -2,45 +2,22 @@ import { initializeApp, FirebaseApp } from 'firebase/app'
 import { getAuth, Auth } from 'firebase/auth'
 import { getFirestore, Firestore } from 'firebase/firestore'
 
-// Helper function to check if Firebase is configured with real credentials
+// Helper function to check if Firebase is configured
 export const isFirebaseConfigured = (): boolean => {
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
   const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 
-  // Check if all required variables exist and are not placeholder values
-  const isConfigured = !!(
-    apiKey &&
-    authDomain &&
-    projectId &&
-    appId &&
-    !apiKey.includes('COLE_SUA') &&
-    !apiKey.includes('SUA_API_KEY') &&
-    !authDomain.includes('seu-projeto') &&
-    !authDomain.includes('COLE_SEU') &&
-    !projectId.includes('seu-projeto') &&
-    !projectId.includes('COLE_SEU') &&
-    !appId.includes('abcdef123456') &&
-    !appId.includes('COLE_SEU')
-  )
-
-  const getConfigStatus = (value: string | undefined) => {
-    if (!value) return 'MISSING'
-    if (value.includes('COLE_SUA') || value.includes('SUA_API_KEY') ||
-        value.includes('seu-projeto') || value.includes('COLE_SEU') ||
-        value.includes('abcdef123456')) {
-      return 'PLACEHOLDER'
-    }
-    return 'CONFIGURED'
-  }
+  // Check if all required variables exist
+  const isConfigured = !!(apiKey && authDomain && projectId && appId)
 
   console.log('🔥 Firebase Configuration Status:', {
     configured: isConfigured,
-    apiKey: getConfigStatus(apiKey),
-    authDomain: getConfigStatus(authDomain),
-    projectId: getConfigStatus(projectId),
-    appId: getConfigStatus(appId)
+    apiKey: apiKey ? 'SET' : 'MISSING',
+    authDomain: authDomain ? 'SET' : 'MISSING',
+    projectId: projectId ? 'SET' : 'MISSING',
+    appId: appId ? 'SET' : 'MISSING'
   })
 
   return isConfigured
