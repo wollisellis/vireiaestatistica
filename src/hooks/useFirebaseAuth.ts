@@ -49,21 +49,7 @@ export function useFirebaseAuth() {
       return
     }
 
-    // Verificar se há resultado de redirect do Google OAuth
-    const checkRedirectResult = async () => {
-      try {
-        const { getRedirectResult } = await import('firebase/auth')
-        const result = await getRedirectResult(auth)
-        if (result) {
-          console.log('✅ Redirect result obtido:', result.user.email)
-          // O onAuthStateChanged vai capturar automaticamente
-        }
-      } catch (error) {
-        console.log('ℹ️ Nenhum redirect result ou erro:', error)
-      }
-    }
 
-    checkRedirectResult()
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('🔄 Auth state changed:', user?.email || 'null')
@@ -189,21 +175,7 @@ export function useFirebaseAuth() {
       })
 
       console.log('🔄 Iniciando autenticação Google...')
-      // Usar redirect ao invés de popup para evitar problemas COOP
-      const result = await signInWithPopup(auth, provider).catch(async (popupError) => {
-        console.log('⚠️ Popup falhou, tentando redirect...', popupError)
-        // Se popup falhar, usar redirect
-        const { signInWithRedirect, getRedirectResult } = await import('firebase/auth')
-        await signInWithRedirect(auth, provider)
-        // O resultado será obtido na próxima carga da página
-        return null
-      })
-
-      // Se result for null (redirect), retornar early
-      if (!result) {
-        console.log('🔄 Redirecionando para Google OAuth...')
-        return { data: null, error: null } // Não é erro, apenas redirecionamento
-      }
+      const result = await signInWithPopup(auth, provider)
 
       const firebaseUser = result.user
       const email = firebaseUser.email!
@@ -220,12 +192,7 @@ export function useFirebaseAuth() {
         throw new Error('Estudantes devem usar email institucional @dac.unicamp.br ou @unicamp.br')
       }
 
-      // Para professores, também vamos restringir (opcional - remova se quiser flexibilidade)
-      if (role === 'professor' && !isValidDomain) {
-        console.log('❌ Email não autorizado para professor:', email)
-        await firebaseSignOut(auth)
-        throw new Error('Professores devem usar email institucional @dac.unicamp.br ou @unicamp.br')
-      }
+      // Professores podem usar qualquer email (flexibilidade mantida)
 
       console.log('✅ Domínio de email validado')
 

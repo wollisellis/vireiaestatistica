@@ -183,12 +183,7 @@ export function AuthForm() {
         throw new Error(error.message)
       }
 
-      // Se data for null, significa que foi redirecionado
-      if (!data) {
-        console.log('🔄 Redirecionamento em andamento...')
-        // Não fazer nada, o redirect está acontecendo
-        return
-      }
+
 
       // Redirect based on role and whether it's a new user
       if (data?.isNewUser) {
@@ -457,17 +452,7 @@ export function AuthForm() {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-red-600 text-sm">{error}</p>
 
-                  {/* Debug info - REMOVER EM PRODUÇÃO */}
-                  {error.includes('Firebase not configured') && (
-                    <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
-                      <strong>Debug Info:</strong><br/>
-                      API_KEY: {process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'SET' : 'MISSING'}<br/>
-                      AUTH_DOMAIN: {process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? 'SET' : 'MISSING'}<br/>
-                      PROJECT_ID: {process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? 'SET' : 'MISSING'}<br/>
-                      Environment: {process.env.NODE_ENV}<br/>
-                      URL: {typeof window !== 'undefined' ? window.location.href : 'SSR'}
-                    </div>
-                  )}
+
                 </div>
               )}
 
