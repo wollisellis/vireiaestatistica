@@ -452,19 +452,7 @@ export function AuthForm() {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-red-600 text-sm">{error}</p>
 
-                  {/* Debug temporário - REMOVER após resolver */}
-                  {error.includes('Firebase not configured') && (
-                    <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
-                      <strong>Debug Detalhado:</strong><br/>
-                      API_KEY: {process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? `${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 15)}...` : 'MISSING'}<br/>
-                      PROJECT_ID: {process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'MISSING'}<br/>
-                      AUTH_DOMAIN: {process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'MISSING'}<br/>
-                      <br/>
-                      <strong>Verificações:</strong><br/>
-                      API_KEY válida: {process.env.NEXT_PUBLIC_FIREBASE_API_KEY && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY.includes('demo') ? 'SIM' : 'NÃO'}<br/>
-                      PROJECT_ID válido: {process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID && !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID.includes('demo') ? 'SIM' : 'NÃO'}<br/>
-                    </div>
-                  )}
+
                 </div>
               )}
 
