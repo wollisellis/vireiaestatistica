@@ -10,7 +10,7 @@ import {
   signInWithPopup
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
-import { auth, db, User, isFirebaseConfigured, generateAnonymousId } from '@/lib/firebase'
+import { auth, db, User, isFirebaseConfigured, generateAnonymousId, handleFirestoreError, retryFirestoreOperation } from '@/lib/firebase'
 
 // Cookie management functions
 const setCookie = (name: string, value: string, days: number = 7) => {
@@ -200,14 +200,16 @@ export function useFirebaseAuth() {
 
       console.log('✅ Domínio de email validado')
 
-      // Check if user already exists in Firestore
+      // Check if user already exists in Firestore with retry logic
       let userDoc
       try {
-        userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+        userDoc = await retryFirestoreOperation(async () => {
+          return await getDoc(doc(db, 'users', firebaseUser.uid))
+        })
       } catch (firestoreError) {
         console.error('❌ Erro ao acessar Firestore:', firestoreError)
         await firebaseSignOut(auth)
-        throw new Error('Erro de conexão com o banco de dados. Verifique sua conexão com a internet.')
+        throw new Error(handleFirestoreError(firestoreError))
       }
 
       if (!userDoc.exists()) {
@@ -356,9 +358,11 @@ export function useFirebaseProfile(userId: string) {
 
     const fetchProfile = async () => {
       try {
-        const docRef = doc(db, 'users', userId)
-        const docSnap = await getDoc(docRef)
-        
+        const docSnap = await retryFirestoreOperation(async () => {
+          const docRef = doc(db, 'users', userId)
+          return await getDoc(docRef)
+        })
+
         if (docSnap.exists()) {
           const data = docSnap.data()
           setProfile({
@@ -380,6 +384,7 @@ export function useFirebaseProfile(userId: string) {
         }
       } catch (error) {
         console.error('Error fetching profile:', error)
+        // Don't throw error here, just log it and continue with null profile
       } finally {
         setLoading(false)
       }

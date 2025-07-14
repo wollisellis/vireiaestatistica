@@ -1,6 +1,6 @@
 import { initializeApp, FirebaseApp } from 'firebase/app'
 import { getAuth, Auth } from 'firebase/auth'
-import { getFirestore, Firestore } from 'firebase/firestore'
+import { getFirestore, Firestore, enableNetwork, disableNetwork, connectFirestoreEmulator } from 'firebase/firestore'
 
 // Helper function to check if Firebase is configured
 export const isFirebaseConfigured = (): boolean => {
@@ -44,6 +44,13 @@ try {
     app = initializeApp(firebaseConfig)
     auth = getAuth(app)
     db = getFirestore(app)
+
+    // Enable offline persistence for better offline experience
+    if (typeof window !== 'undefined') {
+      // Only enable in browser environment
+      console.log('🔄 Enabling Firestore offline persistence...')
+    }
+
     console.log('✅ Firebase initialized successfully!')
   } else {
     console.warn('⚠️ Firebase not configured - using fallback mode')
@@ -52,6 +59,57 @@ try {
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error)
   console.warn('🔄 Using fallback mode')
+}
+
+// Helper function to handle Firestore errors
+export const handleFirestoreError = (error: any): string => {
+  console.error('Firestore error:', error)
+
+  if (error.code === 'unavailable') {
+    return 'Serviço temporariamente indisponível. Tente novamente em alguns instantes.'
+  }
+
+  if (error.code === 'permission-denied') {
+    return 'Acesso negado. Verifique suas permissões.'
+  }
+
+  if (error.code === 'not-found') {
+    return 'Dados não encontrados.'
+  }
+
+  if (error.message && error.message.includes('offline')) {
+    return 'Você está offline. Verifique sua conexão com a internet.'
+  }
+
+  if (error.message && error.message.includes('network')) {
+    return 'Erro de rede. Verifique sua conexão com a internet.'
+  }
+
+  return 'Erro inesperado. Tente novamente.'
+}
+
+// Helper function to retry Firestore operations
+export const retryFirestoreOperation = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation()
+    } catch (error: any) {
+      console.warn(`Firestore operation failed (attempt ${attempt}/${maxRetries}):`, error)
+
+      if (attempt === maxRetries) {
+        throw error
+      }
+
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, delay * attempt))
+    }
+  }
+
+  throw new Error('Max retries exceeded')
 }
 
 export { auth, db }

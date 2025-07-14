@@ -13,7 +13,7 @@ import {
   onSnapshot,
   Timestamp 
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { db, handleFirestoreError, retryFirestoreOperation } from '@/lib/firebase'
 
 // Types for Firebase data
 export interface FirebaseUser {
@@ -86,21 +86,28 @@ export const createUserProfile = async (userData: Omit<FirebaseUser, 'id' | 'cre
 
 export const getUserProfile = async (userId: string): Promise<FirebaseUser | null> => {
   if (!db) throw new Error('Firebase not configured')
-  
-  const docRef = doc(db, 'users', userId)
-  const docSnap = await getDoc(docRef)
-  
-  if (docSnap.exists()) {
-    const data = docSnap.data()
-    return {
-      id: docSnap.id,
-      ...data,
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
-    } as FirebaseUser
+
+  try {
+    const docSnap = await retryFirestoreOperation(async () => {
+      const docRef = doc(db, 'users', userId)
+      return await getDoc(docRef)
+    })
+
+    if (docSnap.exists()) {
+      const data = docSnap.data()
+      return {
+        id: docSnap.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+      } as FirebaseUser
+    }
+
+    return null
+  } catch (error) {
+    console.error('Error getting user profile:', error)
+    throw new Error(handleFirestoreError(error))
   }
-  
-  return null
 }
 
 export const updateUserProfile = async (userId: string, updates: Partial<FirebaseUser>) => {
@@ -128,20 +135,27 @@ export const saveGameProgress = async (progressData: Omit<GameProgress, 'id' | '
 
 export const getUserGameProgress = async (userId: string): Promise<GameProgress[]> => {
   if (!db) throw new Error('Firebase not configured')
-  
-  const q = query(
-    collection(db, 'gameProgress'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
-  )
-  
-  const querySnapshot = await getDocs(q)
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-    completedAt: doc.data().completedAt?.toDate?.()?.toISOString() || doc.data().completedAt,
-    createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
-  })) as GameProgress[]
+
+  try {
+    const querySnapshot = await retryFirestoreOperation(async () => {
+      const q = query(
+        collection(db, 'gameProgress'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      )
+      return await getDocs(q)
+    })
+
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      completedAt: doc.data().completedAt?.toDate?.()?.toISOString() || doc.data().completedAt,
+      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+    })) as GameProgress[]
+  } catch (error) {
+    console.error('Error getting user game progress:', error)
+    throw new Error(handleFirestoreError(error))
+  }
 }
 
 // Course Management
@@ -160,19 +174,26 @@ export const createCourse = async (courseData: Omit<Course, 'id' | 'createdAt' |
 
 export const getProfessorCourses = async (professorId: string): Promise<Course[]> => {
   if (!db) throw new Error('Firebase not configured')
-  
-  const q = query(
-    collection(db, 'courses'),
-    where('professorId', '==', professorId)
-  )
-  
-  const querySnapshot = await getDocs(q)
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-    updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt
-  })) as Course[]
+
+  try {
+    const querySnapshot = await retryFirestoreOperation(async () => {
+      const q = query(
+        collection(db, 'courses'),
+        where('professorId', '==', professorId)
+      )
+      return await getDocs(q)
+    })
+
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+      updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt
+    })) as Course[]
+  } catch (error) {
+    console.error('Error getting professor courses:', error)
+    throw new Error(handleFirestoreError(error))
+  }
 }
 
 // Analytics and Reporting
