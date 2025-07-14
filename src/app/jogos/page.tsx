@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRBAC } from '@/hooks/useRBAC'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import {
   BookOpen,
   Target,
@@ -112,6 +113,57 @@ const nutritionalGames = [
 export default function JogosNT600Page() {
   const [selectedGame, setSelectedGame] = useState<number | null>(null)
   const { user, loading } = useRBAC()
+  const { signOut } = useFirebaseAuth()
+
+  // Function to handle logout and redirect to login page
+  const handleLogoutAndRedirect = async () => {
+    try {
+      // Clear all authentication state
+      if (typeof window !== 'undefined') {
+        // Clear cookies
+        const cookiesToClear = [
+          'guest-mode',
+          'professor-guest-mode',
+          'auth-token',
+          'firebase-auth-token',
+          'user-role',
+          'user-session'
+        ]
+
+        cookiesToClear.forEach(cookieName => {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
+        })
+
+        // Clear localStorage and sessionStorage
+        const localStorageKeysToRemove = [
+          'guest-mode',
+          'professor-guest-mode',
+          'firebase-auth-token',
+          'user-data',
+          'auth-state'
+        ]
+
+        localStorageKeysToRemove.forEach(key => {
+          localStorage.removeItem(key)
+        })
+
+        sessionStorage.clear()
+      }
+
+      // Sign out from Firebase if user is authenticated
+      if (user && user.id !== 'guest-user' && user.id !== 'professor-guest-user') {
+        await signOut()
+      }
+
+      // Redirect to login page
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Even if logout fails, redirect to login page
+      window.location.href = '/'
+    }
+  }
 
   // Check if user is an authenticated professor (not guest)
   const isAuthenticatedProfessor = user?.role === 'professor' && user?.id !== 'professor-guest-user'
@@ -186,10 +238,14 @@ export default function JogosNT600Page() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Link href="/" className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
+                  <button
+                    onClick={handleLogoutAndRedirect}
+                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
+                    title="Sair e voltar ao login"
+                  >
                     <Home className="w-5 h-5" />
                     <span>Início</span>
-                  </Link>
+                  </button>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-900 font-medium">NT600 - Jogos Educacionais</span>
                 </div>
@@ -273,74 +329,7 @@ export default function JogosNT600Page() {
           </div>
         </motion.div>
 
-        {/* Learning Connection Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-12"
-        >
-          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
-            <CardHeader>
-              <div className="flex items-center">
-                <Target className="w-8 h-8 text-emerald-600 mr-4" />
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Como os Jogos Reforçam seu Aprendizado</h2>
-                  <p className="text-gray-600">Conexão direta entre teoria e prática em avaliação nutricional</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="bg-white p-5 rounded-lg border border-emerald-100">
-                  <div className="flex items-center mb-3">
-                    <Scale className="w-6 h-6 text-emerald-600 mr-3" />
-                    <h3 className="font-semibold text-gray-900">Teoria → Prática</h3>
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    Cada conceito teórico da disciplina é aplicado em <strong>casos reais brasileiros</strong>,
-                    permitindo que você pratique imediatamente o que aprendeu em aula.
-                  </p>
-                </div>
 
-                <div className="bg-white p-5 rounded-lg border border-emerald-100">
-                  <div className="flex items-center mb-3">
-                    <BarChart3 className="w-6 h-6 text-emerald-600 mr-3" />
-                    <h3 className="font-semibold text-gray-900">Dados Autênticos</h3>
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    Trabalhe com <strong>datasets reais</strong> do IBGE, Ministério da Saúde e pesquisas
-                    peer-reviewed, preparando você para a realidade profissional.
-                  </p>
-                </div>
-
-                <div className="bg-white p-5 rounded-lg border border-emerald-100">
-                  <div className="flex items-center mb-3">
-                    <TrendingUp className="w-6 h-6 text-emerald-600 mr-3" />
-                    <h3 className="font-semibold text-gray-900">Progresso Mensurável</h3>
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    Acompanhe seu <strong>desenvolvimento</strong> através de pontuações e feedback
-                    imediato, identificando áreas que precisam de mais estudo.
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-emerald-100 p-5 rounded-lg border-l-4 border-emerald-500">
-                <h3 className="text-lg font-semibold text-emerald-900 mb-3 flex items-center">
-                  <Lightbulb className="w-5 h-5 text-emerald-700 mr-2" />
-                  Metodologia Pedagógica Integrada
-                </h3>
-                <p className="text-emerald-800 leading-relaxed">
-                  Os jogos não substituem as aulas teóricas - eles <strong>complementam e reforçam</strong>
-                  o aprendizado. Cada exercício foi cuidadosamente alinhado com os objetivos da disciplina,
-                  utilizando a <strong>abordagem ultra-iniciante</strong> que assume zero conhecimento prévio
-                  e constrói o entendimento passo a passo com exemplos do cotidiano brasileiro.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
 
         {/* Student Progress Dashboard */}
         <motion.div
@@ -492,6 +481,75 @@ export default function JogosNT600Page() {
               </motion.div>
             ))}
           </div>
+        </motion.div>
+
+        {/* Learning Connection Card - Moved after games */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="mt-16 mb-12"
+        >
+          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+            <CardHeader>
+              <div className="flex items-center">
+                <Target className="w-8 h-8 text-emerald-600 mr-4" />
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Como os Jogos Reforçam seu Aprendizado</h2>
+                  <p className="text-gray-600">Conexão direta entre teoria e prática em avaliação nutricional</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="bg-white p-5 rounded-lg border border-emerald-100">
+                  <div className="flex items-center mb-3">
+                    <Scale className="w-6 h-6 text-emerald-600 mr-3" />
+                    <h3 className="font-semibold text-gray-900">Teoria → Prática</h3>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    Cada conceito teórico da disciplina é aplicado em <strong>casos reais brasileiros</strong>,
+                    permitindo que você pratique imediatamente o que aprendeu em aula.
+                  </p>
+                </div>
+
+                <div className="bg-white p-5 rounded-lg border border-emerald-100">
+                  <div className="flex items-center mb-3">
+                    <BarChart3 className="w-6 h-6 text-emerald-600 mr-3" />
+                    <h3 className="font-semibold text-gray-900">Dados Autênticos</h3>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    Trabalhe com <strong>datasets reais</strong> do IBGE, Ministério da Saúde e pesquisas
+                    peer-reviewed, preparando você para a realidade profissional.
+                  </p>
+                </div>
+
+                <div className="bg-white p-5 rounded-lg border border-emerald-100">
+                  <div className="flex items-center mb-3">
+                    <TrendingUp className="w-6 h-6 text-emerald-600 mr-3" />
+                    <h3 className="font-semibold text-gray-900">Progresso Mensurável</h3>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    Acompanhe seu <strong>desenvolvimento</strong> através de pontuações e feedback
+                    imediato, identificando áreas que precisam de mais estudo.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-emerald-100 p-5 rounded-lg border-l-4 border-emerald-500">
+                <h3 className="text-lg font-semibold text-emerald-900 mb-3 flex items-center">
+                  <Lightbulb className="w-5 h-5 text-emerald-700 mr-2" />
+                  Metodologia Pedagógica Integrada
+                </h3>
+                <p className="text-emerald-800 leading-relaxed">
+                  Os jogos não substituem as aulas teóricas - eles <strong>complementam e reforçam</strong>
+                  o aprendizado. Cada exercício foi cuidadosamente alinhado com os objetivos da disciplina,
+                  utilizando a <strong>abordagem ultra-iniciante</strong> que assume zero conhecimento prévio
+                  e constrói o entendimento passo a passo com exemplos do cotidiano brasileiro.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Innovation Highlights */}

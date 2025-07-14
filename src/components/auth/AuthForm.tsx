@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
+import { User, Gamepad2, ArrowLeft } from 'lucide-react'
 
 // Mock translation function
 const t = (key: string) => {
@@ -70,12 +71,13 @@ const signUpSchema = signInSchema.extend({
 })
 
 export function AuthForm() {
+  const [showLoginOptions, setShowLoginOptions] = useState(true)
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isGuest, setIsGuest] = useState(false)
   const [selectedRole, setSelectedRole] = useState<'student' | 'professor'>('student')
-  const { signIn, signUp, enableGuestMode } = useFirebaseAuth()
+  const { signIn, signInWithGoogle, signUp, enableGuestMode } = useFirebaseAuth()
 
   const {
     register,
@@ -155,6 +157,148 @@ export function AuthForm() {
     reset()
   }
 
+  const handleRoleSelection = (role: 'student' | 'professor') => {
+    setSelectedRole(role)
+    setShowLoginOptions(false)
+    setIsSignUp(false) // Start with login form
+  }
+
+  const backToOptions = () => {
+    setShowLoginOptions(true)
+    setIsSignUp(false)
+    setError('')
+    reset()
+  }
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const { data, error } = await signInWithGoogle(selectedRole)
+      if (error) throw new Error(error.message)
+
+      // Redirect based on role and whether it's a new user
+      if (data?.isNewUser) {
+        console.log('New Google user created:', data.profile)
+      }
+
+      // Redirect to appropriate dashboard
+      if (selectedRole === 'professor') {
+        window.location.href = '/professor'
+      } else {
+        window.location.href = '/jogos'
+      }
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Erro ao fazer login com Google')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Show role selection screen first
+  if (showLoginOptions) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <div className="text-center">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  AvaliaNutri
+                </h1>
+                <p className="text-gray-600">
+                  Plataforma Educacional de Avaliação Nutricional
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Escolha como deseja acessar a plataforma
+                </p>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {/* Professor Login Option */}
+              <Button
+                onClick={() => handleRoleSelection('professor')}
+                className="w-full h-16 text-left bg-blue-600 hover:bg-blue-700 text-white"
+                size="lg"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Entrar como Professor</div>
+                    <div className="text-sm text-blue-100">
+                      Acesso ao dashboard administrativo
+                    </div>
+                  </div>
+                </div>
+              </Button>
+
+              {/* Student Login Option */}
+              <Button
+                onClick={() => handleRoleSelection('student')}
+                className="w-full h-16 text-left bg-emerald-600 hover:bg-emerald-700 text-white"
+                size="lg"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                    <Gamepad2 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Entrar como Estudante</div>
+                    <div className="text-sm text-emerald-100">
+                      Acesso aos jogos educacionais
+                    </div>
+                  </div>
+                </div>
+              </Button>
+
+              {/* Guest Access Options */}
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">ou acesse sem cadastro</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleGuestAccess}
+                  >
+                    Continuar como Visitante (Estudante)
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="w-full bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                    onClick={handleProfessorGuestAccess}
+                  >
+                    Continuar como Professor Visitante
+                  </Button>
+
+                  <p className="text-center text-xs text-gray-500 mt-2">
+                    Acesso completo para demonstração - sem necessidade de cadastro
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <motion.div
@@ -165,13 +309,20 @@ export function AuthForm() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="text-center">
+              <button
+                onClick={backToOptions}
+                className="mb-4 text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center mx-auto"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Voltar às opções
+              </button>
               <h1 className="text-2xl font-bold text-gray-900">
-                {isSignUp ? t('auth.createAccount') : t('auth.welcomeBack')}
+                {isSignUp ? 'Criar Conta' : 'Entrar'} - {selectedRole === 'professor' ? 'Professor' : 'Estudante'}
               </h1>
               <p className="text-gray-600 mt-2">
                 {isSignUp
-                  ? t('auth.startYourJourney')
-                  : t('auth.signInToContinue')
+                  ? `Crie sua conta de ${selectedRole === 'professor' ? 'professor' : 'estudante'}`
+                  : `Entre com sua conta de ${selectedRole === 'professor' ? 'professor' : 'estudante'}`
                 }
               </p>
             </div>
@@ -301,8 +452,8 @@ export function AuthForm() {
               </Button>
             </form>
 
-            {/* Guest Access Option */}
-            <div className="mt-4">
+            {/* Google Sign In */}
+            <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300" />
@@ -312,25 +463,29 @@ export function AuthForm() {
                 </div>
               </div>
 
-              <Button
-                variant="outline"
-                className="w-full mt-4"
-                onClick={handleGuestAccess}
-              >
-                Continuar como Visitante (Estudante)
-              </Button>
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-3 border-gray-300 hover:bg-gray-50"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  {isSignUp ? 'Criar conta' : 'Entrar'} com Google
+                </Button>
 
-              <Button
-                variant="outline"
-                className="w-full mt-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                onClick={handleProfessorGuestAccess}
-              >
-                Continuar como Professor Visitante
-              </Button>
-
-              <p className="text-center text-xs text-gray-500 mt-2">
-                Acesso completo para demonstração - sem necessidade de cadastro
-              </p>
+                {selectedRole === 'student' && (
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    ⚠️ Estudantes devem usar email @dac.unicamp.br
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="mt-6 text-center space-y-3">
@@ -344,15 +499,17 @@ export function AuthForm() {
                 }
               </button>
 
-              <div className="border-t border-gray-200 pt-3">
-                <p className="text-xs text-gray-500 mb-2">Você é professor?</p>
-                <a
-                  href="/professor/registro"
-                  className="text-green-600 hover:text-green-700 text-sm font-medium"
-                >
-                  Cadastre-se como Professor
-                </a>
-              </div>
+              {selectedRole === 'professor' && (
+                <div className="border-t border-gray-200 pt-3">
+                  <p className="text-xs text-gray-500 mb-2">Precisa se cadastrar como professor?</p>
+                  <a
+                    href="/professor/registro"
+                    className="text-green-600 hover:text-green-700 text-sm font-medium"
+                  >
+                    Cadastre-se como Professor
+                  </a>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

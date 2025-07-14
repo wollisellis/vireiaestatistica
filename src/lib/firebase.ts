@@ -70,6 +70,7 @@ export interface User {
   achievements: string[]
   createdAt: string
   updatedAt: string
+  authProvider?: 'email' | 'google' // Track authentication method
 }
 
 export interface CollaborationRecord {

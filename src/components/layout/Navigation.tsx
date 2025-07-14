@@ -41,12 +41,59 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
     await signOut()
   }
 
+  const handleLogoClick = async () => {
+    // Clear all authentication state
+    if (typeof window !== 'undefined') {
+      // Clear cookies
+      const cookiesToClear = [
+        'guest-mode',
+        'professor-guest-mode',
+        'auth-token',
+        'firebase-auth-token',
+        'user-role',
+        'user-session'
+      ]
+
+      cookiesToClear.forEach(cookieName => {
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
+      })
+
+      // Clear localStorage and sessionStorage
+      const localStorageKeysToRemove = [
+        'guest-mode',
+        'professor-guest-mode',
+        'firebase-auth-token',
+        'user-data',
+        'auth-state'
+      ]
+
+      localStorageKeysToRemove.forEach(key => {
+        localStorage.removeItem(key)
+      })
+
+      sessionStorage.clear()
+    }
+
+    // Sign out from Firebase if user is authenticated
+    if (user && user.id !== 'guest-user' && user.id !== 'professor-guest-user') {
+      await signOut()
+    }
+
+    // Redirect to login page
+    window.location.href = '/'
+  }
+
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
+            <button
+              onClick={handleLogoClick}
+              className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
+              title="Sair e voltar ao login"
+            >
               <motion.div
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.5 }}
@@ -55,7 +102,7 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
                 <BarChart3 className="w-5 h-5 text-white" />
               </motion.div>
               <span className="text-xl font-bold text-gray-900">{t('academic.platformName')}</span>
-            </Link>
+            </button>
           </div>
 
           {user && (

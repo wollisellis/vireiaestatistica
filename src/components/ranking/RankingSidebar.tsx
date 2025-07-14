@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Trophy, 
@@ -12,7 +12,9 @@ import {
   Target,
   Star,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -26,10 +28,12 @@ interface RankingSidebarProps {
 }
 
 const RankingSidebar: React.FC<RankingSidebarProps> = ({ className = '' }) => {
-  const { 
-    progress, 
-    getRankingData, 
-    getCurrentRank, 
+  const [isPerformanceVisible, setIsPerformanceVisible] = useState(true)
+
+  const {
+    progress,
+    getRankingData,
+    getCurrentRank,
     getTopPerformers,
     calculateOverallPerformance 
   } = useStudentProgress()
@@ -76,12 +80,28 @@ const RankingSidebar: React.FC<RankingSidebarProps> = ({ className = '' }) => {
         {/* Current Student Performance */}
         <Card className="border-emerald-200 bg-emerald-50">
           <CardHeader className="pb-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <User className="w-5 h-5 text-emerald-600" />
-              Seu Desempenho
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <User className="w-5 h-5 text-emerald-600" />
+                Seu Desempenho
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsPerformanceVisible(!isPerformanceVisible)}
+                className="h-8 w-8 p-0 hover:bg-emerald-100"
+                title={isPerformanceVisible ? "Esconder desempenho" : "Mostrar desempenho"}
+              >
+                {isPerformanceVisible ? (
+                  <EyeOff className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <Eye className="w-4 h-4 text-emerald-600" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          {isPerformanceVisible && (
+            <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {getRankIcon(currentRank)}
@@ -117,7 +137,8 @@ const RankingSidebar: React.FC<RankingSidebarProps> = ({ className = '' }) => {
                 <span>Sequência de {progress.improvementStreak} melhorias!</span>
               </div>
             )}
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
 
         {/* Individual Game Scores */}

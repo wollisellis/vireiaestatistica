@@ -5,7 +5,9 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
-  User as FirebaseUser
+  User as FirebaseUser,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db, User, isFirebaseConfigured, generateAnonymousId } from '@/lib/firebase'
@@ -151,6 +153,84 @@ export function useFirebaseAuth() {
     }
   }
 
+  const signInWithGoogle = async (role: 'student' | 'professor' = 'student') => {
+    if (!auth || !db || !isFirebaseConfigured()) {
+      throw new Error('Firebase not configured')
+    }
+
+    try {
+      setLoading(true)
+
+      const provider = new GoogleAuthProvider()
+      provider.addScope('email')
+      provider.addScope('profile')
+
+      // Force account selection
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      })
+
+      const result = await signInWithPopup(auth, provider)
+      const firebaseUser = result.user
+      const email = firebaseUser.email!
+
+      // Validate email domain for students
+      if (role === 'student' && !email.endsWith('@dac.unicamp.br')) {
+        // Sign out the user since they don't meet the requirements
+        await firebaseSignOut(auth)
+        throw new Error('Estudantes devem usar email institucional @dac.unicamp.br')
+      }
+
+      // Check if user already exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+
+      if (!userDoc.exists()) {
+        // Create new user profile
+        const anonymousId = role === 'student' ? generateAnonymousId() : undefined
+
+        const userProfile: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email!,
+          fullName: firebaseUser.displayName || 'Usuário Google',
+          role,
+          anonymousId,
+          institutionId: 'unicamp',
+          totalScore: 0,
+          levelReached: 1,
+          gamesCompleted: 0,
+          collaborationHistory: [],
+          preferredPartners: [],
+          achievements: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          authProvider: 'google'
+        }
+
+        await setDoc(doc(db, 'users', firebaseUser.uid), {
+          ...userProfile,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        })
+
+        return { data: { user: firebaseUser, profile: userProfile, isNewUser: true }, error: null }
+      } else {
+        // Existing user - verify role matches
+        const existingProfile = userDoc.data() as User
+        if (existingProfile.role !== role) {
+          await firebaseSignOut(auth)
+          throw new Error(`Esta conta está registrada como ${existingProfile.role === 'student' ? 'estudante' : 'professor'}`)
+        }
+
+        return { data: { user: firebaseUser, profile: existingProfile, isNewUser: false }, error: null }
+      }
+    } catch (error: unknown) {
+      console.error('Google sign in error:', error)
+      return { data: null, error: { message: (error as Error).message } }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const signOut = async () => {
     try {
       await firebaseSignOut(auth)
@@ -225,6 +305,7 @@ export function useFirebaseAuth() {
     user,
     loading,
     signIn,
+    signInWithGoogle,
     signUp,
     signOut,
     enableGuestMode,
