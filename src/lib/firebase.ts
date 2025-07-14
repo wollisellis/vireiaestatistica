@@ -4,23 +4,33 @@ import { getFirestore, Firestore } from 'firebase/firestore'
 
 // Helper function to check if Firebase is configured
 export const isFirebaseConfigured = (): boolean => {
-  const isConfigured = !!(
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_APP_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'demo-api-key' &&
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'demo-project' &&
-    !process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.includes('Demo')
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
+  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+  const messagingSenderId = process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+
+  // Verificar se todas as variáveis existem
+  const allVariablesExist = !!(apiKey && authDomain && projectId && storageBucket && messagingSenderId && appId)
+
+  // Verificar se não são valores demo
+  const isNotDemo = !!(
+    apiKey !== 'demo-api-key' &&
+    projectId !== 'demo-project' &&
+    !apiKey?.includes('Demo') &&
+    !apiKey?.includes('demo') &&
+    !projectId?.includes('demo')
   )
 
+  const isConfigured = allVariablesExist && isNotDemo
+
   console.log('🔥 Firebase Configuration Check:', {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?
-      `${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 10)}...` : 'MISSING',
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING',
+    authDomain,
+    projectId,
+    allVariablesExist,
+    isNotDemo,
     isConfigured,
     environment: process.env.NODE_ENV
   })
