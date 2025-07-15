@@ -9,6 +9,8 @@ import { useRBAC } from '@/hooks/useRBAC'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { HintSystem, useHints } from '@/components/ui/HintSystem'
 import { getGameHints } from '@/lib/gameHints'
+import { GameContentProtection } from '@/components/security'
+import { useModuleAccess } from '@/hooks/useModuleAccess'
 import Link from 'next/link'
 import {
   NutritionalGame1Anthropometric,
@@ -24,9 +26,45 @@ export default function NutritionalGamePage() {
   const { user: firebaseUser } = useFirebaseAuth()
   const { user, loading } = useRBAC(firebaseUser?.uid)
   const { markHintViewed, hintStats } = useHints(gameId)
+  const { isModuleLocked, canAccessModule } = useModuleAccess()
 
   // Get hints for this game
   const gameHints = getGameHints(gameId)
+
+  // Game titles for protection
+  const gameTitles = {
+    1: 'Indicadores Antropométricos',
+    2: 'Indicadores Clínicos e Bioquímicos',
+    3: 'Fatores Demográficos e Socioeconômicos',
+    4: 'Curvas de Crescimento Interativas'
+  }
+
+  // Check if module is locked
+  if (isModuleLocked(gameId)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-yellow-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            Módulo Bloqueado
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Este módulo está temporariamente bloqueado. Entre em contato com seu professor para mais informações.
+          </p>
+          <div className="space-y-3">
+            <Link href="/jogos">
+              <Button className="w-full">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar aos Jogos
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const handleBack = () => {
     router.push('/jogos')
@@ -132,18 +170,26 @@ export default function NutritionalGamePage() {
 
   return (
     <StudentProgressProvider>
-      {renderGame()}
+      <GameContentProtection
+        gameId={gameId}
+        gameTitle={gameTitles[gameId as keyof typeof gameTitles] || `Jogo ${gameId}`}
+        enableScreenshotProtection={true}
+        enableCopyProtection={true}
+        enableDevToolsProtection={true}
+      >
+        {renderGame()}
 
-      {/* Hint System */}
-      {gameHints.length > 0 && (
-        <HintSystem
-          hints={gameHints}
-          gameId={gameId}
-          onHintViewed={markHintViewed}
-          showInitialHint={true}
-          position="bottom"
-        />
-      )}
+        {/* Hint System */}
+        {gameHints.length > 0 && (
+          <HintSystem
+            hints={gameHints}
+            gameId={gameId}
+            onHintViewed={markHintViewed}
+            showInitialHint={true}
+            position="bottom"
+          />
+        )}
+      </GameContentProtection>
     </StudentProgressProvider>
   )
 }
