@@ -245,6 +245,7 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
       // Update progress
       updateGameScore(newGameScore)
       setGameScore(newGameScore)
+      setIsCompleted(true)
       setShowScoreFeedback(true)
     }
   }
