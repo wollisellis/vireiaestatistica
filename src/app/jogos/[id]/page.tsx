@@ -6,6 +6,7 @@ import { ArrowLeft, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { StudentProgressProvider } from '@/contexts/StudentProgressContext'
 import { useRBAC } from '@/hooks/useRBAC'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { HintSystem, useHints } from '@/components/ui/HintSystem'
 import { getGameHints } from '@/lib/gameHints'
 import Link from 'next/link'
@@ -20,7 +21,8 @@ export default function NutritionalGamePage() {
   const params = useParams()
   const router = useRouter()
   const gameId = parseInt(params.id as string)
-  const { user, loading } = useRBAC()
+  const { user: firebaseUser } = useFirebaseAuth()
+  const { user, loading } = useRBAC(firebaseUser?.uid)
   const { markHintViewed, hintStats } = useHints(gameId)
 
   // Get hints for this game
@@ -48,7 +50,8 @@ export default function NutritionalGamePage() {
   }
 
   // Show access denied if user is not authenticated
-  if (!user) {
+  // Allow access if Firebase user is authenticated even if profile is loading
+  if (!user && !firebaseUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
