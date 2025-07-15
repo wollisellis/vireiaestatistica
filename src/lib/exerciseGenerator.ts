@@ -1,5 +1,5 @@
-// Exercise Generator for VireiEstatística Platform
-// Generates minimum 5 exercises for each statistical concept
+// Exercise Generator for AvaliaNutri Platform
+// Generates minimum 5 exercises for each nutritional assessment concept
 
 import { gameDefinitions } from './gameData'
 import { getGameContent, generateDefaultContent } from './gameSpecificContent'

@@ -39,7 +39,7 @@ const helpTopics: HelpTopic[] = [
     id: 'getting-started',
     title: 'Primeiros Passos',
     icon: <Play className="w-5 h-5" />,
-    content: 'Bem-vindo ao VireiEstatística! Esta plataforma foi criada para ensinar biostatística de forma interativa e divertida.',
+    content: 'Bem-vindo ao AvaliaNutri! Esta plataforma foi criada para ensinar avaliação nutricional de forma interativa e divertida.',
     subtopics: [
       {
         id: 'navigation',

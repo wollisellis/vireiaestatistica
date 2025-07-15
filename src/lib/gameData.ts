@@ -1,4 +1,4 @@
-// Game definitions and datasets for VireiEstatística
+// Game definitions and datasets for AvaliaNutri
 export interface GameDefinition {
   id: number
   title: string

@@ -1,11 +1,11 @@
-// Brazilian Portuguese translations for VireiEstatística
+// Brazilian Portuguese translations for AvaliaNutri
 export const translations = {
   // Authentication
   auth: {
     welcomeBack: 'Bem-vindo de volta',
     createAccount: 'Criar Conta',
     signInToContinue: 'Faça login para continuar aprendendo',
-    startYourJourney: 'Inicie sua jornada de aprendizado em bioestatística',
+    startYourJourney: 'Inicie sua jornada de aprendizado em avaliação nutricional',
     fullName: 'Nome Completo',
     email: 'E-mail',
     password: 'Senha',
@@ -58,7 +58,7 @@ export const translations = {
   // Dashboard
   dashboard: {
     welcomeBack: 'Bem-vindo de volta',
-    readyToContinue: 'Pronto para continuar sua jornada em bioestatística?',
+    readyToContinue: 'Pronto para continuar sua jornada em avaliação nutricional?',
     totalScore: 'Pontuação Total',
     levelReached: 'Nível Alcançado',
     gamesCompleted: 'Jogos Concluídos',
@@ -166,12 +166,12 @@ export const translations = {
 
   // Academic context
   academic: {
-    platformName: 'VireiEstatística',
-    subtitle: 'Plataforma Interativa de Aprendizado em Bioestatística',
-    description: 'Aprenda bioestatística através de jogos interativos e exemplos do mundo real da pesquisa em nutrição e ciências do esporte',
+    platformName: process.env.NEXT_PUBLIC_APP_NAME || 'AvaliaNutri',
+    subtitle: 'Plataforma Educacional de Avaliação Nutricional',
+    description: 'Aprenda avaliação nutricional através de jogos interativos com dados reais brasileiros e abordagem ultra-iniciante',
     author: 'Ellis Wollis Malta Abhulime',
     institution: 'Mestrando em Nutrição, Esporte e Metabolismo - Unicamp',
-    course: 'EN004 - Bioestatística',
+    course: 'NT600 - Avaliação Nutricional',
   },
 
   // Progress and achievements

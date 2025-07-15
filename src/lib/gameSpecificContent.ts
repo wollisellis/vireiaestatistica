@@ -1,4 +1,4 @@
-// Game-specific educational content and exercises for VireiEstatística
+// Game-specific educational content and exercises for AvaliaNutri
 // Ultra-beginner approach with Brazilian examples and daily life analogies
 
 import { Coffee, Heart, Calculator, TrendingUp, BarChart3, Users, Target, Brain } from 'lucide-react'
