@@ -512,8 +512,8 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
                   <Home className="w-4 h-4 mr-2" />
                   Voltar aos Jogos
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setCurrentExercise(0)
                     setSelectedAnswer(null)
@@ -521,6 +521,12 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
                     setScore(0)
                     setTimeElapsed(0)
                     setIsCompleted(false)
+                    setShowInteractiveExercises(false)
+                    setCurrentInteractiveExercise(0)
+                    setInteractiveScore(0)
+                    setShowScoreFeedback(false)
+                    setGameScore(null)
+                    setPreviousRank(undefined)
                     setShowEducation(true)
                   }}
                   className="w-full"
@@ -532,6 +538,71 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
             </CardContent>
           </Card>
         </motion.div>
+      </div>
+    )
+  }
+
+  // Interactive Exercises Section
+  if (showInteractiveExercises && !isCompleted) {
+    const currentInteractiveEx = interactiveExercises[currentInteractiveExercise]
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="outline"
+                  onClick={onBack}
+                  className="text-emerald-700 border-emerald-300"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold text-emerald-900">
+                    Jogo 1: Indicadores Antropométricos - Exercícios Interativos
+                  </h1>
+                  <p className="text-emerald-700">
+                    Exercício {currentInteractiveExercise + 1} de {interactiveExercises.length} - {currentInteractiveEx.title}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-6">
+                <div className="text-right">
+                  <div className="text-sm text-emerald-600">Pontuação Total</div>
+                  <div className="text-xl font-bold text-emerald-900">
+                    {score + interactiveScore}/{maxScore}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-emerald-600">Tempo</div>
+                  <div className="text-xl font-bold text-emerald-900 flex items-center">
+                    <Clock className="w-5 h-5 mr-1" />
+                    {formatTime(timeElapsed)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Interactive Exercise Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <InteractiveGrowthCurveChart
+            exerciseId={currentInteractiveEx.id}
+            chartType={currentInteractiveEx.chartType}
+            gender={currentInteractiveEx.gender}
+            targetChild={currentInteractiveEx.targetChild}
+            interactionType={currentInteractiveEx.type}
+            onComplete={handleInteractiveExerciseComplete}
+            maxAttempts={currentInteractiveEx.maxAttempts}
+            targetPercentile={currentInteractiveEx.targetPercentile}
+          />
+        </div>
       </div>
     )
   }
@@ -718,69 +789,4 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
       </div>
     </div>
   )
-
-  // Interactive Exercises Section
-  if (showInteractiveExercises && !isCompleted) {
-    const currentInteractiveEx = interactiveExercises[currentInteractiveExercise]
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="outline"
-                  onClick={onBack}
-                  className="text-emerald-700 border-emerald-300"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Voltar
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold text-emerald-900">
-                    Jogo 1: Indicadores Antropométricos - Exercícios Interativos
-                  </h1>
-                  <p className="text-emerald-700">
-                    Exercício {currentInteractiveExercise + 1} de {interactiveExercises.length} - {currentInteractiveEx.title}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-6">
-                <div className="text-right">
-                  <div className="text-sm text-emerald-600">Pontuação Total</div>
-                  <div className="text-xl font-bold text-emerald-900">
-                    {score + interactiveScore}/{maxScore}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-emerald-600">Tempo</div>
-                  <div className="text-xl font-bold text-emerald-900 flex items-center">
-                    <Clock className="w-5 h-5 mr-1" />
-                    {formatTime(timeElapsed)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Interactive Exercise Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <InteractiveGrowthCurveChart
-            exerciseId={currentInteractiveEx.id}
-            chartType={currentInteractiveEx.chartType}
-            gender={currentInteractiveEx.gender}
-            targetChild={currentInteractiveEx.targetChild}
-            interactionType={currentInteractiveEx.type}
-            onComplete={handleInteractiveExerciseComplete}
-            maxAttempts={currentInteractiveEx.maxAttempts}
-            targetPercentile={currentInteractiveEx.targetPercentile}
-          />
-        </div>
-      </div>
-    )
-  }
 }
