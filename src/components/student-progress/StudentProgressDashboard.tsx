@@ -17,6 +17,8 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useStudentProgress, achievements, formatTime } from '@/contexts/StudentProgressContext'
+import { useRBAC } from '@/hooks/useRBAC'
+import { AnonymousIdBadge } from '@/components/ui/AnonymousIdBadge'
 
 interface StudentProgressDashboardProps {
   compact?: boolean
@@ -24,6 +26,7 @@ interface StudentProgressDashboardProps {
 
 export function StudentProgressDashboard({ compact = false }: StudentProgressDashboardProps) {
   const { progress, resetProgress, calculateOverallPerformance } = useStudentProgress()
+  const { user } = useRBAC()
   const performance = calculateOverallPerformance()
 
   const getPerformanceColor = (color: string) => {
@@ -46,9 +49,18 @@ export function StudentProgressDashboard({ compact = false }: StudentProgressDas
                 <Trophy className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Seu Progresso</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold text-gray-900">Seu Progresso</h3>
+                  {user?.anonymousId && (
+                    <AnonymousIdBadge
+                      anonymousId={user.anonymousId}
+                      size="sm"
+                      variant="student"
+                    />
+                  )}
+                </div>
                 <p className="text-sm text-gray-600">
-                  {progress.gamesCompleted}/{progress.totalGames} jogos • {progress.averageScore.toFixed(0)}% média
+                  {progress.gamesCompleted}/{progress.gamesCompleted + 1} jogos • {progress.averageScore.toFixed(0)}% média
                 </p>
               </div>
             </div>

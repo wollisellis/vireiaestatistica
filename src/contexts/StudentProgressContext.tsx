@@ -58,7 +58,7 @@ interface StudentProgressContextType {
   newAchievements: string[]
   clearNewAchievements: () => void
   calculateOverallPerformance: () => {
-    performance: 'Excelente' | 'Bom' | 'Regular' | 'Precisa Melhorar'
+    performance: 'Excelente' | 'Bom' | 'Regular' | 'Precisa Melhorar' | 'Em Progresso'
     color: string
     recommendation: string
   }
@@ -71,8 +71,8 @@ interface StudentProgressContextType {
 const StudentProgressContext = createContext<StudentProgressContextType | undefined>(undefined)
 
 const generateStudentName = () => {
-  const names = ['Ana Silva', 'João Santos', 'Maria Oliveira', 'Pedro Costa', 'Carla Souza', 'Lucas Lima', 'Fernanda Alves', 'Rafael Pereira']
-  return names[Math.floor(Math.random() * names.length)]
+  // Return generic name instead of fake names
+  return 'Estudante'
 }
 
 const getInitialProgress = (): StudentProgress => {
@@ -332,11 +332,11 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
 
   const calculateOverallPerformance = () => {
     const { averageScore, gamesCompleted } = progress
-    
+
     if (gamesCompleted === 0) {
       return {
-        performance: 'Precisa Melhorar' as const,
-        color: 'gray',
+        performance: 'Em Progresso' as const,
+        color: 'blue',
         recommendation: 'Comece jogando para avaliar seu progresso!'
       }
     }
@@ -368,31 +368,14 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
     }
   }
 
-  // Generate mock ranking data for demonstration
-  const generateMockRankingData = (): RankingEntry[] => {
-    const mockStudents = [
-      { name: 'Ana Silva', score: 185, games: 2, avg: 92.5 },
-      { name: 'João Santos', score: 178, games: 2, avg: 89.0 },
-      { name: 'Maria Oliveira', score: 172, games: 2, avg: 86.0 },
-      { name: 'Pedro Costa', score: 165, games: 2, avg: 82.5 },
-      { name: 'Carla Souza', score: 158, games: 2, avg: 79.0 },
-      { name: 'Lucas Lima', score: 145, games: 2, avg: 72.5 },
-      { name: 'Fernanda Alves', score: 138, games: 2, avg: 69.0 },
-      { name: 'Rafael Pereira', score: 125, games: 1, avg: 62.5 }
-    ]
-
-    return mockStudents.map((student, index) => ({
-      studentId: `mock-${index}`,
-      studentName: student.name,
-      rankingScore: student.score,
-      gamesCompleted: student.games,
-      averageScore: student.avg,
-      lastActivity: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000) // Fixed calculation for SSR consistency
-    }))
+  // Generate minimal mock ranking data only if no real data exists
+  const generateMinimalMockData = (): RankingEntry[] => {
+    // Only return empty array - no fake students
+    return []
   }
 
   const getRankingData = (): RankingEntry[] => {
-    const mockData = generateMockRankingData()
+    // Only include current student - no fake data
     const currentStudent: RankingEntry = {
       studentId: progress.studentId,
       studentName: progress.studentName,
@@ -402,8 +385,12 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
       lastActivity: progress.lastActivity
     }
 
-    const allStudents = [...mockData, currentStudent]
-    return allStudents.sort((a, b) => b.rankingScore - a.rankingScore)
+    // Return only current student if they have played games
+    if (progress.gamesCompleted > 0) {
+      return [currentStudent]
+    }
+
+    return []
   }
 
   const getCurrentRank = (): number => {
