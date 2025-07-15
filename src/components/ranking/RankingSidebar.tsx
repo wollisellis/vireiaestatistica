@@ -20,7 +20,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Progress } from '@/components/ui/Progress'
+import { AnonymousIdBadge } from '@/components/ui/AnonymousIdBadge'
 import { useStudentProgress } from '@/contexts/StudentProgressContext'
+import { useRBAC } from '@/hooks/useRBAC'
 import type { RankingEntry } from '@/contexts/StudentProgressContext'
 
 interface RankingSidebarProps {
@@ -28,6 +30,7 @@ interface RankingSidebarProps {
 }
 
 const RankingSidebar: React.FC<RankingSidebarProps> = ({ className = '' }) => {
+  const { user } = useRBAC()
   const [isPerformanceVisible, setIsPerformanceVisible] = useState(true)
 
   const {
@@ -35,7 +38,7 @@ const RankingSidebar: React.FC<RankingSidebarProps> = ({ className = '' }) => {
     getRankingData,
     getCurrentRank,
     getTopPerformers,
-    calculateOverallPerformance 
+    calculateOverallPerformance
   } = useStudentProgress()
 
   const currentRank = getCurrentRank()
@@ -81,10 +84,19 @@ const RankingSidebar: React.FC<RankingSidebarProps> = ({ className = '' }) => {
         <Card className="border-emerald-200 bg-emerald-50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <User className="w-5 h-5 text-emerald-600" />
-                Seu Desempenho
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <User className="w-5 h-5 text-emerald-600" />
+                  Seu Desempenho
+                </h3>
+                {user?.anonymousId && (
+                  <AnonymousIdBadge
+                    anonymousId={user.anonymousId}
+                    size="sm"
+                    variant="student"
+                  />
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="sm"

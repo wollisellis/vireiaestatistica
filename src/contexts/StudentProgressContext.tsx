@@ -331,7 +331,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
   }
 
   const calculateOverallPerformance = () => {
-    const { averageScore, gamesCompleted } = progress
+    const { averageScore, gamesCompleted, totalScore } = progress
 
     if (gamesCompleted === 0) {
       return {
@@ -340,7 +340,16 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
         recommendation: 'Comece jogando para avaliar seu progresso!'
       }
     }
-    
+
+    // For students who have completed few games but have good scores, show "Em Progresso"
+    if (gamesCompleted === 1 && totalScore >= 70) {
+      return {
+        performance: 'Em Progresso' as const,
+        color: 'blue',
+        recommendation: 'Bom início! Continue jogando para melhorar sua classificação.'
+      }
+    }
+
     if (averageScore >= 85) {
       return {
         performance: 'Excelente' as const,
@@ -360,6 +369,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
         recommendation: 'Revise o conteúdo teórico e pratique mais os exercícios.'
       }
     } else {
+      // Only show "Precisa Melhorar" for students with consistently low scores
       return {
         performance: 'Precisa Melhorar' as const,
         color: 'red',

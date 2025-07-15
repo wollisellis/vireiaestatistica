@@ -147,7 +147,7 @@ export function StudentDashboard() {
       moduleProgress,
       achievements,
       rankingPosition: progress.currentRank,
-      totalStudents: 45 // TODO: Get real total from Firebase
+      totalStudents: progress.currentRank > 0 ? Math.max(progress.currentRank, 1) : 1 // Show at least current rank or 1
     }
 
     const nextStepsData: NextStep[] = [
