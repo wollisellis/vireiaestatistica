@@ -29,6 +29,15 @@ export function StudentProgressDashboard({ compact = false }: StudentProgressDas
   const { user } = useRBAC()
   const performance = calculateOverallPerformance()
 
+  // Calculate available games (unlocked games only)
+  const getAvailableGames = () => {
+    // Game 1 is always available
+    // Game 2 unlocks after completing Game 1
+    // Game 3 unlocks after completing Game 2
+    // Game 4 unlocks after completing Game 3
+    return Math.min(progress.gamesCompleted + 1, progress.totalGames)
+  }
+
   const getPerformanceColor = (color: string) => {
     switch (color) {
       case 'green': return 'bg-green-100 text-green-800 border-green-200'
@@ -60,7 +69,7 @@ export function StudentProgressDashboard({ compact = false }: StudentProgressDas
                   )}
                 </div>
                 <p className="text-sm text-gray-600">
-                  {progress.gamesCompleted}/{progress.gamesCompleted + 1} jogos • {progress.averageScore.toFixed(0)}% média
+                  {progress.gamesCompleted}/{getAvailableGames()} jogos • {progress.averageScore.toFixed(0)}% média
                 </p>
               </div>
             </div>

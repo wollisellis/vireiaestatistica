@@ -138,20 +138,37 @@ export const getUserGameProgress = async (userId: string): Promise<GameProgress[
 
   try {
     const querySnapshot = await retryFirestoreOperation(async () => {
-      const q = query(
-        collection(db, 'gameProgress'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      )
-      return await getDocs(q)
+      try {
+        // Try with orderBy first (requires index)
+        const q = query(
+          collection(db, 'gameProgress'),
+          where('userId', '==', userId),
+          orderBy('createdAt', 'desc')
+        )
+        return await getDocs(q)
+      } catch (indexError: any) {
+        // If index error, fallback to simple query without orderBy
+        if (indexError.code === 'failed-precondition' || indexError.message?.includes('index')) {
+          console.warn('⚠️ Firestore index not available, using fallback query')
+          const fallbackQuery = query(
+            collection(db, 'gameProgress'),
+            where('userId', '==', userId)
+          )
+          return await getDocs(fallbackQuery)
+        }
+        throw indexError
+      }
     })
 
-    return querySnapshot.docs.map(doc => ({
+    const results = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       completedAt: doc.data().completedAt?.toDate?.()?.toISOString() || doc.data().completedAt,
       createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
     })) as GameProgress[]
+
+    // Sort manually if we used fallback query
+    return results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   } catch (error) {
     console.error('Error getting user game progress:', error)
     throw new Error(handleFirestoreError(error))
@@ -254,23 +271,58 @@ const getModuleName = (moduleId: number): string => {
 // Real-time data subscriptions
 export const subscribeToUserProgress = (userId: string, callback: (progress: GameProgress[]) => void) => {
   if (!db) throw new Error('Firebase not configured')
-  
-  const q = query(
-    collection(db, 'gameProgress'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
-  )
-  
-  return onSnapshot(q, (querySnapshot) => {
-    const progress = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      completedAt: doc.data().completedAt?.toDate?.()?.toISOString() || doc.data().completedAt,
-      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
-    })) as GameProgress[]
-    
-    callback(progress)
-  })
+
+  try {
+    // Try with orderBy first (requires index)
+    const q = query(
+      collection(db, 'gameProgress'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    )
+
+    return onSnapshot(q, (querySnapshot) => {
+      const progress = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        completedAt: doc.data().completedAt?.toDate?.()?.toISOString() || doc.data().completedAt,
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+      })) as GameProgress[]
+
+      callback(progress)
+    }, (error) => {
+      // If index error, fallback to simple query
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.warn('⚠️ Firestore index not available for subscription, using fallback')
+        const fallbackQuery = query(
+          collection(db, 'gameProgress'),
+          where('userId', '==', userId)
+        )
+
+        return onSnapshot(fallbackQuery, (querySnapshot) => {
+          const progress = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            completedAt: doc.data().completedAt?.toDate?.()?.toISOString() || doc.data().completedAt,
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+          })) as GameProgress[]
+
+          // Sort manually since we can't use orderBy
+          const sortedProgress = progress.sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+
+          callback(sortedProgress)
+        })
+      } else {
+        console.error('Subscription error:', error)
+        callback([]) // Return empty array on error
+      }
+    })
+  } catch (error) {
+    console.error('Error setting up subscription:', error)
+    // Return a dummy unsubscribe function
+    return () => {}
+  }
 }
 
 // Enrollment functions
