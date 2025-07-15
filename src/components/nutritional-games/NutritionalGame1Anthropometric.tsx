@@ -224,20 +224,17 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
       // All exercises completed
       const finalScore = score + interactiveScore + exerciseScore
 
-      // Calculate exercises completed correctly (based on score)
-      const correctExercises = Math.round((finalScore / maxScore) * totalExercises)
-
       // Store previous rank for comparison
       setPreviousRank(getCurrentRank())
 
-      // Create game score object
+      // Create game score object - all exercises were completed since we reached this point
       const newGameScore = {
         gameId: 1,
         score: finalScore,
         maxScore: maxScore,
         timeElapsed: timeElapsed,
         completedAt: new Date(),
-        exercisesCompleted: correctExercises,
+        exercisesCompleted: totalExercises, // All exercises were completed
         totalExercises: totalExercises,
         difficulty: 'Variada'
       }
@@ -462,55 +459,85 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
           }}
           onContinue={() => {
             setShowScoreFeedback(false)
-            setIsCompleted(true)
+            // Don't call onComplete() here - let user choose in completion screen
           }}
         />
       </div>
     )
   }
 
-  if (isCompleted) {
+  if (isCompleted && !showScoreFeedback) {
+    const finalScore = score + interactiveScore
+    const percentage = Math.round((finalScore / maxScore) * 100)
+    const currentRank = getCurrentRank()
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="max-w-2xl mx-auto p-8"
+          className="max-w-3xl mx-auto"
         >
           <Card className="text-center">
             <CardContent className="p-8">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
+              <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-12 h-12 text-emerald-600" />
               </div>
-              
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Parabéns! Jogo Concluído
+
+              <h2 className="text-4xl font-bold text-emerald-900 mb-2">
+                🎉 Parabéns!
               </h2>
-              
-              <p className="text-lg text-gray-600 mb-6">
-                Você completou com sucesso o jogo de Indicadores Antropométricos
+
+              <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                Jogo 1: Indicadores Antropométricos Concluído
+              </h3>
+
+              <p className="text-lg text-gray-600 mb-8">
+                Você completou com sucesso todos os {totalExercises} exercícios!
               </p>
-              
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{score}</div>
-                  <div className="text-sm text-gray-600">Pontuação</div>
+
+              {/* Score Summary */}
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-6 rounded-xl mb-8">
+                <div className="text-5xl font-bold text-emerald-600 mb-2">
+                  {finalScore}/{maxScore}
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{formatTime(timeElapsed)}</div>
-                  <div className="text-sm text-gray-600">Tempo</div>
+                <div className="text-xl text-emerald-700 mb-4">
+                  {percentage}% de aproveitamento
+                </div>
+                <div className="text-sm text-emerald-600">
+                  {percentage >= 90 ? '🏆 Desempenho Excelente!' :
+                   percentage >= 75 ? '⭐ Bom Desempenho!' :
+                   percentage >= 60 ? '👍 Desempenho Regular' :
+                   '📚 Continue Praticando!'}
+                </div>
+              </div>
+
+              {/* Detailed Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{formatTime(timeElapsed)}</div>
+                  <div className="text-sm text-gray-600">Tempo Total</div>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{exercises.length}</div>
-                  <div className="text-sm text-gray-600">Exercícios</div>
+                  <div className="text-2xl font-bold text-purple-600">#{currentRank}</div>
+                  <div className="text-sm text-gray-600">Posição Atual</div>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{exercises.length}</div>
+                  <div className="text-sm text-gray-600">Exercícios Tradicionais</div>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">{interactiveExercises.length}</div>
+                  <div className="text-sm text-gray-600">Exercícios Interativos</div>
                 </div>
               </div>
-              
+
+              {/* Action Buttons */}
               <div className="space-y-3">
-                <Button onClick={onComplete} size="lg" className="w-full">
+                <Button onClick={onComplete} size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700">
                   <Home className="w-4 h-4 mr-2" />
-                  Voltar aos Jogos
+                  Voltar ao Dashboard de Jogos
                 </Button>
                 <Button
                   variant="outline"
@@ -529,11 +556,15 @@ export function NutritionalGame1Anthropometric({ onBack, onComplete }: Nutrition
                     setPreviousRank(undefined)
                     setShowEducation(true)
                   }}
-                  className="w-full"
+                  className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Jogar Novamente
                 </Button>
+              </div>
+
+              <div className="mt-6 text-sm text-gray-500">
+                💡 Sua pontuação foi automaticamente salva no sistema de ranking
               </div>
             </CardContent>
           </Card>

@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { evaluateAchievements, calculateAchievementPoints } from '@/lib/achievementSystem'
 import { useAchievementNotifications } from '@/components/achievements/AchievementNotification'
+import { LeaderboardService } from '@/lib/leaderboardService'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 
 export interface GameScore {
   gameId: number
@@ -145,6 +147,8 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
   })
   const [newAchievements, setNewAchievements] = useState<string[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
+  const { user } = useFirebaseAuth()
+  const leaderboardService = new LeaderboardService()
 
   // Load progress from localStorage on mount (skip for guest mode)
   useEffect(() => {
@@ -285,7 +289,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
         setNewAchievements(earnedAchievements)
       }
 
-      return {
+      const updatedProgress = {
         ...prev,
         totalScore,
         totalPossibleScore,
@@ -298,6 +302,22 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
         rankingScore,
         improvementStreak
       }
+
+      // Save to Firebase leaderboard if user is authenticated
+      if (user && user.uid && user.uid !== 'guest-user' && user.uid !== 'professor-guest-user') {
+        const anonymousId = user.anonymousId || `#${Math.floor(Math.random() * 9000) + 1000}`
+        leaderboardService.updateUserScore(
+          user.uid,
+          anonymousId,
+          rankingScore,
+          gamesCompleted,
+          averageScore
+        ).catch(error => {
+          console.error('Failed to update leaderboard:', error)
+        })
+      }
+
+      return updatedProgress
     })
   }
 
