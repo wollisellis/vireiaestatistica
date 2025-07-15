@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/Button'
 import { useRBAC } from '@/hooks/useRBAC'
 import { useStudentProgress } from '@/contexts/StudentProgressContext'
 import { useFirebaseDataWithFallback } from '@/contexts/FirebaseDataContext'
+import { getPersonalizedGreeting, extractFirstNameFromEmail } from '@/lib/firebase'
+import { PersonalizedGreeting } from '@/components/ui/AnonymousIdBadge'
 
 interface PersonalProgress {
   overallScore: number
@@ -290,9 +292,14 @@ export function StudentDashboard() {
                 Meu Painel de Aprendizagem
               </h1>
               <div className="flex items-center gap-4">
-                <p className="text-gray-600">
-                  Olá, {user.fullName}! • ID: {user.anonymousId} • NT600 - Avaliação Nutricional
-                </p>
+                <PersonalizedGreeting
+                  name={extractFirstNameFromEmail(user.email) || user.fullName}
+                  role="student"
+                  anonymousId={user.anonymousId}
+                  showId={true}
+                />
+                <span className="text-gray-500">•</span>
+                <span className="text-gray-600">NT600 - Avaliação Nutricional</span>
                 <div className="flex items-center gap-2 text-sm">
                   {isUsingRealData ? (
                     <>

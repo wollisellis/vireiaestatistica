@@ -322,7 +322,38 @@ export const RBAC_PERMISSIONS = {
 
 // Utility functions
 export const generateAnonymousId = (): string => {
-  return `Aluno${Math.floor(Math.random() * 90000) + 10000}`
+  // Generate exactly 4 digits (1000-9999)
+  const fourDigitNumber = Math.floor(Math.random() * 9000) + 1000
+  return `${fourDigitNumber}`
+}
+
+// Extract first name from email for personalized greetings
+export const extractFirstNameFromEmail = (email: string): string => {
+  try {
+    // Extract the part before @ and before any dots
+    const localPart = email.split('@')[0]
+
+    // Handle common patterns like "nome.sobrenome" or "nome_sobrenome"
+    const firstName = localPart.split(/[._-]/)[0]
+
+    // Capitalize first letter
+    return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()
+  } catch {
+    return 'Usuário'
+  }
+}
+
+// Get personalized greeting based on time of day
+export const getPersonalizedGreeting = (name: string): string => {
+  const hour = new Date().getHours()
+
+  if (hour < 12) {
+    return `Bom dia, ${name}!`
+  } else if (hour < 18) {
+    return `Boa tarde, ${name}!`
+  } else {
+    return `Boa noite, ${name}!`
+  }
 }
 
 export const hasPermission = (

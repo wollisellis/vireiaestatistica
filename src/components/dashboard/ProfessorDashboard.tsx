@@ -53,8 +53,9 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useRBAC } from '@/hooks/useRBAC'
-import { User } from '@/lib/firebase'
+import { User, getPersonalizedGreeting, extractFirstNameFromEmail } from '@/lib/firebase'
 import { useFirebaseDataWithFallback } from '@/contexts/FirebaseDataContext'
+import { PersonalizedGreeting, StudentDisplay, AnonymousIdBadge } from '@/components/ui/AnonymousIdBadge'
 import { InteractiveChart, ProfessorChartConfigs } from '@/components/charts/InteractiveChart'
 import { DynamicTable, ProfessorTableConfigs } from '@/components/tables/DynamicTable'
 
@@ -425,9 +426,12 @@ export function ProfessorDashboard() {
                 🎓 AvaliaNutri - Dashboard do Professor
               </h1>
               <div className="flex items-center gap-6">
-                <p className="text-lg text-gray-700">
-                  Bem-vindo, <span className="font-semibold text-blue-600">Prof. {user.fullName}</span>
-                </p>
+                <PersonalizedGreeting
+                  name={extractFirstNameFromEmail(user.email) || user.fullName}
+                  role="professor"
+                  showId={false}
+                  className="text-lg"
+                />
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full">
                     <BookOpen className="h-4 w-4 text-blue-600" />

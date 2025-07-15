@@ -10,7 +10,7 @@ import {
   signInWithPopup
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
-import { auth, db, User, isFirebaseConfigured, generateAnonymousId, handleFirestoreError, retryFirestoreOperation } from '@/lib/firebase'
+import { auth, db, User, isFirebaseConfigured, generateAnonymousId, handleFirestoreError, retryFirestoreOperation, extractFirstNameFromEmail } from '@/lib/firebase'
 
 // Cookie management functions
 const setCookie = (name: string, value: string, days: number = 7) => {
@@ -248,10 +248,15 @@ export function useFirebaseAuth() {
         // Create new user profile
         const anonymousId = role === 'student' ? generateAnonymousId() : undefined
 
+        // Extract name from email if displayName is not available
+        const fullName = firebaseUser.displayName ||
+          extractFirstNameFromEmail(firebaseUser.email!) ||
+          'Usuário'
+
         const userProfile: User = {
           id: firebaseUser.uid,
           email: firebaseUser.email!,
-          fullName: firebaseUser.displayName || 'Usuário Google',
+          fullName,
           role,
           roleHistory: [role], // Initialize with current role
           anonymousId,
