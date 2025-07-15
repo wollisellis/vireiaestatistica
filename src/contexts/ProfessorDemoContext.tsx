@@ -170,16 +170,51 @@ export function ProfessorDemoProvider({ children }: { children: React.ReactNode 
 
     setStudents(demoStudents)
     setAnalytics(demoAnalytics)
+
+    // Load module settings from localStorage if available
+    const savedSettings = localStorage.getItem('nt600-module-settings')
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings)
+        setModuleSettings(parsed)
+      } catch (error) {
+        console.error('Error loading module settings:', error)
+      }
+    }
+
+    // Listen for storage changes to sync module settings across components
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'nt600-module-settings' && e.newValue) {
+        try {
+          const newSettings = JSON.parse(e.newValue)
+          setModuleSettings(newSettings)
+        } catch (error) {
+          console.error('Error parsing storage change:', error)
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
   const toggleModuleLock = (moduleId: number) => {
-    setModuleSettings(prev => 
-      prev.map(module => 
-        module.moduleId === moduleId 
-          ? { ...module, isLocked: !module.isLocked }
-          : module
-      )
+    const updatedSettings = moduleSettings.map(module =>
+      module.moduleId === moduleId
+        ? { ...module, isLocked: !module.isLocked }
+        : module
     )
+
+    setModuleSettings(updatedSettings)
+
+    // Persist to localStorage for cross-component synchronization
+    localStorage.setItem('nt600-module-settings', JSON.stringify(updatedSettings))
+
+    // Trigger storage event to notify other components
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'nt600-module-settings',
+      newValue: JSON.stringify(updatedSettings)
+    }))
   }
 
   const exportStudentData = () => {

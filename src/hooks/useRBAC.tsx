@@ -62,14 +62,28 @@ export function useRBAC(userId?: string): RBACHookReturn {
   }, [user, isStudentGuest, isProfessorGuest])
 
   const loadModuleAccess = async (userId: string) => {
-    // Mock implementation - in real app, this would check enrollment status
-    const mockAccess = {
-      1: true, // Anthropometric Assessment
-      2: true, // Clinical Assessment
-      3: true, // Socioeconomic Assessment
-      4: true, // Growth Curves
+    // Try to get module settings from professor context
+    try {
+      // This will work if the component is wrapped in ProfessorDemoProvider
+      const { useProfessorDemo } = await import('@/contexts/ProfessorDemoContext')
+      const { moduleSettings } = useProfessorDemo()
+
+      const access: Record<number, boolean> = {}
+      moduleSettings.forEach(setting => {
+        access[setting.moduleId] = !setting.isLocked
+      })
+
+      setModuleAccess(access)
+    } catch {
+      // Fallback to default settings if not in professor context
+      const defaultAccess = {
+        1: true,  // Anthropometric Assessment - always unlocked
+        2: false, // Clinical Assessment - locked by default
+        3: false, // Socioeconomic Assessment - locked by default
+        4: true,  // Growth Curves - unlocked by default
+      }
+      setModuleAccess(defaultAccess)
     }
-    setModuleAccess(mockAccess)
   }
 
   const checkPermission = (resource: string, action: string): boolean => {

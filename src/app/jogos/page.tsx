@@ -35,9 +35,10 @@ import { StudentProgressProvider } from '@/contexts/StudentProgressContext'
 import { Footer } from '@/components/layout'
 // Professor dashboard removed - professors should access root route (/) instead
 import Link from 'next/link'
+import { useModuleAccess } from '@/hooks/useModuleAccess'
 
-// Game definitions for NT600 - Nutritional Status Assessment
-const nutritionalGames = [
+// Base game definitions for NT600 - Nutritional Status Assessment
+const baseNutritionalGames = [
   {
     id: 1,
     title: 'Indicadores Antropométricos',
@@ -52,8 +53,7 @@ const nutritionalGames = [
     ],
     icon: <Scale className="w-6 h-6" />,
     color: 'bg-emerald-500',
-    topics: ['IMC', 'Peso/Altura', 'Circunferências', 'Dobras Cutâneas'],
-    isLocked: false
+    topics: ['IMC', 'Peso/Altura', 'Circunferências', 'Dobras Cutâneas']
   },
   {
     id: 2,
@@ -69,9 +69,7 @@ const nutritionalGames = [
     ],
     icon: <Activity className="w-6 h-6" />,
     color: 'bg-teal-500',
-    topics: ['Hemograma', 'Proteínas', 'Vitaminas', 'Minerais'],
-    isLocked: true,
-    lockMessage: 'Aguardando liberação do docente'
+    topics: ['Hemograma', 'Proteínas', 'Vitaminas', 'Minerais']
   },
   {
     id: 3,
@@ -87,9 +85,7 @@ const nutritionalGames = [
     ],
     icon: <Users className="w-6 h-6" />,
     color: 'bg-cyan-500',
-    topics: ['Renda', 'Educação', 'Acesso a Alimentos', 'Cultura Alimentar'],
-    isLocked: true,
-    lockMessage: 'Aguardando liberação do docente'
+    topics: ['Renda', 'Educação', 'Acesso a Alimentos', 'Cultura Alimentar']
   },
   {
     id: 4,
@@ -105,14 +101,24 @@ const nutritionalGames = [
     ],
     icon: <TrendingUp className="w-6 h-6" />,
     color: 'bg-indigo-500',
-    topics: ['Percentis', 'Plotagem', 'Crescimento Infantil', 'Padrões Brasileiros'],
-    isLocked: false
+    topics: ['Percentis', 'Plotagem', 'Crescimento Infantil', 'Padrões Brasileiros']
   }
 ]
 
 export default function JogosNT600Page() {
   const [selectedGame, setSelectedGame] = useState<number | null>(null)
   const { user: firebaseUser } = useFirebaseAuth()
+  const { moduleSettings, isModuleLocked, loading: moduleLoading } = useModuleAccess()
+
+  // Combine base games with module settings
+  const nutritionalGames = baseNutritionalGames.map(game => {
+    const locked = isModuleLocked(game.id)
+    return {
+      ...game,
+      isLocked: locked,
+      lockMessage: locked ? 'Aguardando liberação do docente' : undefined
+    }
+  })
   const { user, loading } = useRBAC(firebaseUser?.uid)
   const { signOut } = useFirebaseAuth()
 
