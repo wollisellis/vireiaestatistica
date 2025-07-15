@@ -16,6 +16,17 @@ export function useRBAC(userId?: string): RBACHookReturn {
   const [isStudentGuest, setIsStudentGuest] = useState(false)
   const [isProfessorGuest, setIsProfessorGuest] = useState(false)
 
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 RBAC Debug:', {
+      userId: userId || 'not provided',
+      user: user ? { id: user.id, email: user.email, role: user.role } : 'null',
+      loading,
+      isStudentGuest,
+      isProfessorGuest
+    })
+  }, [userId, user, loading, isStudentGuest, isProfessorGuest])
+
   useEffect(() => {
     // Check for guest modes
     if (typeof window !== 'undefined') {

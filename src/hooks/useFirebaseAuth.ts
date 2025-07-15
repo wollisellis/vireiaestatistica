@@ -50,6 +50,37 @@ export function useFirebaseAuth() {
       return
     }
 
+    console.log('🔥 Configurando listener de autenticação...')
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      console.log('🔄 Estado de autenticação mudou:', firebaseUser ? 'Logado' : 'Deslogado')
+
+      if (firebaseUser) {
+        console.log('✅ Usuário autenticado:', {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName
+        })
+
+        // Set auth token cookie for middleware
+        setCookie('auth-token', firebaseUser.uid, 7)
+      } else {
+        console.log('❌ Usuário não autenticado')
+        // Clear auth token cookie
+        deleteCookie('auth-token')
+      }
+
+      setUser(firebaseUser)
+      setLoading(false)
+    })
+
+    return () => {
+      console.log('🔄 Removendo listener de autenticação')
+      unsubscribe()
+    }
+  }, [])
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('🔄 Auth state changed:', user?.email || 'null')
 

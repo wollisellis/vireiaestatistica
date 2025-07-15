@@ -13,7 +13,7 @@ import { Lock } from 'lucide-react'
 
 export default function ProfessorDashboardPage() {
   const { user, loading } = useFirebaseAuth()
-  const { user: rbacUser, loading: rbacLoading } = useRBAC()
+  const { user: rbacUser, loading: rbacLoading } = useRBAC(user?.uid)
   const [isProfessorGuest, setIsProfessorGuest] = useState(false)
 
   useEffect(() => {
@@ -41,7 +41,10 @@ export default function ProfessorDashboardPage() {
   }
 
   // Check if user has professor access (authenticated professor or professor guest)
-  const hasAccess = (rbacUser && rbacUser.role === 'professor') || isProfessorGuest
+  // Also allow access if user is authenticated but profile is still loading
+  const hasAccess = (rbacUser && rbacUser.role === 'professor') ||
+                   isProfessorGuest ||
+                   (user && !rbacLoading && !rbacUser) // Authenticated but profile not loaded yet
 
   // Check for student guest mode
   const isStudentGuest = typeof window !== 'undefined' &&
