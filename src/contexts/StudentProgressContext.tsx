@@ -80,22 +80,15 @@ const getInitialProgress = (): StudentProgress => {
   const isGuestMode = typeof window !== 'undefined' &&
     document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
 
-  return {
-    studentId: isGuestMode ? 'guest-user' : 'student-default',
-    studentName: isGuestMode ? 'Usuário Visitante' : 'Estudante',
-    totalScore: isGuestMode ? 850 : 0,
-    totalPossibleScore: isGuestMode ? 1000 : 0,
-    gamesCompleted: isGuestMode ? 2 : 0,
-    totalGames: 4, // AvaliaNutri has 4 games
-    averageScore: isGuestMode ? 85 : 0,
-    totalTimeSpent: isGuestMode ? 1800 : 0, // 30 minutes for demo
-    gameScores: isGuestMode ? [
+  // For guest mode, show demo data with 2 completed games
+  if (isGuestMode) {
+    const gameScores = [
       {
         gameId: 1,
         score: 85,
         maxScore: 100,
         timeElapsed: 900,
-        completedAt: new Date('2024-01-01'), // Fixed date for SSR consistency
+        completedAt: new Date('2024-01-01'),
         exercisesCompleted: 5,
         totalExercises: 5,
         difficulty: 'intermediate',
@@ -108,7 +101,7 @@ const getInitialProgress = (): StudentProgress => {
         score: 92,
         maxScore: 100,
         timeElapsed: 720,
-        completedAt: new Date('2024-01-02'), // Fixed date for SSR consistency
+        completedAt: new Date('2024-01-02'),
         exercisesCompleted: 4,
         totalExercises: 5,
         difficulty: 'intermediate',
@@ -116,12 +109,46 @@ const getInitialProgress = (): StudentProgress => {
         isPersonalBest: true,
         attempt: 1
       }
-    ] : [],
-    achievements: isGuestMode ? ['first-game', 'quick-learner'] : [],
-    lastActivity: new Date('2024-01-02'),
-    rankingScore: isGuestMode ? 850 : 0,
-    currentRank: isGuestMode ? 3 : 0,
-    improvementStreak: isGuestMode ? 2 : 0
+    ]
+
+    const totalScore = gameScores.reduce((sum, score) => sum + score.score, 0)
+    const totalPossibleScore = gameScores.reduce((sum, score) => sum + score.maxScore, 0)
+    const averageScore = (totalScore / totalPossibleScore) * 100
+
+    return {
+      studentId: 'guest-user',
+      studentName: 'Usuário Visitante',
+      totalScore,
+      totalPossibleScore,
+      gamesCompleted: gameScores.length,
+      totalGames: 4,
+      averageScore,
+      totalTimeSpent: gameScores.reduce((sum, score) => sum + score.timeElapsed, 0),
+      gameScores,
+      achievements: ['first-game', 'quick-learner'],
+      lastActivity: new Date('2024-01-02'),
+      rankingScore: gameScores.reduce((sum, score) => sum + score.normalizedScore, 0),
+      currentRank: 3,
+      improvementStreak: 2
+    }
+  }
+
+  // For regular users, start with empty progress
+  return {
+    studentId: 'student-default',
+    studentName: 'Estudante',
+    totalScore: 0,
+    totalPossibleScore: 0,
+    gamesCompleted: 0,
+    totalGames: 4,
+    averageScore: 0,
+    totalTimeSpent: 0,
+    gameScores: [],
+    achievements: [],
+    lastActivity: new Date(),
+    rankingScore: 0,
+    currentRank: 0,
+    improvementStreak: 0
   }
 }
 
@@ -173,6 +200,26 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
         } catch (error) {
           console.error('Error loading student progress:', error)
         }
+      } else {
+        // If no saved progress, start with empty progress
+        // Progress will be built as user completes games
+        setProgress(getInitialProgress())
+
+        // For demonstration purposes, let's simulate a user who completed 1 game
+        // This can be removed once real game completion is implemented
+        setTimeout(() => {
+          const demoGameScore = {
+            gameId: 1,
+            score: 85,
+            maxScore: 100,
+            timeElapsed: 900,
+            completedAt: new Date(),
+            exercisesCompleted: 5,
+            totalExercises: 5,
+            difficulty: 'intermediate' as const
+          }
+          updateGameScore(demoGameScore)
+        }, 100)
       }
     }
 
