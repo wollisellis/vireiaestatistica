@@ -148,6 +148,7 @@ export interface User {
   email: string
   fullName: string
   role: 'professor' | 'student'
+  roleHistory?: ('professor' | 'student')[] // Track role changes
   anonymousId?: string // For students only
   institutionId: string
   totalScore: number

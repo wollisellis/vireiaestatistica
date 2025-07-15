@@ -253,6 +253,7 @@ export function useFirebaseAuth() {
           email: firebaseUser.email!,
           fullName: firebaseUser.displayName || 'Usuário Google',
           role,
+          roleHistory: [role], // Initialize with current role
           anonymousId,
           institutionId: 'unicamp',
           totalScore: 0,
@@ -276,12 +277,34 @@ export function useFirebaseAuth() {
         return { data: { user: firebaseUser, profile: userProfile, isNewUser: true }, error: null }
       } else {
         console.log('👤 Usuário existente encontrado')
-        // Existing user - verify role matches
+        // Existing user - allow role switching or multiple roles
         const existingProfile = userDoc.data() as User
+
+        // If user is trying to access a different role, update their profile
         if (existingProfile.role !== role) {
-          console.log('❌ Role não confere:', { expected: role, actual: existingProfile.role })
-          await firebaseSignOut(auth)
-          throw new Error(`Esta conta está registrada como ${existingProfile.role === 'student' ? 'estudante' : 'professor'}`)
+          console.log('🔄 Atualizando papel do usuário:', { from: existingProfile.role, to: role })
+
+          // Update role history
+          const currentRoleHistory = existingProfile.roleHistory || [existingProfile.role]
+          const newRoleHistory = currentRoleHistory.includes(role)
+            ? currentRoleHistory
+            : [...currentRoleHistory, role]
+
+          // Update user role in Firestore
+          const updatedProfile = {
+            ...existingProfile,
+            role,
+            roleHistory: newRoleHistory,
+            updatedAt: new Date().toISOString()
+          }
+
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
+            ...updatedProfile,
+            updatedAt: serverTimestamp()
+          }, { merge: true })
+
+          console.log('✅ Papel atualizado com sucesso:', updatedProfile)
+          return { data: { user: firebaseUser, profile: updatedProfile, isNewUser: false }, error: null }
         }
 
         console.log('✅ Login bem-sucedido:', existingProfile)
@@ -401,6 +424,7 @@ export function useFirebaseProfile(userId: string) {
             email: data.email,
             fullName: data.fullName,
             role: data.role || 'student',
+            roleHistory: data.roleHistory || [data.role || 'student'],
             anonymousId: data.anonymousId,
             institutionId: data.institutionId || 'unicamp',
             totalScore: data.totalScore || 0,
