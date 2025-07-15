@@ -4,13 +4,40 @@ import React, { useEffect, useState } from 'react'
 import { AuthForm } from '@/components/auth/AuthForm'
 import FirebaseConfigWarning from '@/components/FirebaseConfigWarning'
 import { isFirebaseConfigured } from '@/lib/firebase'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { useRBAC } from '@/hooks/useRBAC'
 
 export default function LoginPage() {
   const [isCleared, setIsCleared] = useState(false)
   const [showFirebaseWarning, setShowFirebaseWarning] = useState(false)
+  const { user: firebaseUser } = useFirebaseAuth()
+  const { user: rbacUser } = useRBAC(firebaseUser?.uid)
+
+  // Check if user is authenticated and redirect appropriately
+  useEffect(() => {
+    if (firebaseUser && rbacUser) {
+      console.log('🔄 User authenticated, redirecting...', {
+        firebaseUser: firebaseUser.email,
+        rbacUser: rbacUser.role
+      })
+
+      // Redirect based on role
+      if (rbacUser.role === 'professor') {
+        window.location.href = '/professor'
+      } else {
+        window.location.href = '/jogos'
+      }
+      return
+    }
+  }, [firebaseUser, rbacUser])
 
   // Clear any authentication state when accessing login page to ensure clean state
   useEffect(() => {
+    // Only clear if user is not authenticated
+    if (firebaseUser || rbacUser) {
+      setIsCleared(true)
+      return
+    }
     if (typeof window !== 'undefined') {
       // Clear all authentication-related cookies
       const cookiesToClear = [
@@ -56,7 +83,7 @@ export default function LoginPage() {
     } else {
       setIsCleared(true)
     }
-  }, [])
+  }, [firebaseUser, rbacUser])
 
   // Show loading while clearing state
   if (!isCleared) {

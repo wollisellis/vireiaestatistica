@@ -112,7 +112,8 @@ const nutritionalGames = [
 
 export default function JogosNT600Page() {
   const [selectedGame, setSelectedGame] = useState<number | null>(null)
-  const { user, loading } = useRBAC()
+  const { user: firebaseUser } = useFirebaseAuth()
+  const { user, loading } = useRBAC(firebaseUser?.uid)
   const { signOut } = useFirebaseAuth()
 
   // Function to handle logout and redirect to login page
@@ -204,8 +205,18 @@ export default function JogosNT600Page() {
   const isStudentGuest = typeof window !== 'undefined' &&
     document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
 
+  // Debug logging
+  console.log('🔍 Jogos Page Debug:', {
+    firebaseUser: firebaseUser ? { uid: firebaseUser.uid, email: firebaseUser.email } : 'null',
+    rbacUser: user ? { id: user.id, email: user.email, role: user.role } : 'null',
+    loading,
+    isStudentGuest,
+    isProfessorGuest
+  })
+
   // Show access denied if user is not authenticated and not in any guest mode
-  if (!user && !isStudentGuest && !isProfessorGuest) {
+  // Allow access if Firebase user is authenticated even if profile is still loading
+  if (!user && !firebaseUser && !isStudentGuest && !isProfessorGuest) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
