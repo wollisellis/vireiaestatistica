@@ -40,11 +40,26 @@ export default function ProfessorDashboardPage() {
     )
   }
 
-  // Check if user has professor access (authenticated professor or professor guest)
-  // Also allow access if user is authenticated but profile is still loading
-  const hasAccess = (rbacUser && rbacUser.role === 'professor') ||
-                   isProfessorGuest ||
-                   (user && !rbacLoading && !rbacUser) // Authenticated but profile not loaded yet
+  // Debug logging
+  console.log('🔍 Professor Page Debug:', {
+    user: user ? { uid: user.uid, email: user.email } : 'null',
+    rbacUser: rbacUser ? { id: rbacUser.id, email: rbacUser.email, role: rbacUser.role } : 'null',
+    loading,
+    rbacLoading,
+    isProfessorGuest
+  })
+
+  // Check if user has professor access
+  const hasAccess = (rbacUser && rbacUser.role === 'professor') || isProfessorGuest
+
+  // Show loading while authentication is being checked
+  if (loading || (user && rbacLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   // Check for student guest mode
   const isStudentGuest = typeof window !== 'undefined' &&
