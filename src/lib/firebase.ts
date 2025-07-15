@@ -14,10 +14,10 @@ export const isFirebaseConfigured = (): boolean => {
 
   console.log('🔥 Firebase Configuration Status:', {
     configured: isConfigured,
-    apiKey: apiKey ? 'SET' : 'MISSING',
-    authDomain: authDomain ? 'SET' : 'MISSING',
-    projectId: projectId ? 'SET' : 'MISSING',
-    appId: appId ? 'SET' : 'MISSING'
+    apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING',
+    authDomain: authDomain || 'MISSING',
+    projectId: projectId || 'MISSING',
+    appId: appId ? `${appId.substring(0, 20)}...` : 'MISSING'
   })
 
   return isConfigured
@@ -41,6 +41,15 @@ let db: Firestore | null = null
 try {
   if (isFirebaseConfigured()) {
     console.log('🔥 Initializing Firebase with configured credentials...')
+
+    // Check for demo-project issue
+    if (firebaseConfig.projectId === 'demo-project') {
+      console.error('❌ CRITICAL: Firebase is trying to connect to demo-project!')
+      console.error('🔧 This means environment variables are not being loaded correctly')
+      console.error('📝 Check Vercel environment variables or .env.local configuration')
+      throw new Error('Invalid Firebase project configuration')
+    }
+
     app = initializeApp(firebaseConfig)
     auth = getAuth(app)
     db = getFirestore(app)
@@ -52,6 +61,7 @@ try {
     }
 
     console.log('✅ Firebase initialized successfully!')
+    console.log(`🎯 Connected to project: ${firebaseConfig.projectId}`)
   } else {
     console.warn('⚠️ Firebase not configured - using fallback mode')
     console.warn('📝 To use Firebase, configure NEXT_PUBLIC_FIREBASE_* variables in .env.local')
@@ -312,7 +322,7 @@ export const hasPermission = (
   resource: keyof typeof RBAC_PERMISSIONS.professor,
   action: string
 ): boolean => {
-  const permissions = RBAC_PERMISSIONS[userRole]
+  const permissions = RBAC_PERMISSIONS[userRole] as any
   return permissions[resource]?.includes(action) || false
 }
 
