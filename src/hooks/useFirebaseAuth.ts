@@ -52,7 +52,7 @@ export function useFirebaseAuth() {
 
     console.log('🔥 Configurando listener de autenticação...')
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log('🔄 Estado de autenticação mudou:', firebaseUser ? 'Logado' : 'Deslogado')
 
       if (firebaseUser) {
@@ -62,8 +62,16 @@ export function useFirebaseAuth() {
           displayName: firebaseUser.displayName
         })
 
-        // Set auth token cookie for middleware
-        setCookie('auth-token', firebaseUser.uid, 7)
+        try {
+          // Set authentication cookie when user is authenticated
+          const token = await firebaseUser.getIdToken()
+          setCookie('auth-token', token, 7) // 7 days
+          deleteCookie('guest-mode') // Remove guest mode if user logs in
+        } catch (error) {
+          console.error('❌ Erro ao obter token de autenticação:', error)
+          // Continue mesmo com erro no token
+          setCookie('auth-token', firebaseUser.uid, 7) // Fallback to UID
+        }
       } else {
         console.log('❌ Usuário não autenticado')
         // Clear auth token cookie
@@ -78,32 +86,6 @@ export function useFirebaseAuth() {
       console.log('🔄 Removendo listener de autenticação')
       unsubscribe()
     }
-  }, [])
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('🔄 Auth state changed:', user?.email || 'null')
-
-      if (user) {
-        try {
-          // Set authentication cookie when user is authenticated
-          const token = await user.getIdToken()
-          setCookie('auth-token', token, 7) // 7 days
-          deleteCookie('guest-mode') // Remove guest mode if user logs in
-        } catch (error) {
-          console.error('❌ Erro ao obter token de autenticação:', error)
-          // Continue mesmo com erro no token
-        }
-      } else {
-        // Remove authentication cookie when user logs out
-        deleteCookie('auth-token')
-      }
-
-      setUser(user)
-      setLoading(false)
-    })
-
-    return () => unsubscribe()
   }, [])
 
   const signUp = async (
