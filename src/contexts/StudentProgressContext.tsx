@@ -86,23 +86,26 @@ const generateStudentName = () => {
   return 'Estudante'
 }
 
-// Função para mapear módulos reais para dados demo
+// Função para mapear módulos reais para dados demo baseados em dados reais
 const getModuleGameScores = (): GameScore[] => {
   return modules.slice(0, 2).map((module, index) => {
     const totalPoints = module.exercises.reduce((sum, exercise) => sum + exercise.points, 0)
     const completedExercises = module.exercises.length
-    const demoScores = [85, 92] // Pontuações demo
+    
+    // Pontuações demo baseadas na pontuação real dos módulos (70-80% da pontuação máxima)
+    const demoScorePercentages = [0.75, 0.85] // 75% e 85% da pontuação máxima
+    const demoScore = Math.floor(totalPoints * demoScorePercentages[index])
     
     return {
       gameId: index + 1,
-      score: demoScores[index],
-      maxScore: 100,
+      score: demoScore,
+      maxScore: totalPoints, // Usar pontuação real do módulo
       timeElapsed: index === 0 ? 900 : 720,
       completedAt: new Date(`2024-01-0${index + 1}`),
       exercisesCompleted: completedExercises,
       totalExercises: completedExercises,
       difficulty: 'intermediate',
-      normalizedScore: demoScores[index],
+      normalizedScore: Math.floor(demoScorePercentages[index] * 100), // Porcentagem real
       isPersonalBest: true,
       attempt: 1,
       moduleId: module.id,

@@ -127,9 +127,9 @@ const RankingSidebar: React.FC<RankingSidebarProps> = ({ className = '' }) => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Pontuação Total</span>
-                <span className="font-semibold">{progress.rankingScore}/200</span>
+                <span className="font-semibold">{progress.totalScore}/{progress.totalPossibleScore}</span>
               </div>
-              <Progress value={(progress.rankingScore / 200) * 100} className="h-2" />
+              <Progress value={progress.totalPossibleScore > 0 ? (progress.totalScore / progress.totalPossibleScore) * 100 : 0} className="h-2" />
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">

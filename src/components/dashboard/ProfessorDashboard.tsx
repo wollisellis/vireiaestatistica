@@ -203,12 +203,58 @@ export function ProfessorDashboard() {
 
   useEffect(() => {
     if (user && user.role === 'professor') {
-      loadEnhancedMockData()
+      if (isUsingRealData && firebaseStudentData && firebaseStudentData.length > 0) {
+        loadRealStudentData()
+      } else {
+        loadEnhancedMockData()
+      }
       // Simulate real-time updates
       const interval = setInterval(updateRealTimeMetrics, 5000)
       return () => clearInterval(interval)
     }
-  }, [user])
+  }, [user, isUsingRealData, firebaseStudentData])
+
+  const loadRealStudentData = async () => {
+    if (!firebaseStudentData) return
+    
+    // Converter dados reais do Firebase para o formato esperado
+    const realStudents: StudentSummary[] = firebaseStudentData.map((student, index) => {
+      const totalScore = student.gameScores?.reduce((sum, game) => sum + game.score, 0) || 0
+      const totalPossible = student.gameScores?.reduce((sum, game) => sum + game.maxScore, 0) || 1
+      const averageScore = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0
+      
+      return {
+        id: student.studentId || `real-${index}`,
+        name: student.studentName || `Estudante ${index + 1}`,
+        anonymousId: student.anonymousId || `ID${String(index + 1).padStart(3, '0')}`,
+        totalScore,
+        gamesCompleted: student.gameScores?.length || 0,
+        lastActivity: student.lastActivity ? formatLastActivity(student.lastActivity) : 'Nunca',
+        averageScore
+      }
+    }).filter(student => student.gamesCompleted > 0) // Só mostrar estudantes que jogaram
+
+    // Ordenar por pontuação total
+    realStudents.sort((a, b) => b.totalScore - a.totalScore)
+    
+    // Top 3 performers
+    setTopPerformers(realStudents.slice(0, 3))
+    
+    // Estudantes com dificuldades (pontuação abaixo de 60%)
+    const struggling = realStudents.filter(student => student.averageScore < 60)
+    setStrugglingStudents(struggling.slice(0, 5))
+  }
+
+  const formatLastActivity = (date: Date | string): string => {
+    const activityDate = typeof date === 'string' ? new Date(date) : date
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - activityDate.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 1) return 'Agora'
+    if (diffInHours < 24) return `${diffInHours} hora${diffInHours > 1 ? 's' : ''} atrás`
+    const diffInDays = Math.floor(diffInHours / 24)
+    return `${diffInDays} dia${diffInDays > 1 ? 's' : ''} atrás`
+  }
 
   const loadEnhancedMockData = async () => {
     // Enhanced mock data based on suggestions
