@@ -66,13 +66,14 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
         return
       }
 
-      // If no specific role required, redirect based on user role
-      if (!requiredRole) {
-        if (rbacUser.role === 'professor') {
-          router.push(professorRedirect)
-        } else {
-          router.push(studentRedirect)
-        }
+      // If no specific role required and no redirectTo specified, allow access
+      if (!requiredRole && !redirectTo) {
+        return
+      }
+      
+      // If no specific role required but redirectTo is specified, redirect
+      if (!requiredRole && redirectTo) {
+        router.push(redirectTo)
         return
       }
 

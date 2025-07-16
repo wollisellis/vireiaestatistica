@@ -18,8 +18,8 @@ export default function ModulePage() {
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
   const [totalScore, setTotalScore] = useState(0);
 
-  // Redirecionamento baseado no papel
-  useRoleRedirect();
+  // Redirecionamento baseado no papel - permite acesso de convidados
+  useRoleRedirect({ allowGuests: true });
 
   useEffect(() => {
     if (moduleId) {

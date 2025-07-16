@@ -35,74 +35,47 @@ import { StudentProgressProvider } from '@/contexts/StudentProgressContext'
 import { Footer } from '@/components/layout'
 import Link from 'next/link'
 import { useModuleAccess } from '@/hooks/useModuleAccess'
+import { modules } from '@/data/modules'
 
-// Base game definitions for NT600 - Nutritional Status Assessment
-const baseNutritionalGames = [
-  {
-    id: 1,
-    title: 'Indicadores Antropométricos',
-    description: 'Aprenda a avaliar o estado nutricional através de medidas corporais como peso, altura, IMC e circunferências',
-    difficulty: 'Muito Fácil',
-    estimatedTime: '15-20 min',
-    learningObjectives: [
-      'Compreender os principais indicadores antropométricos',
-      'Calcular e interpretar IMC, relação cintura-quadril',
-      'Avaliar adequação de peso e altura para idade',
-      'Identificar sinais de desnutrição e obesidade'
-    ],
-    icon: <Scale className="w-6 h-6" />,
-    color: 'bg-emerald-500',
-    topics: ['IMC', 'Peso/Altura', 'Circunferências', 'Dobras Cutâneas']
-  },
-  {
-    id: 2,
-    title: 'Indicadores Clínicos e Bioquímicos',
-    description: 'Domine a interpretação de exames laboratoriais e sinais clínicos para avaliação nutricional',
-    difficulty: 'Médio',
-    estimatedTime: '20-25 min',
-    learningObjectives: [
-      'Interpretar exames bioquímicos nutricionais',
-      'Reconhecer sinais clínicos de deficiências',
-      'Avaliar marcadores de inflamação e metabolismo',
-      'Correlacionar achados clínicos com estado nutricional'
-    ],
-    icon: <Activity className="w-6 h-6" />,
-    color: 'bg-teal-500',
-    topics: ['Hemograma', 'Proteínas', 'Vitaminas', 'Minerais']
-  },
-  {
-    id: 3,
-    title: 'Fatores Demográficos e Socioeconômicos',
-    description: 'Entenda como fatores sociais, econômicos e culturais influenciam o estado nutricional populacional',
-    difficulty: 'Difícil',
-    estimatedTime: '25-30 min',
-    learningObjectives: [
-      'Analisar determinantes sociais da nutrição',
-      'Compreender desigualdades nutricionais',
-      'Avaliar segurança alimentar e nutricional',
-      'Interpretar dados populacionais de nutrição'
-    ],
-    icon: <Users className="w-6 h-6" />,
-    color: 'bg-cyan-500',
-    topics: ['Renda', 'Educação', 'Acesso a Alimentos', 'Cultura Alimentar']
-  },
-  {
-    id: 4,
-    title: 'Curvas de Crescimento Interativas',
-    description: 'Domine a plotagem e interpretação de curvas de crescimento usando dados reais de crianças brasileiras',
-    difficulty: 'Médio',
-    estimatedTime: '20-25 min',
-    learningObjectives: [
-      'Identificar linhas de percentil em gráficos de crescimento',
-      'Plotar medições de peso e altura corretamente',
-      'Interpretar percentis e classificar estado nutricional',
-      'Aplicar conhecimentos em casos reais brasileiros'
-    ],
-    icon: <TrendingUp className="w-6 h-6" />,
-    color: 'bg-indigo-500',
-    topics: ['Percentis', 'Plotagem', 'Crescimento Infantil', 'Padrões Brasileiros']
-  }
-]
+// Mapear dificuldades
+const getDifficultyLevel = (estimatedTime: number) => {
+  if (estimatedTime <= 90) return 'Muito Fácil'
+  if (estimatedTime <= 120) return 'Médio'
+  if (estimatedTime <= 150) return 'Difícil'
+  return 'Muito Difícil'
+}
+
+// Mapear cores baseadas no order
+const getColorByOrder = (order: number) => {
+  const colors = [
+    'bg-emerald-500',
+    'bg-teal-500',
+    'bg-cyan-500',
+    'bg-indigo-500'
+  ]
+  return colors[order - 1] || 'bg-gray-500'
+}
+
+// Converter módulos para formato de jogos
+const convertModulesToGames = (modules: any[]) => {
+  return modules.map(module => ({
+    id: parseInt(module.id.split('-')[1]), // Converter module-1 para 1
+    title: module.title,
+    description: module.description,
+    difficulty: getDifficultyLevel(module.estimatedTime),
+    estimatedTime: `${module.estimatedTime} min`,
+    learningObjectives: module.content.slice(0, 4).map((content: any) => content.title),
+    icon: module.icon === '📊' ? <BarChart3 className="w-6 h-6" /> :
+          module.icon === '🔬' ? <Activity className="w-6 h-6" /> :
+          module.icon === '📏' ? <Scale className="w-6 h-6" /> :
+          module.icon === '🎯' ? <Target className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />,
+    color: getColorByOrder(module.order),
+    topics: module.exercises.slice(0, 4).map((exercise: any) => exercise.title)
+  }))
+}
+
+// Converter módulos para jogos
+const baseNutritionalGames = convertModulesToGames(modules)
 
 export default function JogosNT600Page() {
   const [selectedGame, setSelectedGame] = useState<number | null>(null)
@@ -455,13 +428,13 @@ export default function JogosNT600Page() {
                               Módulo Bloqueado
                             </Button>
                           ) : (
-                            <Link href={`/jogos/${game.id}`}>
+                            <Link href={`/modules/module-${game.id}`}>
                               <Button
                                 className="w-full mt-4 group-hover:bg-blue-600 transition-colors"
                                 size="lg"
                               >
                                 <Play className="w-4 h-4 mr-2" />
-                                Iniciar Jogo
+                                Iniciar Módulo
                               </Button>
                             </Link>
                           )}
