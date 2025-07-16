@@ -31,7 +31,7 @@ export function ModuleCard({ module, progress, onUnlock, isProfessor = false }: 
 
   const handleClick = () => {
     if (!module.isLocked || isProfessor) {
-      router.push(`/modules/${module.id}`);
+      router.push(`/jogos/${module.id}`);
     }
   };
 

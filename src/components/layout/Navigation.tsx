@@ -30,7 +30,6 @@ const getNavigationItems = (userRole?: string) => {
       ...baseItems,
       { href: '/professor', label: 'Dashboard', icon: BarChart3 },
       { href: '/jogos', label: t('navigation.games'), icon: Gamepad2 },
-      { href: '/modules', label: 'Módulos', icon: BookOpen },
       { href: '/profile', label: t('navigation.profile'), icon: User },
     ]
   } else {
@@ -38,7 +37,6 @@ const getNavigationItems = (userRole?: string) => {
     return [
       ...baseItems,
       { href: '/jogos', label: t('navigation.games'), icon: Gamepad2 },
-      { href: '/modules', label: 'Módulos', icon: BookOpen },
       { href: '/progress', label: t('navigation.progress'), icon: BarChart3 },
       { href: '/leaderboard', label: t('navigation.leaderboard'), icon: Trophy },
       { href: '/profile', label: t('navigation.profile'), icon: User },
