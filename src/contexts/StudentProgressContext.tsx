@@ -6,6 +6,7 @@ import { useAchievementNotifications } from '@/components/achievements/Achieveme
 import { LeaderboardService } from '@/lib/leaderboardService'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { AdvancedScoringSystem, QuestionMetrics, ScoreCalculation } from '@/lib/scoringSystem'
+import { modules } from '@/data/modules'
 
 export interface GameScore {
   gameId: number
@@ -25,6 +26,8 @@ export interface GameScore {
   partnerName?: string
   scoreCalculation?: ScoreCalculation // Advanced scoring details
   questionMetrics?: QuestionMetrics[] // Per-question metrics
+  moduleId?: string // ID do módulo real
+  moduleName?: string // Nome do módulo real
 }
 
 export interface StudentProgress {
@@ -56,6 +59,7 @@ export interface RankingEntry {
 interface StudentProgressContextType {
   progress: StudentProgress
   updateGameScore: (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => void
+  updateModuleScore: (moduleId: string, score: number, maxScore: number, timeElapsed: number, exercisesCompleted: number, totalExercises: number, difficulty: string) => void
   updateGameScoreAdvanced: (
     gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt' | 'scoreCalculation'>,
     questionMetrics: QuestionMetrics[]
@@ -82,6 +86,31 @@ const generateStudentName = () => {
   return 'Estudante'
 }
 
+// Função para mapear módulos reais para dados demo
+const getModuleGameScores = (): GameScore[] => {
+  return modules.slice(0, 2).map((module, index) => {
+    const totalPoints = module.exercises.reduce((sum, exercise) => sum + exercise.points, 0)
+    const completedExercises = module.exercises.length
+    const demoScores = [85, 92] // Pontuações demo
+    
+    return {
+      gameId: index + 1,
+      score: demoScores[index],
+      maxScore: 100,
+      timeElapsed: index === 0 ? 900 : 720,
+      completedAt: new Date(`2024-01-0${index + 1}`),
+      exercisesCompleted: completedExercises,
+      totalExercises: completedExercises,
+      difficulty: 'intermediate',
+      normalizedScore: demoScores[index],
+      isPersonalBest: true,
+      attempt: 1,
+      moduleId: module.id,
+      moduleName: module.title
+    }
+  })
+}
+
 const getInitialProgress = (): StudentProgress => {
   // Check if in guest mode
   const isGuestMode = typeof window !== 'undefined' &&
@@ -89,34 +118,7 @@ const getInitialProgress = (): StudentProgress => {
 
   // For guest mode, show demo data with 2 completed games
   if (isGuestMode) {
-    const gameScores = [
-      {
-        gameId: 1,
-        score: 85,
-        maxScore: 100,
-        timeElapsed: 900,
-        completedAt: new Date('2024-01-01'),
-        exercisesCompleted: 5,
-        totalExercises: 5,
-        difficulty: 'intermediate',
-        normalizedScore: 85,
-        isPersonalBest: true,
-        attempt: 1
-      },
-      {
-        gameId: 2,
-        score: 92,
-        maxScore: 100,
-        timeElapsed: 720,
-        completedAt: new Date('2024-01-02'),
-        exercisesCompleted: 4,
-        totalExercises: 5,
-        difficulty: 'intermediate',
-        normalizedScore: 92,
-        isPersonalBest: true,
-        attempt: 1
-      }
-    ]
+    const gameScores = getModuleGameScores()
 
     const totalScore = gameScores.reduce((sum, score) => sum + score.score, 0)
     const totalPossibleScore = gameScores.reduce((sum, score) => sum + score.maxScore, 0)
@@ -245,6 +247,27 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
 
   const calculateNormalizedScore = (exercisesCompleted: number, totalExercises: number): number => {
     return Math.round((exercisesCompleted / totalExercises) * 100)
+  }
+
+  // Nova função para atualizar com dados de módulos reais
+  const updateModuleScore = (moduleId: string, score: number, maxScore: number, timeElapsed: number, exercisesCompleted: number, totalExercises: number, difficulty: string) => {
+    const module = modules.find(m => m.id === moduleId)
+    if (!module) return
+
+    const gameScore = {
+      gameId: parseInt(moduleId.split('-')[1]) || 0,
+      score,
+      maxScore,
+      timeElapsed,
+      completedAt: new Date(),
+      exercisesCompleted,
+      totalExercises,
+      difficulty,
+      moduleId: module.id,
+      moduleName: module.title
+    }
+
+    updateGameScore(gameScore)
   }
 
   const updateGameScore = (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => {
@@ -503,6 +526,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
     <StudentProgressContext.Provider value={{
       progress,
       updateGameScore,
+      updateModuleScore,
       updateGameScoreAdvanced,
       resetProgress,
       getGameProgress,

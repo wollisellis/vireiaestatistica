@@ -36,7 +36,6 @@ import { StudentProgressProvider } from '@/contexts/StudentProgressContext';
 import { StudentProgressDashboard } from '@/components/student-progress/StudentProgressDashboard';
 import { Footer } from '@/components/layout';
 import { useStudentAccess } from '@/hooks/useRoleRedirect';
-import SystemInfo from '@/components/info/SystemInfo';
 
 interface ModuleProgress {
   [moduleId: string]: {
@@ -671,7 +670,6 @@ export default function JogosPage() {
               transition={{ duration: 0.6, delay: 0.7 }}
               className="mt-16"
             >
-              <SystemInfo />
             </motion.div>
           </div>
 

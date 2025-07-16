@@ -94,10 +94,10 @@ export function Footer() {
                     <Code className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">Ellis Wollis</h4>
-                    <p className="text-sm text-emerald-600 mb-2">Desenvolvedor Full-Stack</p>
+                    <h4 className="font-semibold text-gray-900">AvaliaNutri</h4>
+                    <p className="text-sm text-emerald-600 mb-2">Plataforma Educacional</p>
                     <p className="text-xs text-gray-600 mb-3">
-                      Mestrando em Nutrição, Esporte e Metabolismo - UNICAMP
+                      Sistema de Avaliação Nutricional
                     </p>
                     <div className="flex items-center space-x-3">
                       <a
@@ -195,31 +195,13 @@ export function AboutModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           </div>
           
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Desenvolvedor</h3>
-              <div className="bg-emerald-50 p-4 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-full flex items-center justify-center">
-                    <Code className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-bold text-gray-900">Ellis Wollis</h4>
-                    <p className="text-emerald-600 font-medium">Desenvolvedor Full-Stack & Pesquisador</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Mestrando em Nutrição, Esporte e Metabolismo - UNICAMP
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Sobre o Projeto</h3>
               <p className="text-gray-700 leading-relaxed">
-                O AvaliaNutri é uma plataforma educacional inovadora desenvolvida especificamente 
-                para a disciplina NT600 - Avaliação do Estado Nutricional da UNICAMP. 
-                Combina gamificação educacional com dados reais brasileiros, oferecendo uma 
-                experiência de aprendizado única e culturalmente relevante.
+                O AvaliaNutri é uma plataforma educacional inovadora para o ensino de 
+                avaliação nutricional. Combina gamificação educacional com dados reais 
+                brasileiros, oferecendo uma experiência de aprendizado única e culturalmente relevante.
               </p>
             </div>
 

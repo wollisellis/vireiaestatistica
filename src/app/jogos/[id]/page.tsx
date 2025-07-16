@@ -8,8 +8,10 @@ import { Module } from '@/types/modules';
 import { getModuleById } from '@/data/modules';
 import { ExerciseRenderer } from '@/components/exercises/ExerciseRenderer';
 import { useRoleRedirect } from '@/hooks/useRoleRedirect';
+import { useStudentProgress } from '@/contexts/StudentProgressContext';
+import { StudentProgressProvider } from '@/contexts/StudentProgressContext';
 
-export default function JogoPage() {
+function JogoPageContent() {
   const params = useParams();
   const moduleId = params.id as string;
   const [module, setModule] = useState<Module | null>(null);
@@ -17,6 +19,9 @@ export default function JogoPage() {
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
   const [totalScore, setTotalScore] = useState(0);
+  const [startTime, setStartTime] = useState<number>(Date.now());
+  
+  const { updateModuleScore } = useStudentProgress();
 
   // Redirecionamento baseado no papel - permite acesso de convidados
   useRoleRedirect({ allowGuests: true });
@@ -35,6 +40,26 @@ export default function JogoPage() {
     }
     setSelectedExercise(null);
   };
+
+  // Atualiza a pontuação do módulo quando todos os exercícios são concluídos
+  useEffect(() => {
+    if (module && completedExercises.length === module.exercises.length && module.exercises.length > 0) {
+      const timeElapsed = Math.floor((Date.now() - startTime) / 1000); // em segundos
+      const maxScore = module.exercises.reduce((sum, exercise) => sum + exercise.points, 0);
+      const difficulty = module.exercises.some(ex => ex.difficulty === 'hard') ? 'hard' : 
+                       module.exercises.some(ex => ex.difficulty === 'medium') ? 'medium' : 'easy';
+      
+      updateModuleScore(
+        module.id,
+        totalScore,
+        maxScore,
+        timeElapsed,
+        completedExercises.length,
+        module.exercises.length,
+        difficulty
+      );
+    }
+  }, [completedExercises, totalScore, module, startTime, updateModuleScore]);
 
   if (!module) {
     return (
@@ -158,9 +183,14 @@ export default function JogoPage() {
                   <div className="prose max-w-none">
                     <div className="text-gray-700 leading-relaxed space-y-4">
                       {content.content.split('\n\n').map((paragraph, index) => (
-                        <p key={index} className="text-base leading-7">
-                          {paragraph}
-                        </p>
+                        <div key={index} className="text-base leading-7">
+                          {paragraph.split('**').map((text, textIndex) => {
+                            if (textIndex % 2 === 1) {
+                              return <strong key={textIndex}>{text}</strong>;
+                            }
+                            return text;
+                          })}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -188,6 +218,19 @@ export default function JogoPage() {
                 )}
               </div>
             ))}
+            
+            {/* Botão Começar Exercícios no final */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="text-center">
+                <button
+                  onClick={() => setCurrentTab('exercises')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center gap-2"
+                >
+                  <span>🎯</span>
+                  Começar Exercícios
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -278,5 +321,13 @@ export default function JogoPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function JogoPage() {
+  return (
+    <StudentProgressProvider>
+      <JogoPageContent />
+    </StudentProgressProvider>
   );
 }
