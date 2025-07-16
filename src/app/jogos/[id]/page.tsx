@@ -156,9 +156,13 @@ export default function JogoPage() {
                 
                 {content.type === 'text' && (
                   <div className="prose max-w-none">
-                    <pre className="whitespace-pre-wrap text-gray-700 font-sans">
-                      {content.content}
-                    </pre>
+                    <div className="text-gray-700 leading-relaxed space-y-4">
+                      {content.content.split('\n\n').map((paragraph, index) => (
+                        <p key={index} className="text-base leading-7">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 )}
                 
