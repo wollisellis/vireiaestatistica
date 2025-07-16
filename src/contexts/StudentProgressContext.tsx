@@ -5,6 +5,7 @@ import { evaluateAchievements, calculateAchievementPoints } from '@/lib/achievem
 import { useAchievementNotifications } from '@/components/achievements/AchievementNotification'
 import { LeaderboardService } from '@/lib/leaderboardService'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { AdvancedScoringSystem, QuestionMetrics, ScoreCalculation } from '@/lib/scoringSystem'
 
 export interface GameScore {
   gameId: number
@@ -22,6 +23,8 @@ export interface GameScore {
   isCollaborative?: boolean
   partnerId?: string
   partnerName?: string
+  scoreCalculation?: ScoreCalculation // Advanced scoring details
+  questionMetrics?: QuestionMetrics[] // Per-question metrics
 }
 
 export interface StudentProgress {
@@ -53,6 +56,10 @@ export interface RankingEntry {
 interface StudentProgressContextType {
   progress: StudentProgress
   updateGameScore: (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => void
+  updateGameScoreAdvanced: (
+    gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt' | 'scoreCalculation'>,
+    questionMetrics: QuestionMetrics[]
+  ) => void
   resetProgress: () => void
   getGameProgress: (gameId: number) => GameScore | null
   newAchievements: string[]
@@ -464,10 +471,39 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
     setNewAchievements([])
   }
 
+  // Advanced scoring method with question metrics
+  const updateGameScoreAdvanced = (
+    gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt' | 'scoreCalculation'>,
+    questionMetrics: QuestionMetrics[]
+  ) => {
+    // Calculate advanced score
+    const scoreCalculation = AdvancedScoringSystem.calculateScore(
+      questionMetrics,
+      gameScore.timeElapsed,
+      gameScore.isCollaborative
+    )
+    
+    // Use the normalized score from the advanced calculation
+    const normalizedScore = AdvancedScoringSystem.calculateNormalizedScore(scoreCalculation)
+    
+    // Create enhanced game score with advanced scoring
+    const enhancedGameScore = {
+      ...gameScore,
+      score: scoreCalculation.finalScore,
+      normalizedScore,
+      scoreCalculation,
+      questionMetrics
+    }
+    
+    // Update using the existing method
+    updateGameScore(enhancedGameScore)
+  }
+
   return (
     <StudentProgressContext.Provider value={{
       progress,
       updateGameScore,
+      updateGameScoreAdvanced,
       resetProgress,
       getGameProgress,
       calculateOverallPerformance,
