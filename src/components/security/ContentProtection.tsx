@@ -24,8 +24,13 @@ export function ContentProtection({
 }: ContentProtectionProps) {
   const [isBlurred, setIsBlurred] = useState(false)
   const [showWarning, setShowWarning] = useState(false)
+  const [isWindowFocused, setIsWindowFocused] = useState(true)
+  const [suspiciousActivity, setSuspiciousActivity] = useState(false)
+  const [blurReason, setBlurReason] = useState<'printscreen' | 'focus_lost' | 'devtools' | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const { user } = useRBAC()
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const printScreenTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!enableProtection) return
@@ -48,9 +53,29 @@ export function ContentProtection({
       // Handle PrintScreen
       if (blurOnPrintScreen && e.key === 'PrintScreen') {
         e.preventDefault()
+        setBlurReason('printscreen')
         setIsBlurred(true)
-        showProtectionWarning()
-        setTimeout(() => setIsBlurred(false), 3000)
+        setShowWarning(true)
+        setSuspiciousActivity(true)
+
+        // Log específico para PrintScreen
+        console.log('🚨 TENTATIVA DE PRINTSCREEN DETECTADA!', {
+          timestamp: new Date().toISOString(),
+          key: e.key,
+          userAgent: navigator.userAgent
+        })
+
+        // Remove blur após 3 segundos para PrintScreen
+        if (printScreenTimeoutRef.current) {
+          clearTimeout(printScreenTimeoutRef.current)
+        }
+        printScreenTimeoutRef.current = setTimeout(() => {
+          setIsBlurred(false)
+          setShowWarning(false)
+          setBlurReason(null)
+          setSuspiciousActivity(false)
+        }, 3000)
+
         return false
       }
     }
@@ -85,11 +110,30 @@ export function ContentProtection({
     if (disableDevTools) {
       const detectDevTools = () => {
         const threshold = 160
-        if (window.outerHeight - window.innerHeight > threshold || 
+        if (window.outerHeight - window.innerHeight > threshold ||
             window.outerWidth - window.innerWidth > threshold) {
-          showProtectionWarning()
-          setIsBlurred(true)
-          setTimeout(() => setIsBlurred(false), 2000)
+
+          // Só aplica se não há outro motivo ativo
+          if (!blurReason || blurReason === 'devtools') {
+            setBlurReason('devtools')
+            setIsBlurred(true)
+            setShowWarning(true)
+            setSuspiciousActivity(true)
+
+            console.log('🚨 DEVTOOLS DETECTADO!', {
+              timestamp: new Date().toISOString(),
+              windowSize: { outer: { width: window.outerWidth, height: window.outerHeight }, inner: { width: window.innerWidth, height: window.innerHeight } }
+            })
+
+            setTimeout(() => {
+              if (blurReason === 'devtools') {
+                setIsBlurred(false)
+                setShowWarning(false)
+                setBlurReason(null)
+                setSuspiciousActivity(false)
+              }
+            }, 2000)
+          }
         }
       }
 
@@ -112,9 +156,99 @@ export function ContentProtection({
     }
   }, [enableProtection, blurOnPrintScreen, disableRightClick, disableTextSelection, disableDevTools])
 
+  // Detecta perda de foco da janela/aba (proteção contra captura)
+  useEffect(() => {
+    if (!enableProtection) return
+
+    const handleWindowFocus = () => {
+      setIsWindowFocused(true)
+
+      // Remove ofuscação quando volta o foco, mas só se foi causada por perda de foco
+      if (blurReason === 'focus_lost') {
+        if (blurTimeoutRef.current) {
+          clearTimeout(blurTimeoutRef.current)
+          blurTimeoutRef.current = null
+        }
+
+        // Restaura imediatamente quando volta o foco
+        setIsBlurred(false)
+        setShowWarning(false)
+        setBlurReason(null)
+        setSuspiciousActivity(false)
+      }
+    }
+
+    const handleWindowBlur = () => {
+      setIsWindowFocused(false)
+
+      // Só aplica ofuscação por perda de foco se não há outro motivo ativo
+      if (!blurReason || blurReason === 'focus_lost') {
+        setBlurReason('focus_lost')
+        setSuspiciousActivity(true)
+        setIsBlurred(true)
+        setShowWarning(true)
+
+        // Log da atividade suspeita
+        console.log('🚨 PERDA DE FOCO DETECTADA - Possível tentativa de captura', {
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          url: window.location.href
+        })
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleWindowBlur()
+      } else {
+        handleWindowFocus()
+      }
+    }
+
+    // Eventos de foco da janela
+    window.addEventListener('focus', handleWindowFocus)
+    window.addEventListener('blur', handleWindowBlur)
+
+    // Evento de mudança de visibilidade da aba
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus)
+      window.removeEventListener('blur', handleWindowBlur)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current)
+      }
+      if (printScreenTimeoutRef.current) {
+        clearTimeout(printScreenTimeoutRef.current)
+      }
+    }
+  }, [enableProtection])
+
   const showProtectionWarning = () => {
     setShowWarning(true)
     setTimeout(() => setShowWarning(false), 3000)
+  }
+
+  const handleRestoreContent = () => {
+    console.log('🔄 Botão clicado - Restaurando conteúdo...')
+
+    setIsBlurred(false)
+    setShowWarning(false)
+    setBlurReason(null)
+    setSuspiciousActivity(false)
+
+    // Limpa todos os timeouts
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current)
+      blurTimeoutRef.current = null
+    }
+    if (printScreenTimeoutRef.current) {
+      clearTimeout(printScreenTimeoutRef.current)
+      printScreenTimeoutRef.current = null
+    }
+
+    console.log('✅ Conteúdo restaurado com sucesso!')
   }
 
   const getWatermarkText = () => {
@@ -129,14 +263,14 @@ export function ContentProtection({
     MozUserSelect: disableTextSelection ? 'none' as const : 'auto' as const,
     msUserSelect: disableTextSelection ? 'none' as const : 'auto' as const,
     WebkitUserDrag: 'none' as const,
-    WebkitTouchCallout: 'none' as const,
-    pointerEvents: isBlurred ? 'none' as const : 'auto' as const
+    WebkitTouchCallout: 'none' as const
+    // Removido pointerEvents para permitir cliques no overlay
   } : {}
 
   return (
-    <div 
+    <div
       ref={contentRef}
-      className={`relative ${isBlurred ? 'blur-lg' : ''} transition-all duration-300`}
+      className={`relative ${isBlurred ? 'blur-sm opacity-50' : ''} transition-all duration-500`}
       style={protectionStyles}
     >
       {/* Watermark */}
@@ -164,31 +298,65 @@ export function ContentProtection({
 
       {/* Protection Warning */}
       {showWarning && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse">
+        <div className="fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 border border-gray-600">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">Conteúdo protegido!</span>
+            <div>
+              <div className="text-sm font-medium">
+                {blurReason === 'printscreen' && '🛡️ Captura Bloqueada'}
+                {blurReason === 'focus_lost' && '👁️ Foco Perdido'}
+                {blurReason === 'devtools' && '🔧 DevTools Detectado'}
+                {!blurReason && '🛡️ Conteúdo Protegido'}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Blur overlay when protection is active */}
       {isBlurred && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md mx-4">
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4"
+          style={{ pointerEvents: 'auto' }}
+        >
+          <div
+            className="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full mx-4 border border-gray-200"
+            style={{ pointerEvents: 'auto' }}
+          >
             <div className="text-center">
-              <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Conteúdo Protegido
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Este conteúdo educacional é protegido contra cópia e captura de tela.
-                O acesso será restaurado em alguns segundos.
-              </p>
+              <div className="mb-6">
+                <svg className="w-20 h-20 text-blue-500 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  🛡️ Conteúdo Protegido
+                </h3>
+
+                <p className="text-gray-700 text-base mb-6">
+                  Identificamos que você saiu da página. O conteúdo foi temporariamente ofuscado para proteção.
+                </p>
+              </div>
+
+              <button
+                onClick={handleRestoreContent}
+                onMouseDown={handleRestoreContent}
+                onTouchStart={handleRestoreContent}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
+                style={{ pointerEvents: 'auto', zIndex: 9999 }}
+                type="button"
+              >
+                Clique aqui para voltar
+              </button>
+
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-6">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                <span>AvaliaNutri - Sistema de Proteção</span>
+              </div>
             </div>
           </div>
         </div>

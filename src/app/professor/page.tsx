@@ -1,9 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import React from 'react'
+import { useProfessorAccess } from '@/hooks/useRoleRedirect'
 import { ProfessorDashboard } from '@/components/dashboard/ProfessorDashboard'
-import { useRBAC } from '@/hooks/useRBAC'
 import { Layout } from '@/components/layout/Layout'
 import { StudentProgressProvider } from '@/contexts/StudentProgressContext'
 import { FirebaseDataProvider } from '@/contexts/FirebaseDataContext'
@@ -12,23 +11,9 @@ import { Button } from '@/components/ui/Button'
 import { Lock } from 'lucide-react'
 
 export default function ProfessorDashboardPage() {
-  const { user, loading } = useFirebaseAuth()
-  const { user: rbacUser, loading: rbacLoading } = useRBAC(user?.uid)
-  const [isProfessorGuest, setIsProfessorGuest] = useState(false)
+  const { user, loading, hasAccess } = useProfessorAccess(true)
 
-  useEffect(() => {
-    // Check for professor guest mode via cookie
-    if (typeof window !== 'undefined') {
-      const professorGuestCookie = document.cookie.split(';').find(cookie =>
-        cookie.trim().startsWith('professor-guest-mode=')
-      )
-      if (professorGuestCookie?.split('=')[1] === 'true') {
-        setIsProfessorGuest(true)
-      }
-    }
-  }, [])
-
-  if (loading || rbacLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
@@ -40,48 +25,8 @@ export default function ProfessorDashboardPage() {
     )
   }
 
-  // Debug logging
-  console.log('🔍 Professor Page Debug:', {
-    user: user ? { uid: user.uid, email: user.email } : 'null',
-    rbacUser: rbacUser ? { id: rbacUser.id, email: rbacUser.email, role: rbacUser.role } : 'null',
-    loading,
-    rbacLoading,
-    isProfessorGuest
-  })
-
-  // Check if user has professor access
-  const hasAccess = (rbacUser && rbacUser.role === 'professor') || isProfessorGuest
-
-  // Show loading while authentication is being checked
-  if (loading || (user && rbacLoading)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
-
-  // Check for student guest mode
-  const isStudentGuest = typeof window !== 'undefined' &&
-    document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
-
-  // Redirect students (including student guests) to /jogos
-  if ((rbacUser && rbacUser.role === 'student' && rbacUser.id !== 'professor-guest-user') || isStudentGuest) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/jogos'
-    }
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-700">Redirecionando para Jogos...</h2>
-        </div>
-      </div>
-    )
-  }
-
   // Show access denied if user doesn't have professor access
-  if (!hasAccess) {
+  if (!hasAccess()) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">

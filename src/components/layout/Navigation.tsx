@@ -15,18 +15,36 @@ import {
   HelpCircle,
   Book
 } from 'lucide-react'
-import { useAuth } from '@/hooks/useSupabase'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { useRBAC } from '@/hooks/useRBAC'
 import { Button } from '@/components/ui/Button'
 import { t } from '@/lib/translations'
 
-const navigationItems = [
-  { href: '/', label: t('navigation.home'), icon: Home },
-  { href: '/games', label: t('navigation.games'), icon: Gamepad2 },
-  { href: '/progress', label: t('navigation.progress'), icon: BarChart3 },
-  { href: '/leaderboard', label: t('navigation.leaderboard'), icon: Trophy },
-  { href: '/learn', label: t('navigation.learn'), icon: BookOpen },
-  { href: '/profile', label: t('navigation.profile'), icon: User },
-]
+const getNavigationItems = (userRole?: string) => {
+  const baseItems = [
+    { href: '/', label: t('navigation.home'), icon: Home },
+  ]
+
+  if (userRole === 'professor') {
+    return [
+      ...baseItems,
+      { href: '/professor', label: 'Dashboard', icon: BarChart3 },
+      { href: '/jogos', label: t('navigation.games'), icon: Gamepad2 },
+      { href: '/modules', label: 'Módulos', icon: BookOpen },
+      { href: '/profile', label: t('navigation.profile'), icon: User },
+    ]
+  } else {
+    // Student navigation
+    return [
+      ...baseItems,
+      { href: '/jogos', label: t('navigation.games'), icon: Gamepad2 },
+      { href: '/modules', label: 'Módulos', icon: BookOpen },
+      { href: '/progress', label: t('navigation.progress'), icon: BarChart3 },
+      { href: '/leaderboard', label: t('navigation.leaderboard'), icon: Trophy },
+      { href: '/profile', label: t('navigation.profile'), icon: User },
+    ]
+  }
+}
 
 interface NavigationProps {
   onShowHelp?: () => void
@@ -35,7 +53,8 @@ interface NavigationProps {
 
 export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {}) {
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
+  const { user: firebaseUser, signOut } = useFirebaseAuth()
+  const { user } = useRBAC(firebaseUser?.uid)
 
   const handleSignOut = async () => {
     await signOut()
@@ -107,7 +126,7 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
 
           {user && (
             <div className="flex items-center space-x-4">
-              {navigationItems.map((item) => {
+              {getNavigationItems(user?.role).map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
                 

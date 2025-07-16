@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { Navigation } from './Navigation'
-import { useAuth } from '@/hooks/useSupabase'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { HelpSystem } from '@/components/ui/HelpSystem'
 import { BeginnerGlossary } from '@/components/ui/BeginnerGlossary'
 
@@ -11,7 +11,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { loading } = useAuth()
+  const { loading } = useFirebaseAuth()
   const [showHelp, setShowHelp] = useState(false)
   const [showGlossary, setShowGlossary] = useState(false)
 
