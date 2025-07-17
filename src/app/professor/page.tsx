@@ -20,6 +20,7 @@ import {
   Bell,
   HelpCircle
 } from 'lucide-react'
+import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 export default function ProfessorDashboardPage() {
   const { user, loading } = useFirebaseAuth()
@@ -99,9 +100,7 @@ export default function ProfessorDashboardPage() {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm" onClick={handleNotificationClick}>
-                    <Bell className="w-4 h-4" />
-                  </Button>
+                  <NotificationCenter role="professor" />
                   <Button variant="ghost" size="sm" onClick={handleHelpClick}>
                     <HelpCircle className="w-4 h-4" />
                   </Button>
