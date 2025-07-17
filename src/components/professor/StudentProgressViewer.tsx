@@ -142,7 +142,7 @@ export function StudentProgressViewer({ classId, className = '' }: StudentProgre
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className="space-y-6">
       {/* Header com estatísticas gerais */}
       <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
         <CardHeader>
