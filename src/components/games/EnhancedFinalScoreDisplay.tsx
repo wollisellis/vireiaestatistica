@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { useRouter } from 'next/navigation'
-import { ScoreCalculation, AdvancedScoringSystem } from '@/lib/scoringSystem'
+import { ScoreCalculation, EnhancedScoringSystem } from '@/lib/scoringSystem'
 import { ScoreDisplay } from '@/components/scoring/ScoreDisplay'
 
 interface EnhancedFinalScoreDisplayProps {
@@ -61,10 +61,12 @@ export function EnhancedFinalScoreDisplay({
   
   // Calculate performance metrics
   const normalizedScore = scoreCalculation 
-    ? AdvancedScoringSystem.calculateNormalizedScore(scoreCalculation)
+    ? scoreCalculation.normalizedScore
     : Math.round((score / maxScore) * 100)
     
-  const performanceRating = AdvancedScoringSystem.getPerformanceRating(normalizedScore)
+  const performanceRating = scoreCalculation 
+    ? scoreCalculation.performance
+    : EnhancedScoringSystem.getPerformanceRating(normalizedScore)
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -248,7 +250,7 @@ export function EnhancedFinalScoreDisplay({
                   />
                 )}
                 
-                {scoreCalculation.timeBonus > 25 && (
+                {scoreCalculation.timeBonus > 50 && (
                   <AchievementBadge
                     icon={<Zap className="w-6 h-6" />}
                     title="Velocista"

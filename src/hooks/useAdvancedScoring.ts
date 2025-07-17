@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { QuestionMetrics, ScoreCalculation, AdvancedScoringSystem } from '@/lib/scoringSystem'
+import { QuestionMetrics, ScoreCalculation, EnhancedScoringSystem } from '@/lib/scoringSystem'
 import { useStudentProgress } from '@/contexts/StudentProgressContext'
 
 interface UseAdvancedScoringProps {
@@ -79,7 +79,7 @@ export function useAdvancedScoring({
   const calculateFinalScore = useCallback(() => {
     const totalTimeElapsed = Math.floor((Date.now() - gameStartTime.current) / 1000)
     
-    const calculation = AdvancedScoringSystem.calculateScore(
+    const calculation = EnhancedScoringSystem.calculateScore(
       questionMetrics,
       totalTimeElapsed,
       isCollaborative
@@ -87,12 +87,12 @@ export function useAdvancedScoring({
     
     setScoreCalculation(calculation)
     
-    // Update progress with advanced scoring
+    // Update progress with enhanced scoring
     updateGameScoreAdvanced(
       {
         gameId,
         score: calculation.finalScore,
-        maxScore: totalQuestions * 100 * 3, // Max possible with all bonuses
+        maxScore: 1000, // Normalized max score
         timeElapsed: totalTimeElapsed,
         completedAt: new Date(),
         exercisesCompleted: questionMetrics.filter(m => m.correct).length,

@@ -31,20 +31,24 @@ export function ScoreDisplay({
 }: ScoreDisplayProps) {
   const { finalScore, breakdown } = scoreCalculation
   
-  // Calculate normalized score (0-100)
-  const normalizedScore = Math.min(100, Math.round((finalScore / (breakdown.totalQuestions * 300)) * 100))
+  // Use the normalized score from the calculation
+  const normalizedScore = scoreCalculation.normalizedScore
+  const performance = scoreCalculation.performance
   
-  // Get performance rating
-  const getPerformanceRating = () => {
-    if (normalizedScore >= 95) return { label: 'Excepcional', color: 'text-purple-600', bg: 'bg-purple-100' }
-    if (normalizedScore >= 85) return { label: 'Excelente', color: 'text-green-600', bg: 'bg-green-100' }
-    if (normalizedScore >= 70) return { label: 'Muito Bom', color: 'text-blue-600', bg: 'bg-blue-100' }
-    if (normalizedScore >= 60) return { label: 'Bom', color: 'text-yellow-600', bg: 'bg-yellow-100' }
-    if (normalizedScore >= 50) return { label: 'Regular', color: 'text-orange-600', bg: 'bg-orange-100' }
-    return { label: 'Precisa Melhorar', color: 'text-red-600', bg: 'bg-red-100' }
+  // Get rating display properties
+  const getRatingDisplay = () => {
+    const colorMap = {
+      'purple': { color: 'text-purple-600', bg: 'bg-purple-100' },
+      'green': { color: 'text-green-600', bg: 'bg-green-100' },
+      'blue': { color: 'text-blue-600', bg: 'bg-blue-100' },
+      'yellow': { color: 'text-yellow-600', bg: 'bg-yellow-100' },
+      'orange': { color: 'text-orange-600', bg: 'bg-orange-100' },
+      'red': { color: 'text-red-600', bg: 'bg-red-100' }
+    }
+    return colorMap[performance.color as keyof typeof colorMap] || colorMap.blue
   }
 
-  const rating = getPerformanceRating()
+  const rating = getRatingDisplay()
 
   if (compact) {
     return (
@@ -63,7 +67,7 @@ export function ScoreDisplay({
             </div>
           </div>
           <div className={`px-3 py-1 rounded-full ${rating.bg}`}>
-            <span className={`text-sm font-medium ${rating.color}`}>{rating.label}</span>
+            <span className={`text-sm font-medium ${rating.color}`}>{performance.rating}</span>
           </div>
         </div>
       </motion.div>
@@ -76,7 +80,7 @@ export function ScoreDisplay({
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Detalhamento da Pontuação</h3>
           <div className={`px-4 py-2 rounded-full ${rating.bg}`}>
-            <span className={`font-medium ${rating.color}`}>{rating.label}</span>
+            <span className={`font-medium ${rating.color}`}>{performance.rating}</span>
           </div>
         </div>
       </CardHeader>
@@ -91,7 +95,8 @@ export function ScoreDisplay({
           <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <p className="text-sm text-gray-600 mb-2">Pontuação Final</p>
           <p className="text-5xl font-bold text-gray-900">{finalScore}</p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-lg text-gray-600 mt-2">{normalizedScore}% - {performance.rating}</p>
+          <p className="text-sm text-gray-500 mt-1">
             {breakdown.correctAnswers} de {breakdown.totalQuestions} questões corretas
           </p>
         </motion.div>
@@ -116,31 +121,31 @@ export function ScoreDisplay({
               <ScoreComponent
                 icon={<Clock className="w-5 h-5" />}
                 label="Bônus de Tempo"
-                value={`+${scoreCalculation.timeBonus}%`}
+                value={`+${scoreCalculation.timeBonus}`}
                 color="green"
                 delay={0.2}
                 showAnimation={showAnimation}
               />
             )}
 
-            {/* Streak Multiplier */}
-            {scoreCalculation.streakMultiplier > 0 && (
+            {/* Streak Bonus */}
+            {scoreCalculation.streakBonus > 0 && (
               <ScoreComponent
                 icon={<TrendingUp className="w-5 h-5" />}
-                label="Multiplicador de Sequência"
-                value={`+${scoreCalculation.streakMultiplier}%`}
+                label="Bônus de Sequência"
+                value={`+${scoreCalculation.streakBonus}`}
                 color="purple"
                 delay={0.3}
                 showAnimation={showAnimation}
               />
             )}
 
-            {/* Difficulty Multiplier */}
-            {scoreCalculation.difficultyMultiplier > 0 && (
+            {/* Difficulty Bonus */}
+            {scoreCalculation.difficultyBonus > 0 && (
               <ScoreComponent
                 icon={<BarChart3 className="w-5 h-5" />}
-                label="Multiplicador de Dificuldade"
-                value={`+${scoreCalculation.difficultyMultiplier}%`}
+                label="Bônus de Dificuldade"
+                value={`+${scoreCalculation.difficultyBonus}`}
                 color="orange"
                 delay={0.4}
                 showAnimation={showAnimation}
@@ -152,7 +157,7 @@ export function ScoreDisplay({
               <ScoreComponent
                 icon={<Users className="w-5 h-5" />}
                 label="Bônus Colaborativo"
-                value={`+${scoreCalculation.collaborationBonus}%`}
+                value={`+${scoreCalculation.collaborationBonus}`}
                 color="indigo"
                 delay={0.5}
                 showAnimation={showAnimation}
@@ -206,9 +211,9 @@ export function ScoreDisplay({
               icon={<Clock className="w-4 h-4" />}
             />
             <StatItem
-              label="Dicas Usadas"
-              value={breakdown.hintsUsed.toString()}
-              icon={<AlertCircle className="w-4 h-4" />}
+              label="Percentil"
+              value={`${performance.percentile}%`}
+              icon={<Award className="w-4 h-4" />}
             />
           </div>
         </div>
@@ -225,12 +230,13 @@ export function ScoreDisplay({
               <Award className="w-6 h-6 text-yellow-600" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  Conquista Desbloqueada!
+                  Conquista Desbloqueada! {performance.emoji}
                 </p>
                 <p className="text-xs text-gray-600 mt-1">
-                  {normalizedScore >= 95 && "Mestre Excepcional - Desempenho extraordinário!"}
-                  {normalizedScore >= 85 && normalizedScore < 95 && "Expert em Nutrição - Excelente domínio do conteúdo!"}
-                  {normalizedScore >= 70 && normalizedScore < 85 && "Praticante Dedicado - Continue progredindo!"}
+                  {performance.message}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Percentil: {performance.percentile}%
                 </p>
               </div>
             </div>

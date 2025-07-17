@@ -1,16 +1,27 @@
-// Advanced Scoring System for AvaliaNutri Platform
+// Enhanced Scoring System for AvaliaNutri Platform
 // Created by Ellis Abhulime - Unicamp
+// Version 2.0 - Improved consistency and balance
 
 export interface ScoreCalculation {
   baseScore: number
   timeBonus: number
-  streakMultiplier: number
-  difficultyMultiplier: number
+  streakBonus: number
+  difficultyBonus: number
   collaborationBonus: number
   perfectBonus: number
   penaltyDeduction: number
   finalScore: number
+  normalizedScore: number // 0-100 standardized score
   breakdown: ScoreBreakdown
+  performance: PerformanceRating
+}
+
+export interface PerformanceRating {
+  rating: string
+  color: string
+  emoji: string
+  message: string
+  percentile: number
 }
 
 export interface ScoreBreakdown {
@@ -35,41 +46,45 @@ export interface QuestionMetrics {
   difficulty: 'muito-facil' | 'facil' | 'medio' | 'dificil' | 'muito-dificil'
 }
 
-export class AdvancedScoringSystem {
-  private static readonly TIME_BONUSES = {
-    VERY_FAST: { threshold: 15, multiplier: 1.5 },    // < 15 seconds
-    FAST: { threshold: 30, multiplier: 1.25 },        // < 30 seconds
-    NORMAL: { threshold: 60, multiplier: 1.1 },       // < 60 seconds
-    SLOW: { threshold: 120, multiplier: 1.0 },        // < 120 seconds
-    VERY_SLOW: { threshold: Infinity, multiplier: 0.9 } // > 120 seconds
-  }
-
-  private static readonly DIFFICULTY_MULTIPLIERS = {
-    'muito-facil': 1.0,
-    'facil': 1.2,
-    'medio': 1.5,
-    'dificil': 2.0,
-    'muito-dificil': 2.5
-  }
-
-  private static readonly STREAK_BONUSES = {
-    3: 1.1,   // 3 correct in a row
-    5: 1.2,   // 5 correct in a row
-    10: 1.5,  // 10 correct in a row
-    15: 2.0,  // 15 correct in a row
-    20: 2.5   // 20+ correct in a row
-  }
-
-  private static readonly HINT_PENALTIES = {
-    0: 1.0,   // No hints used
-    1: 0.9,   // 1 hint used
-    2: 0.8,   // 2 hints used
-    3: 0.7    // 3+ hints used
-  }
-
-  private static readonly COLLABORATION_BONUS = 1.15 // 15% bonus for collaborative work
-  private static readonly PERFECT_SCORE_BONUS = 500 // Fixed bonus for 100% accuracy
+export class EnhancedScoringSystem {
+  // Base scoring configuration
   private static readonly BASE_POINTS_PER_QUESTION = 100
+  private static readonly MAX_POSSIBLE_SCORE = 1000 // Maximum score for normalization
+  
+  // Time-based bonuses (additive, not multiplicative)
+  private static readonly TIME_BONUSES = {
+    VERY_FAST: { threshold: 15, bonus: 25 },    // < 15 seconds: +25 points
+    FAST: { threshold: 30, bonus: 15 },         // < 30 seconds: +15 points
+    NORMAL: { threshold: 60, bonus: 5 },        // < 60 seconds: +5 points
+    SLOW: { threshold: 120, bonus: 0 },         // < 120 seconds: 0 points
+    VERY_SLOW: { threshold: Infinity, bonus: -10 } // > 120 seconds: -10 points
+  }
+
+  // Difficulty-based bonuses (additive)
+  private static readonly DIFFICULTY_BONUSES = {
+    'muito-facil': 0,
+    'facil': 10,
+    'medio': 25,
+    'dificil': 50,
+    'muito-dificil': 75
+  }
+
+  // Streak bonuses (additive)
+  private static readonly STREAK_BONUSES = {
+    3: 20,   // 3 correct in a row: +20 points
+    5: 40,   // 5 correct in a row: +40 points
+    10: 80,  // 10 correct in a row: +80 points
+    15: 150, // 15 correct in a row: +150 points
+    20: 250  // 20+ correct in a row: +250 points
+  }
+
+  // Hint penalties (fixed per hint)
+  private static readonly HINT_PENALTY = 10 // -10 points per hint
+  private static readonly ATTEMPT_PENALTY = 5 // -5 points per extra attempt
+  
+  // Bonuses
+  private static readonly COLLABORATION_BONUS = 50 // Fixed bonus for collaborative work
+  private static readonly PERFECT_SCORE_BONUS = 100 // Fixed bonus for 100% accuracy
 
   public static calculateScore(
     questionMetrics: QuestionMetrics[],
@@ -81,17 +96,17 @@ export class AdvancedScoringSystem {
     // 1. Calculate base score (accuracy-based)
     const baseScore = this.calculateBaseScore(breakdown)
     
-    // 2. Calculate time bonus
+    // 2. Calculate time bonus (additive)
     const timeBonus = this.calculateTimeBonus(breakdown, questionMetrics)
     
-    // 3. Calculate streak multiplier
-    const streakMultiplier = this.calculateStreakMultiplier(questionMetrics)
+    // 3. Calculate streak bonus (additive)
+    const streakBonus = this.calculateStreakBonus(questionMetrics)
     
-    // 4. Calculate difficulty multiplier
-    const difficultyMultiplier = this.calculateDifficultyMultiplier(questionMetrics)
+    // 4. Calculate difficulty bonus (additive)
+    const difficultyBonus = this.calculateDifficultyBonus(questionMetrics)
     
     // 5. Calculate collaboration bonus
-    const collaborationBonus = isCollaborative ? this.COLLABORATION_BONUS : 1.0
+    const collaborationBonus = isCollaborative ? this.COLLABORATION_BONUS : 0
     
     // 6. Calculate perfect score bonus
     const perfectBonus = breakdown.accuracy === 100 ? this.PERFECT_SCORE_BONUS : 0
@@ -99,24 +114,30 @@ export class AdvancedScoringSystem {
     // 7. Calculate penalty deductions
     const penaltyDeduction = this.calculatePenalties(breakdown)
     
-    // 8. Calculate final score
-    let finalScore = baseScore * timeBonus * streakMultiplier * difficultyMultiplier * collaborationBonus
-    finalScore = Math.round(finalScore - penaltyDeduction + perfectBonus)
+    // 8. Calculate final score (additive system)
+    let finalScore = baseScore + timeBonus + streakBonus + difficultyBonus + collaborationBonus + perfectBonus - penaltyDeduction
     
-    // Ensure score doesn't go below 0 or above maximum possible
-    const maxPossibleScore = questionMetrics.length * this.BASE_POINTS_PER_QUESTION * 3 // Maximum with all bonuses
-    finalScore = Math.max(0, Math.min(finalScore, maxPossibleScore))
+    // Ensure score doesn't go below 0
+    finalScore = Math.max(0, finalScore)
+    
+    // Calculate normalized score (0-100)
+    const normalizedScore = this.calculateNormalizedScore(finalScore, questionMetrics.length)
+    
+    // Get performance rating
+    const performance = this.getPerformanceRating(normalizedScore)
 
     return {
       baseScore: Math.round(baseScore),
-      timeBonus: Math.round((timeBonus - 1) * 100), // Convert to percentage
-      streakMultiplier: Math.round((streakMultiplier - 1) * 100), // Convert to percentage
-      difficultyMultiplier: Math.round((difficultyMultiplier - 1) * 100), // Convert to percentage
-      collaborationBonus: Math.round((collaborationBonus - 1) * 100), // Convert to percentage
-      perfectBonus,
+      timeBonus: Math.round(timeBonus),
+      streakBonus: Math.round(streakBonus),
+      difficultyBonus: Math.round(difficultyBonus),
+      collaborationBonus: Math.round(collaborationBonus),
+      perfectBonus: Math.round(perfectBonus),
       penaltyDeduction: Math.round(penaltyDeduction),
-      finalScore,
-      breakdown
+      finalScore: Math.round(finalScore),
+      normalizedScore: Math.round(normalizedScore),
+      breakdown,
+      performance
     }
   }
 
@@ -153,25 +174,29 @@ export class AdvancedScoringSystem {
   }
 
   private static calculateBaseScore(breakdown: ScoreBreakdown): number {
-    // Base score is percentage of correct answers multiplied by base points
-    return (breakdown.accuracy / 100) * breakdown.totalQuestions * this.BASE_POINTS_PER_QUESTION
+    // Base score is number of correct answers multiplied by base points
+    return breakdown.correctAnswers * this.BASE_POINTS_PER_QUESTION
   }
 
   private static calculateTimeBonus(breakdown: ScoreBreakdown, metrics: QuestionMetrics[]): number {
     // Calculate time bonus based on average response time
     const avgTime = breakdown.averageTimePerQuestion
+    let bonus = 0
     
     if (avgTime <= this.TIME_BONUSES.VERY_FAST.threshold) {
-      return this.TIME_BONUSES.VERY_FAST.multiplier
+      bonus = this.TIME_BONUSES.VERY_FAST.bonus
     } else if (avgTime <= this.TIME_BONUSES.FAST.threshold) {
-      return this.TIME_BONUSES.FAST.multiplier
+      bonus = this.TIME_BONUSES.FAST.bonus
     } else if (avgTime <= this.TIME_BONUSES.NORMAL.threshold) {
-      return this.TIME_BONUSES.NORMAL.multiplier
+      bonus = this.TIME_BONUSES.NORMAL.bonus
     } else if (avgTime <= this.TIME_BONUSES.SLOW.threshold) {
-      return this.TIME_BONUSES.SLOW.multiplier
+      bonus = this.TIME_BONUSES.SLOW.bonus
     } else {
-      return this.TIME_BONUSES.VERY_SLOW.multiplier
+      bonus = this.TIME_BONUSES.VERY_SLOW.bonus
     }
+    
+    // Apply bonus per correct answer
+    return bonus * breakdown.correctAnswers
   }
 
   private static calculateStreaks(metrics: QuestionMetrics[]): { currentStreak: number, maxStreak: number } {
@@ -190,7 +215,7 @@ export class AdvancedScoringSystem {
     return { currentStreak, maxStreak }
   }
 
-  private static calculateStreakMultiplier(metrics: QuestionMetrics[]): number {
+  private static calculateStreakBonus(metrics: QuestionMetrics[]): number {
     const { maxStreak } = this.calculateStreaks(metrics)
     
     if (maxStreak >= 20) return this.STREAK_BONUSES[20]
@@ -199,36 +224,33 @@ export class AdvancedScoringSystem {
     if (maxStreak >= 5) return this.STREAK_BONUSES[5]
     if (maxStreak >= 3) return this.STREAK_BONUSES[3]
     
-    return 1.0 // No streak bonus
+    return 0 // No streak bonus
   }
 
-  private static calculateDifficultyMultiplier(metrics: QuestionMetrics[]): number {
-    if (metrics.length === 0) return 1.0
+  private static calculateDifficultyBonus(metrics: QuestionMetrics[]): number {
+    if (metrics.length === 0) return 0
     
-    // Calculate weighted average based on correct answers at each difficulty
-    let totalMultiplier = 0
-    let correctCount = 0
+    // Calculate difficulty bonus based on correct answers at each difficulty
+    let totalBonus = 0
     
     for (const metric of metrics) {
       if (metric.correct) {
-        totalMultiplier += this.DIFFICULTY_MULTIPLIERS[metric.difficulty]
-        correctCount++
+        totalBonus += this.DIFFICULTY_BONUSES[metric.difficulty]
       }
     }
     
-    return correctCount > 0 ? totalMultiplier / correctCount : 1.0
+    return totalBonus
   }
 
   private static calculatePenalties(breakdown: ScoreBreakdown): number {
     let penalty = 0
     
     // Hint usage penalty
-    const hintPenaltyMultiplier = this.HINT_PENALTIES[Math.min(breakdown.hintsUsed, 3)]
-    penalty += (1 - hintPenaltyMultiplier) * 100 * breakdown.totalQuestions
+    penalty += breakdown.hintsUsed * this.HINT_PENALTY
     
-    // Multiple attempts penalty (5 points per extra attempt)
+    // Multiple attempts penalty
     const extraAttempts = breakdown.attemptsCount - breakdown.totalQuestions
-    penalty += extraAttempts * 5
+    penalty += extraAttempts * this.ATTEMPT_PENALTY
     
     return penalty
   }
@@ -236,17 +258,18 @@ export class AdvancedScoringSystem {
   // Utility method to format score for display
   public static formatScoreDisplay(calculation: ScoreCalculation): string {
     const lines = [
-      `Pontuação Final: ${calculation.finalScore}`,
+      `Pontuação Final: ${calculation.finalScore} (${calculation.normalizedScore}%)`,
+      `Classificação: ${calculation.performance.rating} ${calculation.performance.emoji}`,
       ``,
       `📊 Detalhamento:`,
       `• Pontuação Base: ${calculation.baseScore}`,
-      `• Bônus de Tempo: +${calculation.timeBonus}%`,
-      `• Multiplicador de Sequência: +${calculation.streakMultiplier}%`,
-      `• Multiplicador de Dificuldade: +${calculation.difficultyMultiplier}%`,
+      `• Bônus de Tempo: +${calculation.timeBonus}`,
+      `• Bônus de Sequência: +${calculation.streakBonus}`,
+      `• Bônus de Dificuldade: +${calculation.difficultyBonus}`,
     ]
 
     if (calculation.collaborationBonus > 0) {
-      lines.push(`• Bônus Colaborativo: +${calculation.collaborationBonus}%`)
+      lines.push(`• Bônus Colaborativo: +${calculation.collaborationBonus}`)
     }
 
     if (calculation.perfectBonus > 0) {
@@ -263,71 +286,88 @@ export class AdvancedScoringSystem {
       `• Precisão: ${calculation.breakdown.accuracy.toFixed(1)}%`,
       `• Sequência Máxima: ${calculation.breakdown.maxStreak} acertos`,
       `• Tempo Médio: ${calculation.breakdown.averageTimePerQuestion.toFixed(1)}s`,
-      `• Dicas Usadas: ${calculation.breakdown.hintsUsed}`
+      `• Dicas Usadas: ${calculation.breakdown.hintsUsed}`,
+      `• Percentil: ${calculation.performance.percentile}%`
     )
 
     return lines.join('\n')
   }
 
   // Method to calculate normalized score (0-100)
-  public static calculateNormalizedScore(calculation: ScoreCalculation): number {
-    // Normalize based on maximum possible score with reasonable bonuses
-    const maxReasonableScore = calculation.breakdown.totalQuestions * this.BASE_POINTS_PER_QUESTION * 2
-    return Math.min(100, Math.round((calculation.finalScore / maxReasonableScore) * 100))
+  public static calculateNormalizedScore(finalScore: number, totalQuestions: number): number {
+    // Calculate maximum possible score for this number of questions
+    const maxPossibleScore = totalQuestions * (
+      this.BASE_POINTS_PER_QUESTION + // Base points
+      this.TIME_BONUSES.VERY_FAST.bonus + // Max time bonus
+      this.DIFFICULTY_BONUSES['muito-dificil'] + // Max difficulty bonus
+      (this.STREAK_BONUSES[20] / Math.max(1, totalQuestions)) + // Streak bonus normalized
+      this.COLLABORATION_BONUS + // Collaboration bonus
+      (this.PERFECT_SCORE_BONUS / Math.max(1, totalQuestions)) // Perfect bonus normalized
+    )
+    
+    return Math.min(100, Math.max(0, (finalScore / maxPossibleScore) * 100))
   }
 
-  // Method to get performance rating
-  public static getPerformanceRating(normalizedScore: number): {
-    rating: string
-    color: string
-    emoji: string
-    message: string
-  } {
+  // Method to get performance rating with percentile
+  public static getPerformanceRating(normalizedScore: number): PerformanceRating {
+    let rating: PerformanceRating
+    
     if (normalizedScore >= 95) {
-      return {
+      rating = {
         rating: 'Excepcional',
         color: 'purple',
         emoji: '🏆',
-        message: 'Desempenho extraordinário! Você é um mestre!'
+        message: 'Desempenho extraordinário! Você é um mestre!',
+        percentile: 95
       }
     } else if (normalizedScore >= 85) {
-      return {
+      rating = {
         rating: 'Excelente',
         color: 'green',
         emoji: '⭐',
-        message: 'Excelente trabalho! Você domina o conteúdo!'
+        message: 'Excelente trabalho! Você domina o conteúdo!',
+        percentile: 85
       }
     } else if (normalizedScore >= 70) {
-      return {
+      rating = {
         rating: 'Muito Bom',
         color: 'blue',
         emoji: '👍',
-        message: 'Muito bom! Continue assim!'
+        message: 'Muito bom! Continue assim!',
+        percentile: 70
       }
     } else if (normalizedScore >= 60) {
-      return {
+      rating = {
         rating: 'Bom',
         color: 'yellow',
         emoji: '✅',
-        message: 'Bom trabalho! Há espaço para melhorar.'
+        message: 'Bom trabalho! Há espaço para melhorar.',
+        percentile: 60
       }
     } else if (normalizedScore >= 50) {
-      return {
+      rating = {
         rating: 'Regular',
         color: 'orange',
         emoji: '📚',
-        message: 'Continue estudando e praticando!'
+        message: 'Continue estudando e praticando!',
+        percentile: 50
       }
     } else {
-      return {
+      rating = {
         rating: 'Precisa Melhorar',
         color: 'red',
         emoji: '💪',
-        message: 'Não desista! Revise o conteúdo e tente novamente.'
+        message: 'Não desista! Revise o conteúdo e tente novamente.',
+        percentile: Math.max(0, normalizedScore)
       }
     }
+    
+    return rating
   }
 }
 
 // Export a singleton instance for convenience
-export const scoringSystem = AdvancedScoringSystem
+export const scoringSystem = EnhancedScoringSystem
+
+// For backward compatibility
+export const AdvancedScoringSystem = EnhancedScoringSystem

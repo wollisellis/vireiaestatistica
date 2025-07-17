@@ -1,8 +1,8 @@
-# 🎯 Sistema de Pontuação Perfeito - AvaliaNutri
+# 🎯 Sistema de Pontuação Aprimorado - AvaliaNutri v2.0
 
 ## Visão Geral
 
-O novo sistema de pontuação avançado da plataforma AvaliaNutri foi completamente reformulado para oferecer uma experiência gamificada mais envolvente e justa. O sistema agora considera múltiplos fatores para calcular a pontuação final, incentivando não apenas respostas corretas, mas também velocidade, consistência e aprendizado colaborativo.
+O sistema de pontuação da plataforma AvaliaNutri foi completamente reformulado (v2.0) para oferecer uma experiência mais equilibrada, consistente e justa. O novo sistema utiliza cálculos aditivos em vez de multiplicativos, evitando pontuações desproporcionais e garantindo comparações justas entre diferentes jogos.
 
 ## 🚀 Principais Melhorias Implementadas
 
