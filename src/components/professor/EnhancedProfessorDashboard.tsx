@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import ModuleManagementPanel from './ModuleManagementPanel'
-// import StudentProgressViewer from './StudentProgressViewer'
+import StudentProgressViewer from './StudentProgressViewer'
 import { 
   ProfessorClassService, 
   ClassInfo, 
@@ -363,10 +363,7 @@ export function EnhancedProfessorDashboard({
           </TabsContent>
 
           <TabsContent value="students">
-            {/* <StudentProgressViewer classId={selectedClassId} /> */}
-            <div className="p-4 text-center text-gray-500">
-              Em desenvolvimento - Visualizador de progresso dos estudantes
-            </div>
+            <StudentProgressViewer classId={selectedClassId} />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">

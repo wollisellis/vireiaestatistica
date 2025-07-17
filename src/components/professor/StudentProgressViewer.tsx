@@ -239,7 +239,7 @@ export function StudentProgressViewer({ classId, className = '' }: StudentProgre
                 <div className="text-lg font-bold text-red-700">
                   {classStats.performanceDistribution.struggling}
                 </div>
-                <div className="text-xs text-red-600">Precisa Ajuda (<60%)</div>
+                <div className="text-xs text-red-600">Precisa Ajuda (&lt;60%)</div>
               </div>
             </div>
           </CardContent>
