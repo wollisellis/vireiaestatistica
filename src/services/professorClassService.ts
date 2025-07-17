@@ -14,7 +14,8 @@ import {
   serverTimestamp,
   writeBatch,
   onSnapshot,
-  limit
+  limit,
+  increment
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { StudentModuleProgress } from '@/lib/moduleProgressSystem'
