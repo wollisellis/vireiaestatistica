@@ -12,7 +12,7 @@ interface ExerciseRendererProps {
   onProgress?: (progress: number) => void;
 }
 
-export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
+const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
   exercise,
   onComplete,
   onProgress
