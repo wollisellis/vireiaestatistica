@@ -103,13 +103,17 @@ export function AuthForm() {
         )
         if (error) throw new Error(error.message)
 
-        // Redirect to dashboard after successful registration
-        window.location.reload()
+        // Simple redirect based on role
+        if (data.role === 'professor' || selectedRole === 'professor') {
+          window.location.href = '/professor'
+        } else {
+          window.location.href = '/jogos'
+        }
       } else {
         const { error } = await signIn(data.email, data.password)
         if (error) throw new Error(error.message)
 
-        // Redirect to dashboard after successful login
+        // Will be handled by useRoleRedirect hook
         window.location.reload()
       }
     } catch (err: unknown) {
@@ -207,7 +211,7 @@ export function AuthForm() {
         console.log('✅ Usuário Google existente:', data.profile)
       }
 
-      // Redirect to appropriate dashboard
+      // Simple redirect based on role
       console.log('🔄 Redirecionando para dashboard...')
       if (selectedRole === 'professor') {
         window.location.href = '/professor'

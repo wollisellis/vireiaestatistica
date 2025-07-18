@@ -18,12 +18,13 @@ import {
   Shield,
   Activity,
   Bell,
-  HelpCircle
+  HelpCircle,
+  LogOut
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 export default function ProfessorDashboardPage() {
-  const { user, loading } = useFirebaseAuth()
+  const { user, loading, signOut } = useFirebaseAuth()
 
   if (loading) {
     return (
@@ -73,6 +74,55 @@ export default function ProfessorDashboardPage() {
     console.log('Abrir ajuda')
   }
 
+  const handleLogout = async () => {
+    try {
+      // Clear all authentication state
+      if (typeof window !== 'undefined') {
+        // Clear cookies
+        const cookiesToClear = [
+          'guest-mode',
+          'professor-guest-mode',
+          'auth-token',
+          'firebase-auth-token',
+          'user-role',
+          'user-session'
+        ];
+
+        cookiesToClear.forEach(cookieName => {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+        });
+
+        // Clear localStorage and sessionStorage
+        const localStorageKeysToRemove = [
+          'guest-mode',
+          'professor-guest-mode',
+          'firebase-auth-token',
+          'user-data',
+          'auth-state'
+        ];
+
+        localStorageKeysToRemove.forEach(key => {
+          localStorage.removeItem(key);
+        });
+
+        sessionStorage.clear();
+      }
+
+      // Sign out from Firebase if user is authenticated
+      if (user && user.uid !== 'professor-guest-user') {
+        await signOut();
+      }
+
+      // Redirect to login page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, redirect to login page
+      window.location.href = '/';
+    }
+  };
+
   return (
     <ModuleProgressProvider>
       <div className="min-h-screen bg-gray-50">
@@ -106,6 +156,15 @@ export default function ProfessorDashboardPage() {
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleSettingsClick}>
                     <Settings className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleLogout}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Sair e voltar ao login"
+                  >
+                    <LogOut className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
