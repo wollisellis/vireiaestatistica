@@ -10,7 +10,9 @@ import {
   where,
   onSnapshot,
   orderBy,
-  limit
+  limit,
+  updateDoc,
+  doc
 } from 'firebase/firestore'
 
 export interface ProgressNotification {
@@ -302,4 +304,4 @@ class ProgressNotificationService {
   }
 }
 
-export default ProgressNotificationService.getInstance()
+export default ProgressNotificationService

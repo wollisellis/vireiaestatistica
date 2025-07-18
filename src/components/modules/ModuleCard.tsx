@@ -16,6 +16,7 @@ interface ModuleCardProps {
     completedExercises: number;
     totalExercises: number;
     score: number;
+    maxScore?: number;
   };
   onUnlock?: (moduleId: string) => void;
   isProfessor?: boolean;
@@ -28,6 +29,27 @@ export function ModuleCard({ module, progress, onUnlock, isProfessor = false }: 
     ? Math.round(((progress.completedContent + progress.completedExercises) / 
         (progress.totalContent + progress.totalExercises)) * 100)
     : 0;
+
+  // Calcular pontuação total máxima do módulo
+  const maxScore = progress?.maxScore || module.exercises.reduce((total, exercise) => total + exercise.points, 0);
+  
+  // Calcular porcentagem de pontuação obtida
+  const scorePercentage = progress && maxScore > 0 
+    ? Math.round((progress.score / maxScore) * 100)
+    : 0;
+
+  // Módulo é considerado completo se atingir 75% ou mais da pontuação
+  const isCompleted = scorePercentage >= 75;
+  
+  // Status do módulo baseado na performance
+  const getModuleStatus = () => {
+    if (scorePercentage >= 75) return { label: 'Completo', color: 'text-green-600', bgColor: 'bg-green-100' };
+    if (scorePercentage >= 50) return { label: 'Em Progresso', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+    if (scorePercentage > 0) return { label: 'Iniciado', color: 'text-blue-600', bgColor: 'bg-blue-100' };
+    return { label: 'Não Iniciado', color: 'text-gray-600', bgColor: 'bg-gray-100' };
+  };
+
+  const moduleStatus = getModuleStatus();
 
   const handleClick = () => {
     if (!module.isLocked || isProfessor) {
@@ -48,18 +70,38 @@ export function ModuleCard({ module, progress, onUnlock, isProfessor = false }: 
         module.isLocked && !isProfessor 
           ? 'opacity-75 cursor-not-allowed' 
           : 'hover:shadow-lg cursor-pointer transform hover:-translate-y-1'
+      } ${
+        isCompleted ? 'ring-2 ring-green-400 shadow-green-100' : ''
       }`}
       onClick={handleClick}
     >
+      {/* Indicador de módulo completo */}
+      {isCompleted && (
+        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 text-sm font-medium flex items-center justify-center gap-2">
+          <Trophy className="w-4 h-4" />
+          Módulo Concluído com Sucesso!
+        </div>
+      )}
+      
       {/* Header com ícone e título */}
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
             <span className="text-4xl">{module.icon}</span>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">
-                {module.title}
-              </h3>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {module.title}
+                </h3>
+                {progress && (
+                  <Badge 
+                    variant={isCompleted ? 'default' : 'secondary'}
+                    className={`${moduleStatus.bgColor} ${moduleStatus.color} text-xs`}
+                  >
+                    {moduleStatus.label}
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center mt-1 space-x-2 text-sm text-gray-500">
                 <Clock className="w-4 h-4" />
                 <span>{module.estimatedTime} min</span>
@@ -107,12 +149,39 @@ export function ModuleCard({ module, progress, onUnlock, isProfessor = false }: 
           </div>
         )}
 
-        {/* Pontuação */}
+        {/* Pontuação Detalhada */}
         {progress && progress.score > 0 && (
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <Trophy className="w-5 h-5 text-yellow-500" />
-              <span className="font-semibold">{progress.score} pontos</span>
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                <span className="font-semibold">
+                  {progress.score}/{maxScore} pontos
+                </span>
+              </div>
+              <span className={`text-sm font-medium ${moduleStatus.color}`}>
+                {scorePercentage}%
+              </span>
+            </div>
+            
+            {/* Barra de pontuação */}
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-500 ${
+                  scorePercentage >= 75 ? 'bg-green-500' :
+                  scorePercentage >= 50 ? 'bg-yellow-500' :
+                  'bg-blue-500'
+                }`}
+                style={{ width: `${scorePercentage}%` }}
+              />
+            </div>
+            
+            {/* Indicador de performance */}
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Mínimo para conclusão: 75%</span>
+              {scorePercentage >= 75 && (
+                <span className="text-green-600 font-medium">✓ Concluído</span>
+              )}
             </div>
           </div>
         )}

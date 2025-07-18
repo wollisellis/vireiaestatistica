@@ -25,7 +25,13 @@
       "Bash(timeout 30 npm run dev)",
       "Bash(git config:*)",
       "Bash(git remote add:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(gh auth:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 5 npx tsc --noEmit)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(node:*)"
     ],
     "deny": []
   }

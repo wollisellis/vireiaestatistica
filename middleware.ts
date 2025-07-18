@@ -35,6 +35,9 @@ export function middleware(request: NextRequest) {
   // Check if user is authenticated (has valid token or is in any guest mode)
   const isAuthenticated = !!(authToken || guestMode === 'true' || professorGuestMode === 'true')
   
+  // Determine user role based on authentication method
+  const userRole = professorGuestMode === 'true' ? 'professor' : 'student'
+  
   // Check if the current path is protected
   const isProtectedRoute = protectedRoutes.some(route => 
     pathname.startsWith(route)
@@ -54,10 +57,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
   
+  // Handle role-based access control for protected routes
+  if (isProtectedRoute && isAuthenticated) {
+    // Check if user is trying to access professor pages without professor role
+    if (pathname.startsWith('/professor') && userRole !== 'professor') {
+      // Redirect students to their appropriate page
+      return NextResponse.redirect(new URL('/jogos', request.url))
+    }
+    
+    // Check if professor is trying to access student pages (allow but don't redirect)
+    if (pathname.startsWith('/jogos') && userRole === 'professor') {
+      // Allow professors to access student pages (they can view both)
+      return NextResponse.next()
+    }
+  }
+  
   // Handle auth routes when user is already authenticated
   if (isAuthRoute && isAuthenticated) {
-    // Redirect to dashboard or intended destination
-    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/'
+    // Redirect to appropriate dashboard based on role
+    const redirectTo = userRole === 'professor' ? '/professor' : '/jogos'
     return NextResponse.redirect(new URL(redirectTo, request.url))
   }
 
