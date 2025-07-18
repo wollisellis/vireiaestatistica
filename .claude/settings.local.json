@@ -12,7 +12,8 @@
       "Bash(git config:*)",
       "Bash(ls:*)",
       "Bash(GIT_ASKPASS=echo git push origin main)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": []
   }
