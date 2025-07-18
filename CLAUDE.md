@@ -4,6 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Sempre fale comigo em pt-br
 
+## 🚨 IMPORTANTE: Estrutura do Projeto
+**Este é o diretório principal e oficial do projeto `AvaliaNutri`**. Todo o desenvolvimento deve ser realizado neste local:
+- **Localização**: `/mnt/c/Users/ellis/bioestat/bioestat-platform/`
+- **Código-fonte**: `./src/` (dentro deste diretório)
+- **Documentação**: `./docs/` (organizada por categoria)
+
+### Organização da Documentação
+- `./docs/archive/` - Documentação histórica (AVALIANUTRI_*, correções antigas)
+- `./docs/development/` - Guias técnicos (setup, deploy, especificações)
+- `./docs/features/` - Documentação de funcionalidades específicas
+- **Raiz**: Apenas arquivos essenciais (CLAUDE.md, README.md, LICENSE)
+
 ## Comandos de Desenvolvimento
 
 ```bash

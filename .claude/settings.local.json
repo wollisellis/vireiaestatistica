@@ -8,7 +8,10 @@
       "Bash(npx next build:*)",
       "Bash(npx tsc:*)",
       "Bash(node:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(git config:*)",
+      "Bash(ls:*)",
+      "Bash(GIT_ASKPASS=echo git push origin main)"
     ],
     "deny": []
   }

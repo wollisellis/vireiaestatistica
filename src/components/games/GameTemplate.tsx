@@ -119,7 +119,7 @@ export function GameTemplate({ gameId, questions = [], onBack, onComplete }: Gam
         concepts: [
           {
             term: gameDefinition?.title || 'Conceito Estatístico',
-            definition: gameDefinition?.description || 'Conceito fundamental de bioestatística',
+            definition: gameDefinition?.description || 'Conceito fundamental de avaliação nutricional',
             whenToUse: `Use ${gameDefinition?.title} quando precisar ${gameDefinition?.description?.toLowerCase()}`,
             dailyLifeAnalogy: {
               title: 'Analogia do Café da Manhã',
@@ -166,7 +166,7 @@ export function GameTemplate({ gameId, questions = [], onBack, onComplete }: Gam
       <AdvancedEducationalContent
         gameId={gameId}
         gameTitle={gameDefinition?.title || `Jogo ${gameId}`}
-        gameDescription={gameDefinition?.description || 'Jogo de bioestatística interativo'}
+        gameDescription={gameDefinition?.description || 'Jogo de avaliação nutricional interativo'}
         sections={educationalSections}
         onStartGame={handleStartGame}
         totalEstimatedTime={8}

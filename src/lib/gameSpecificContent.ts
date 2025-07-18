@@ -237,7 +237,7 @@ export function generateDefaultContent(gameId: number, gameTitle: string, gameDe
         id: 'introduction',
         title: `${gameTitle} - Começando do Zero`,
         icon: '🎯',
-        content: `Bem-vindo ao estudo de ${gameTitle}! Vamos aprender este conceito importante da bioestatística usando exemplos práticos e analogias do dia a dia.`,
+        content: `Bem-vindo ao estudo de ${gameTitle}! Vamos aprender este conceito importante da avaliação nutricional usando exemplos práticos e analogias do dia a dia.`,
         concepts: [
           {
             term: gameTitle,
@@ -257,7 +257,7 @@ export function generateDefaultContent(gameId: number, gameTitle: string, gameDe
               source: 'Revistas científicas brasileiras da área'
             },
             keyPoints: [
-              'Conceito fundamental da bioestatística',
+              'Conceito fundamental da avaliação nutricional',
               'Aplicação prática em pesquisas',
               'Interpretação correta dos resultados',
               'Limitações e cuidados necessários'

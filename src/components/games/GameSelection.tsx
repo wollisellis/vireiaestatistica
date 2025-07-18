@@ -141,10 +141,10 @@ export function GameSelection({ onGameSelect }: GameSelectionProps) {
         className="text-center"
       >
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          VireiEstatística - Jogos de Bioestatística
+          AvaliaNutri - Jogos de Avaliação Nutricional
         </h1>
         <p className="text-gray-600 text-lg mb-4">
-          Aprenda estatística através de jogos interativos com abordagem ultra-iniciante
+          Aprenda avaliação nutricional através de jogos interativos com abordagem ultra-iniciante
         </p>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
           <p className="text-blue-800 text-sm">
