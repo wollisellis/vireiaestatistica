@@ -848,8 +848,6 @@ const InteractiveExercise: React.FC<ExerciseRendererProps> = ({ exercise, onComp
     </div>
   );
 
-export default ExerciseRenderer;
-
 // Componentes placeholder para outros tipos de exercício
 const QuizExercise: React.FC<ExerciseRendererProps> = ({ exercise, onComplete }) => {
   return (
@@ -1413,5 +1411,6 @@ const InteractiveExercise: React.FC<ExerciseRendererProps> = ({ exercise, onComp
       </button>
     </div>
   );
-
 };
+
+export default ExerciseRenderer;
