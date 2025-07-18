@@ -304,4 +304,4 @@ class ProgressNotificationService {
   }
 }
 
-export default ProgressNotificationService
+export default ProgressNotificationService.getInstance()

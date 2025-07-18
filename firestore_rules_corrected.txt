@@ -1,0 +1,245 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ========================================
+    // FUNÇÕES AUXILIARES
+    // ========================================
+    
+    // Função para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Função para verificar se é o próprio usuário
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Função para verificar se é professor
+    function isProfessor() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor';
+    }
+    
+    // Função para verificar se é estudante
+    function isStudent() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+    
+    // Função para verificar email da Unicamp (corrigida)
+    function hasUnicampEmail() {
+      return isAuthenticated() && 
+        (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
+         request.auth.token.email.matches('.*@unicamp\\.br'));
+    }
+    
+    // Função para verificar se o usuário pode acessar dados de outro usuário
+    function canAccessUserData(userId) {
+      return isOwner(userId) || isProfessor();
+    }
+    
+    // ========================================
+    // COLEÇÕES PRINCIPAIS
+    // ========================================
+    
+    // USERS COLLECTION - Perfis de usuários
+    match /users/{userId} {
+      // Usuários podem ler e escrever apenas seus próprios dados
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      // Professores podem ler dados de todos os usuários
+      allow read: if isProfessor();
+      
+      // Permitir criação de conta (mais permissivo para testes)
+      allow create: if isAuthenticated();
+         
+      // Permitir atualização apenas do próprio perfil
+      allow update: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // UNIFIED SCORES COLLECTION - Sistema de pontuação unificado
+    match /unified_scores/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // MODULE PROGRESS COLLECTION - Progresso nos módulos
+    match /module_progress/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // USER PROGRESS COLLECTION - Progresso geral do usuário
+    match /userProgress/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // EXERCISE ATTEMPTS COLLECTION - Tentativas de exercícios
+    match /exercise_attempts/{attemptId} {
+      allow read, write: if isAuthenticated();
+      allow create: if isAuthenticated();
+    }
+    
+    // RANKINGS COLLECTION - Rankings e pontuações
+    match /rankings/{rankingId} {
+      allow read: if isAuthenticated();
+      allow write: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // NOTIFICATIONS COLLECTION - Sistema de notificações
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.recipientId == request.auth.uid || isProfessor());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.recipientId == request.auth.uid || isProfessor());
+    }
+    
+    // COURSES COLLECTION - Cursos e turmas
+    match /courses/{courseId} {
+      allow read, write: if isProfessor();
+      allow read: if isStudent() && 
+        request.auth.uid in resource.data.studentIds;
+      allow create: if isProfessor();
+    }
+    
+    // SETTINGS COLLECTION - Configurações do sistema
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isProfessor();
+    }
+    
+    // GAME PROGRESS COLLECTION - Progresso individual nos jogos
+    match /gameProgress/{progressId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas
+    match /collaborativeSessions/{sessionId} {
+      allow read, write: if isAuthenticated() && 
+        request.auth.uid in resource.data.participants;
+      allow read, write: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // QUESTIONS COLLECTION - Banco de questões
+    match /questions/{questionId} {
+      allow read: if isAuthenticated();
+      allow write: if isProfessor();
+    }
+    
+    // QUESTION RESPONSES COLLECTION - Respostas dos estudantes
+    match /questionResponses/{responseId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // ACHIEVEMENTS COLLECTION - Sistema de conquistas
+    match /achievements/{achievementId} {
+      allow read: if isAuthenticated();
+      allow write: if isProfessor();
+    }
+    
+    // USER ACHIEVEMENTS COLLECTION - Conquistas dos usuários
+    match /userAchievements/{userAchievementId} {
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // ANALYTICS COLLECTION - Dados analíticos
+    match /analytics/{analyticsId} {
+      allow read, write: if isProfessor();
+    }
+    
+    // LEADERBOARD COLLECTION - Rankings e pontuações
+    match /leaderboard/{leaderboardId} {
+      allow read: if isAuthenticated();
+      allow write: if isProfessor();
+    }
+    
+    // MODULES COLLECTION - Módulos educacionais
+    match /modules/{moduleId} {
+      allow read: if isAuthenticated();
+      allow write: if isProfessor();
+    }
+    
+    // FEEDBACK COLLECTION - Feedback dos estudantes
+    match /feedback/{feedbackId} {
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // STUDY CASES COLLECTION - Casos de estudo colaborativos
+    match /studyCases/{caseId} {
+      allow read: if isAuthenticated();
+      allow write: if isProfessor();
+    }
+    
+    // STUDY CASE RESPONSES COLLECTION - Respostas aos casos de estudo
+    match /studyCaseResponses/{responseId} {
+      allow read, write: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid ||
+         request.auth.uid in resource.data.collaborators);
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // SYSTEM SETTINGS COLLECTION - Configurações do sistema
+    match /systemSettings/{settingId} {
+      allow read, write: if isProfessor();
+    }
+    
+    // AUDIT LOGS COLLECTION - Logs de auditoria
+    match /auditLogs/{logId} {
+      allow read: if isProfessor();
+      allow create: if isAuthenticated();
+    }
+    
+    // ========================================
+    // SUBCOLEÇÕES
+    // ========================================
+    
+    // Subcoleção de sessões de usuário
+    match /users/{userId}/sessions/{sessionId} {
+      allow read, write: if canAccessUserData(userId);
+    }
+    
+    // Subcoleção de estatísticas de usuário
+    match /users/{userId}/statistics/{statId} {
+      allow read, write: if canAccessUserData(userId);
+    }
+    
+    // Subcoleção de preferências de usuário
+    match /users/{userId}/preferences/{prefId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // ========================================
+    // REGRA TEMPORÁRIA PARA DESENVOLVIMENTO
+    // ========================================
+    
+    // TEMPORÁRIO: Permitir acesso total para desenvolvimento
+    // REMOVER EM PRODUÇÃO
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
