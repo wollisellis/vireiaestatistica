@@ -1,4 +1,8 @@
 {
+  "env": {
+    "ANTHROPIC_CUSTOM_HEADERS": "anthropic-beta: interleaved-thinking-2025-05-14",
+    "MAX_THINKING_TOKENS": "30000"
+  },
   "permissions": {
     "allow": [
       "Bash(claude:*)",
@@ -9,7 +13,10 @@
       "Bash(git init:*)",
       "Bash(npm run build:*)",
       "Bash(mv:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(npm run dev:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }
