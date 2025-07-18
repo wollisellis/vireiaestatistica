@@ -47,14 +47,6 @@ export interface StudentProgress {
   improvementStreak: number
 }
 
-export interface RankingEntry {
-  studentId: string
-  studentName: string
-  rankingScore: number
-  gamesCompleted: number
-  averageScore: number
-  lastActivity: Date
-}
 
 interface StudentProgressContextType {
   progress: StudentProgress
@@ -73,9 +65,6 @@ interface StudentProgressContextType {
     color: string
     recommendation: string
   }
-  getRankingData: () => RankingEntry[]
-  getCurrentRank: () => number
-  getTopPerformers: (limit?: number) => RankingEntry[]
   calculateNormalizedScore: (exercisesCompleted: number, totalExercises: number) => number
 }
 
@@ -133,7 +122,7 @@ const getInitialProgress = (): StudentProgress => {
       totalScore,
       totalPossibleScore,
       gamesCompleted: gameScores.length,
-      totalGames: 4,
+      totalGames: 1,
       averageScore,
       totalTimeSpent: gameScores.reduce((sum, score) => sum + score.timeElapsed, 0),
       gameScores,
@@ -173,7 +162,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
       totalScore: 0,
       totalPossibleScore: 0,
       gamesCompleted: 0,
-      totalGames: 4,
+      totalGames: 1,
       averageScore: 0,
       totalTimeSpent: 0,
       gameScores: [],
@@ -458,40 +447,6 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
     }
   }
 
-  // Generate minimal mock ranking data only if no real data exists
-  const generateMinimalMockData = (): RankingEntry[] => {
-    // Only return empty array - no fake students
-    return []
-  }
-
-  const getRankingData = (): RankingEntry[] => {
-    // Only include current student - no fake data
-    const currentStudent: RankingEntry = {
-      studentId: progress.studentId,
-      studentName: progress.studentName,
-      rankingScore: progress.rankingScore,
-      gamesCompleted: progress.gamesCompleted,
-      averageScore: progress.averageScore,
-      lastActivity: progress.lastActivity
-    }
-
-    // Return only current student if they have played games
-    if (progress.gamesCompleted > 0) {
-      return [currentStudent]
-    }
-
-    return []
-  }
-
-  const getCurrentRank = (): number => {
-    const rankings = getRankingData()
-    const currentIndex = rankings.findIndex(entry => entry.studentId === progress.studentId)
-    return currentIndex + 1
-  }
-
-  const getTopPerformers = (limit: number = 5): RankingEntry[] => {
-    return getRankingData().slice(0, limit)
-  }
 
   const clearNewAchievements = () => {
     setNewAchievements([])
@@ -534,9 +489,6 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
       resetProgress,
       getGameProgress,
       calculateOverallPerformance,
-      getRankingData,
-      getCurrentRank,
-      getTopPerformers,
       calculateNormalizedScore,
       newAchievements,
       clearNewAchievements

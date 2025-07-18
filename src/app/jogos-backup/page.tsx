@@ -26,11 +26,9 @@ import {
   Zap,
   Lock
 } from 'lucide-react'
-import RankingSidebar from '@/components/ranking/RankingSidebar'
-import MobileRanking from '@/components/ranking/MobileRanking'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { StudentProgressDashboard } from '@/components/student-progress'
+import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearningDashboard'
 import { StudentProgressProvider } from '@/contexts/StudentProgressContext'
 import { Footer } from '@/components/layout'
 import Link from 'next/link'
@@ -74,8 +72,8 @@ const convertModulesToGames = (modules: any[]) => {
   }))
 }
 
-// Converter módulos para jogos
-const baseNutritionalGames = convertModulesToGames(modules)
+// Converter módulos para jogos - APENAS MÓDULO 1
+const baseNutritionalGames = convertModulesToGames(modules.filter(module => module.id === 'module-1'))
 
 export default function JogosNT600Page() {
   const [selectedGame, setSelectedGame] = useState<number | null>(null)
@@ -301,7 +299,7 @@ export default function JogosNT600Page() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="mb-12"
             >
-              <StudentProgressDashboard compact={true} />
+              <PersonalLearningDashboard compact={true} />
             </motion.div>
 
             {/* Games Section */}
@@ -581,15 +579,6 @@ export default function JogosNT600Page() {
           <Footer />
         </div>
 
-        {/* Desktop Ranking Sidebar */}
-        <div className="hidden lg:block">
-          <RankingSidebar />
-        </div>
-
-        {/* Mobile Ranking */}
-        <div className="lg:hidden">
-          <MobileRanking />
-        </div>
       </div>
     </StudentProgressProvider>
   )

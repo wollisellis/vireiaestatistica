@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -221,4 +222,5 @@ export function ModuleCard({ module, progress, onUnlock, isProfessor = false }: 
       )}
     </Card>
   );
-}
+
+export default ModuleCard;
