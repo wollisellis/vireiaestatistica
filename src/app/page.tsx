@@ -41,8 +41,6 @@ export default function LoginPage() {
     if (typeof window !== 'undefined') {
       // Clear all authentication-related cookies
       const cookiesToClear = [
-        'guest-mode',
-        'professor-guest-mode',
         'auth-token',
         'firebase-auth-token',
         'user-role',
@@ -56,8 +54,6 @@ export default function LoginPage() {
 
       // Clear any localStorage items that might interfere
       const localStorageKeysToRemove = [
-        'guest-mode',
-        'professor-guest-mode',
         'firebase-auth-token',
         'user-data',
         'auth-state'

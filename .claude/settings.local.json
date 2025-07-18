@@ -31,7 +31,10 @@
       "Bash(npm install:*)",
       "Bash(timeout 5 npx tsc --noEmit)",
       "mcp__sequential-thinking__sequentialthinking",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(diff:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }

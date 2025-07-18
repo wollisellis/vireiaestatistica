@@ -37,13 +37,6 @@ const MOCK_USER: MockUser = {
   created_at: new Date().toISOString(),
 }
 
-const GUEST_USER: MockUser = {
-  id: 'guest-user',
-  email: 'visitante@vireiestatistica.com',
-  full_name: 'Usuário Visitante',
-  created_at: new Date().toISOString(),
-}
-
 const MOCK_PROFILE: MockProfile = {
   id: 'mock-user-123',
   email: 'ellis@example.com',
@@ -51,16 +44,6 @@ const MOCK_PROFILE: MockProfile = {
   total_score: 1250,
   level_reached: 3,
   games_completed: 2,
-  created_at: new Date().toISOString(),
-}
-
-const GUEST_PROFILE: MockProfile = {
-  id: 'guest-user',
-  email: 'visitante@vireiestatistica.com',
-  full_name: 'Usuário Visitante',
-  total_score: 850,
-  level_reached: 2,
-  games_completed: 1,
   created_at: new Date().toISOString(),
 }
 
@@ -108,14 +91,6 @@ export function useMockAuth() {
   useEffect(() => {
     // Simulate loading time
     const timer = setTimeout(() => {
-      // Check for guest mode first
-      const isGuestMode = localStorage.getItem('guest-mode') === 'true'
-      if (isGuestMode) {
-        setUser(GUEST_USER)
-        setLoading(false)
-        return
-      }
-
       // Check if user is "logged in" (stored in localStorage for persistence)
       const storedUser = localStorage.getItem('mock-user')
       if (storedUser) {
@@ -159,7 +134,6 @@ export function useMockAuth() {
 
   const signOut = async () => {
     localStorage.removeItem('mock-user')
-    localStorage.removeItem('guest-mode')
     setUser(null)
     return { error: null }
   }
@@ -236,13 +210,7 @@ export function useMockProfile(userId: string) {
 
     // Simulate loading
     const timer = setTimeout(() => {
-      // Check for guest mode
-      const isGuestMode = localStorage.getItem('guest-mode') === 'true'
-      if (isGuestMode) {
-        setProfile(GUEST_PROFILE)
-      } else {
-        setProfile(MOCK_PROFILE)
-      }
+      setProfile(MOCK_PROFILE)
       setLoading(false)
     }, 500)
 

@@ -13,7 +13,6 @@ interface AuthContextType {
   signInWithGoogle: (role: 'student' | 'professor') => Promise<any>;
   signUp: (email: string, password: string, fullName: string, role: 'professor' | 'student', courseCode?: string) => Promise<any>;
   signOut: () => Promise<any>;
-  enableGuestMode: () => void;
   getUserByEmail: (email: string) => Promise<User | null>;
   updateProfile: (updates: Partial<User>) => Promise<any>;
 }
@@ -32,7 +31,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle: firebaseAuth.signInWithGoogle,
     signUp: firebaseAuth.signUp,
     signOut: firebaseAuth.signOut,
-    enableGuestMode: firebaseAuth.enableGuestMode,
     getUserByEmail: firebaseAuth.getUserByEmail,
     updateProfile,
   };

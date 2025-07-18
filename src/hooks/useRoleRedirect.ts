@@ -34,42 +34,6 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
     // Get current path to avoid unnecessary redirects
     const currentPath = window.location.pathname
 
-    // Check for guest modes
-    const isStudentGuest = typeof window !== 'undefined' && 
-      document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
-    const isProfessorGuest = typeof window !== 'undefined' && 
-      document.cookie.split(';').some(cookie => cookie.trim().startsWith('professor-guest-mode=true'))
-
-    // Handle guest users
-    if (isStudentGuest || isProfessorGuest) {
-      if (!allowGuests) {
-        // Only redirect if not already on login page
-        if (currentPath !== '/') {
-          router.push('/')
-        }
-        return
-      }
-
-      // Check if guest has required role
-      if (requiredRole) {
-        if (requiredRole === 'student' && !isStudentGuest) {
-          // Only redirect if not already on student page
-          if (!currentPath.startsWith('/jogos')) {
-            router.push(studentRedirect)
-          }
-          return
-        }
-        if (requiredRole === 'professor' && !isProfessorGuest) {
-          // Only redirect if not already on professor page
-          if (!currentPath.startsWith('/professor')) {
-            router.push(professorRedirect)
-          }
-          return
-        }
-      }
-
-      return // Allow guests to continue
-    }
 
     // Handle authenticated users
     if (firebaseUser && rbacUser) {
@@ -126,18 +90,6 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
     user: rbacUser,
     loading: authLoading || rbacLoading,
     hasAccess: () => {
-      // Check for guest access
-      const isStudentGuest = typeof window !== 'undefined' && 
-        document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
-      const isProfessorGuest = typeof window !== 'undefined' && 
-        document.cookie.split(';').some(cookie => cookie.trim().startsWith('professor-guest-mode=true'))
-
-      if (allowGuests && (isStudentGuest || isProfessorGuest)) {
-        if (!requiredRole) return true
-        if (requiredRole === 'student' && isStudentGuest) return true
-        if (requiredRole === 'professor' && isProfessorGuest) return true
-      }
-
       // Check authenticated user access
       if (rbacUser) {
         if (!requiredRole) return true
@@ -150,19 +102,19 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
 }
 
 // Specialized hooks for common use cases
-export function useStudentAccess(allowGuests: boolean = true) {
+export function useStudentAccess() {
   return useRoleRedirect({
     requiredRole: 'student',
-    allowGuests,
+    allowGuests: false,
     studentRedirect: '/jogos',
     professorRedirect: '/professor'
   })
 }
 
-export function useProfessorAccess(allowGuests: boolean = true) {
+export function useProfessorAccess() {
   return useRoleRedirect({
     requiredRole: 'professor',
-    allowGuests,
+    allowGuests: false,
     studentRedirect: '/jogos',
     professorRedirect: '/professor'
   })

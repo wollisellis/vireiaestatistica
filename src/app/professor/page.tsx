@@ -5,6 +5,7 @@ import { ModuleProgressProvider } from '@/contexts/ModuleProgressContext'
 import EnhancedProfessorDashboard from '@/components/professor/EnhancedProfessorDashboard'
 import ClassManagement from '@/components/professor/ClassManagement'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { useProfessorAccess } from '@/hooks/useRoleRedirect'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -23,7 +24,7 @@ import {
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 export default function ProfessorDashboardPage() {
-  const { user, loading } = useFirebaseAuth()
+  const { user, loading, hasAccess } = useProfessorAccess()
 
   if (loading) {
     return (
@@ -33,7 +34,7 @@ export default function ProfessorDashboardPage() {
     )
   }
 
-  if (!user) {
+  if (!user || !hasAccess()) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 py-16">

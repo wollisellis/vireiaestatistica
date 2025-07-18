@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Sempre fale comigo em pt-br
 
+## 🚨 IMPORTANTE: Nome do Projeto
+**O projeto oficial é `bioestat-platform`**. Todas as alterações devem ser feitas dentro deste projeto, que está localizado em `/bioestat`. O diretório `/src` dentro de `/bioestat` é onde todo o código-fonte reside.
+
 ## Comandos de Desenvolvimento
 
 ```bash
@@ -41,7 +44,7 @@ rm -rf .next
 - Fazer commit frequentes durante o desenvolvimento
 
 ## Contexto do Projeto
-**AvaliaNutri** - Plataforma educacional para avaliação nutricional
+**bioestat-platform** (anteriormente AvaliaNutri) - Plataforma educacional para avaliação nutricional e estatística em saúde
 
 ### Disciplina
 Avaliação Nutricional - Disciplina focada no ensino dos métodos e técnicas para avaliação do estado nutricional de indivíduos e populações.
