@@ -1,0 +1,46 @@
+{
+  "id": "2025-07-17-1500-sistema-feedback-exercicios",
+  "title": "Sistema de Feedback Visual para Exercícios",
+  "description": "Implementar sistema de feedback visual para exercícios que mostre ao aluno imediatamente se sua resposta está correta ou incorreta, com explicações educativas",
+  "status": "COMPLETE",
+  "created": "2025-07-17T15:00:00Z",
+  "updated": "2025-07-17T15:45:00Z",
+  "phases": {
+    "discovery": {
+      "status": "complete",
+      "questionsAnswered": 5,
+      "totalQuestions": 5,
+      "completedAt": "2025-07-17T15:15:00Z"
+    },
+    "analysis": {
+      "status": "complete",
+      "filesAnalyzed": 12,
+      "componentsIdentified": 5,
+      "completedAt": "2025-07-17T15:25:00Z"
+    },
+    "details": {
+      "status": "complete",
+      "questionsAnswered": 5,
+      "totalQuestions": 5,
+      "completedAt": "2025-07-17T15:40:00Z"
+    },
+    "specification": {
+      "status": "complete",
+      "completedAt": "2025-07-17T15:45:00Z"
+    }
+  },
+  "metrics": {
+    "totalQuestions": 10,
+    "questionsAnswered": 10,
+    "defaultsUsed": 2,
+    "duration": "45 minutes",
+    "filesAnalyzed": 12,
+    "implementationComplexity": "medium"
+  },
+  "tags": [
+    "ui",
+    "feedback",
+    "education",
+    "user-experience"
+  ]
+}
