@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, X, Check, Trophy, AlertTriangle, Heart, Flame } from 'lucide-react'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import ProgressNotificationService, { ProgressNotification } from '@/services/progressNotificationService'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+// Removido date-fns - usando formatação nativa
 
 interface NotificationCenterProps {
   role: 'student' | 'professor'
@@ -153,8 +152,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ role }) 
                               {notification.message}
                             </p>
                             <p className="text-xs text-gray-400 mt-2">
-                              {format(new Date(notification.createdAt), "d 'de' MMMM 'às' HH:mm", {
-                                locale: ptBR
+                              {new Date(notification.createdAt).toLocaleString('pt-BR', {
+                                day: 'numeric',
+                                month: 'long',
+                                hour: '2-digit',
+                                minute: '2-digit'
                               })}
                             </p>
                           </div>

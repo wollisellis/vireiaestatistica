@@ -30,10 +30,8 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import RankingSidebar from '@/components/ranking/RankingSidebar';
-import MobileRanking from '@/components/ranking/MobileRanking';
 import { StudentProgressProvider } from '@/contexts/StudentProgressContext';
-import { StudentProgressDashboard } from '@/components/student-progress/StudentProgressDashboard';
+import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearningDashboard';
 import { Footer } from '@/components/layout';
 import { useStudentAccess } from '@/hooks/useRoleRedirect';
 
@@ -223,8 +221,8 @@ export default function JogosPage() {
     };
   };
 
-  // Converter módulos para jogos
-  const baseNutritionalGames = convertModulesToGames(modules);
+  // Converter módulos para jogos - APENAS MÓDULO 1
+  const baseNutritionalGames = convertModulesToGames(modules.filter(module => module.id === 'module-1'));
 
   // Combine base games with module settings
   const nutritionalGames = baseNutritionalGames.map(game => {
@@ -257,9 +255,9 @@ export default function JogosPage() {
 
   return (
     <StudentProgressProvider>
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="w-full">
           {/* Header */}
           <header className="bg-white shadow-sm border-b">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -388,7 +386,7 @@ export default function JogosPage() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="mb-12"
             >
-              <StudentProgressDashboard compact={true} />
+              <PersonalLearningDashboard compact={true} />
             </motion.div>
 
             {/* Games Section */}
@@ -398,14 +396,15 @@ export default function JogosPage() {
               transition={{ duration: 0.6, delay: 0.4 }}
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">Jogos Educacionais Interativos</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">Módulo Educacional Disponível</h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Quatro jogos especializados que cobrem todos os aspectos da avaliação nutricional,
-                  desde indicadores antropométricos até fatores socioeconômicos.
+                  Módulo fundamental focado nos indicadores antropométricos e medidas corporais,
+                  base essencial para a avaliação nutricional.
                 </p>
               </div>
 
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="flex justify-center">
+                <div className="max-w-md w-full">
                 {nutritionalGames.map((game, index) => (
                   <motion.div
                     key={game.id}
@@ -530,6 +529,7 @@ export default function JogosPage() {
                     </Card>
                   </motion.div>
                 ))}
+                </div>
               </div>
             </motion.div>
 
@@ -677,15 +677,6 @@ export default function JogosPage() {
           <Footer />
         </div>
 
-        {/* Desktop Ranking Sidebar */}
-        <div className="hidden lg:block">
-          <RankingSidebar />
-        </div>
-
-        {/* Mobile Ranking */}
-        <div className="lg:hidden">
-          <MobileRanking />
-        </div>
       </div>
     </StudentProgressProvider>
   );
