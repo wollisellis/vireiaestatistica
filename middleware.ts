@@ -29,11 +29,12 @@ export function middleware(request: NextRequest) {
   
   // Get authentication token from cookies
   const authToken = request.cookies.get('auth-token')?.value
-  const guestMode = request.cookies.get('guest-mode')?.value
-  const professorGuestMode = request.cookies.get('professor-guest-mode')?.value
 
-  // Check if user is authenticated (has valid token or is in any guest mode)
-  const isAuthenticated = !!(authToken || guestMode === 'true' || professorGuestMode === 'true')
+  // Check if user is authenticated (has valid token)
+  const isAuthenticated = !!authToken
+  
+  // Note: Role determination will be handled by the auth context
+  // We'll need to get role from Firebase token or allow access to both roles
   
   // Check if the current path is protected
   const isProtectedRoute = protectedRoutes.some(route => 
@@ -54,11 +55,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
   
+  // Role-based access control will be handled by individual pages
+  // This allows more flexibility and proper role checking with Firebase
+  
   // Handle auth routes when user is already authenticated
   if (isAuthRoute && isAuthenticated) {
-    // Redirect to dashboard or intended destination
-    const redirectTo = request.nextUrl.searchParams.get('redirect') || '/'
-    return NextResponse.redirect(new URL(redirectTo, request.url))
+    // Redirect to default page - role-specific routing will be handled by the app
+    return NextResponse.redirect(new URL('/jogos', request.url))
   }
 
   // Handle root path - allow access for login page

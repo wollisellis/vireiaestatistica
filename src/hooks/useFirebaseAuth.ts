@@ -66,7 +66,6 @@ export function useFirebaseAuth() {
           // Set authentication cookie when user is authenticated
           const token = await firebaseUser.getIdToken()
           setCookie('auth-token', token, 7) // 7 days
-          deleteCookie('guest-mode') // Remove guest mode if user logs in
         } catch (error) {
           console.error('❌ Erro ao obter token de autenticação:', error)
           // Continue mesmo com erro no token
@@ -310,7 +309,6 @@ export function useFirebaseAuth() {
       await firebaseSignOut(auth)
       // Clear authentication cookies
       deleteCookie('auth-token')
-      deleteCookie('guest-mode')
       return { error: null }
     } catch (error: unknown) {
       console.error('Sign out error:', error)
@@ -318,10 +316,6 @@ export function useFirebaseAuth() {
     }
   }
 
-  const enableGuestMode = () => {
-    setCookie('guest-mode', 'true', 1) // 1 day for guest mode
-    deleteCookie('auth-token') // Remove any existing auth token
-  }
 
   // Helper function to enroll student in course
   const enrollStudentInCourse = async (studentId: string, courseCode: string) => {
@@ -382,7 +376,6 @@ export function useFirebaseAuth() {
     signInWithGoogle,
     signUp,
     signOut,
-    enableGuestMode,
     getUserByEmail,
   }
 }

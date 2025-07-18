@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Sempre fale comigo em pt-br
 
 ## 🚨 IMPORTANTE: Estrutura do Projeto
-**Este é o diretório principal e oficial do projeto `AvaliaNutri`**. Todo o desenvolvimento deve ser realizado neste local:
+**Este é o diretório principal e oficial do projeto `bioestat-platform` (AvaliaNutri)**. Todo o desenvolvimento deve ser realizado neste local:
 - **Localização**: `/mnt/c/Users/ellis/bioestat/bioestat-platform/`
 - **Código-fonte**: `./src/` (dentro deste diretório)
 - **Documentação**: `./docs/` (organizada por categoria)
@@ -47,6 +47,27 @@ Remove-Item -Recurse -Force .next
 rm -rf .next
 ```
 
+## Workflow de Desenvolvimento
+- Sempre fazer git add, commit e push após completar atualizações
+- Usar mensagens de commit descritivas
+- Fazer commit frequentes durante o desenvolvimento
+
+## Contexto do Projeto
+**bioestat-platform** (anteriormente AvaliaNutri) - Plataforma educacional para avaliação nutricional e estatística em saúde
+
+### Disciplina
+Avaliação Nutricional - Disciplina focada no ensino dos métodos e técnicas para avaliação do estado nutricional de indivíduos e populações.
+
+### Instituição
+UNICAMP - Área: Ciências da Saúde - Nutrição
+Modalidade: Presencial com suporte digital
+
+### Objetivos de Aprendizagem
+• Compreender os indicadores antropométricos
+• Aplicar métodos de avaliação nutricional
+• Interpretar dados populacionais brasileiros
+• Desenvolver habilidades práticas de diagnóstico
+
 ## Arquitetura de Alto Nível
 
 ### Stack Principal
@@ -82,27 +103,6 @@ src/
 - **Sistema de Pontuação**: Service unificado para todos os jogos
 - **Proteção de Rotas**: Middleware para áreas autenticadas
 - **Modo Convidado**: Acesso sem registro via cookies
-
-## Workflow de Desenvolvimento
-- Sempre fazer git add, commit e push após completar atualizações
-- Usar mensagens de commit descritivas
-- Fazer commit frequentes durante o desenvolvimento
-
-## Contexto do Projeto
-**AvaliaNutri** - Plataforma educacional para avaliação nutricional
-
-### Disciplina
-Avaliação Nutricional - Disciplina focada no ensino dos métodos e técnicas para avaliação do estado nutricional de indivíduos e populações.
-
-### Instituição
-UNICAMP - Área: Ciências da Saúde - Nutrição
-Modalidade: Presencial com suporte digital
-
-### Objetivos de Aprendizagem
-• Compreender os indicadores antropométricos
-• Aplicar métodos de avaliação nutricional
-• Interpretar dados populacionais brasileiros
-• Desenvolver habilidades práticas de diagnóstico
 
 ## Configurações Importantes
 

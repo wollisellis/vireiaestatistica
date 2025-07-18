@@ -25,8 +25,7 @@ import {
   Lightbulb,
   Heart,
   User,
-  GraduationCap,
-  LogOut
+  GraduationCap
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -266,11 +265,11 @@ export default function JogosPage() {
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={handleLogout}
-                    className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors cursor-pointer"
+                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
                     title="Sair e voltar ao login"
                   >
-                    <LogOut className="w-5 h-5" />
-                    <span>Sair</span>
+                    <Home className="w-5 h-5" />
+                    <span>Início</span>
                   </button>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-900 font-medium">NT600 - Jogos Educacionais</span>

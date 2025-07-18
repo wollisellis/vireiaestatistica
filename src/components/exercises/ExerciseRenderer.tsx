@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -11,7 +12,7 @@ interface ExerciseRendererProps {
   onProgress?: (progress: number) => void;
 }
 
-export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
+const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
   exercise,
   onComplete,
   onProgress
@@ -127,36 +128,192 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
   );
 };
 
-// Componentes placeholder para outros tipos de exercício
+// Componente QuizExercise com sistema de feedback completo
 const QuizExercise: React.FC<ExerciseRendererProps> = ({ exercise, onComplete }) => {
+  const [selectedAnswers, setSelectedAnswers] = React.useState<{[key: string]: string}>({});
+  const [isSubmitted, setIsSubmitted] = React.useState(false);
+  const [showFeedback, setShowFeedback] = React.useState(false);
+  const [score, setScore] = React.useState(0);
+  const [correctAnswers, setCorrectAnswers] = React.useState(0);
+
+  const handleAnswerSelect = (questionId: string, answer: string) => {
+    if (isSubmitted) return;
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
+  };
+
+  const handleSubmit = () => {
+    if (!exercise.questions || isSubmitted) return;
+    
+    let correct = 0;
+    const totalQuestions = exercise.questions.length;
+    const pointsPerQuestion = exercise.points / totalQuestions;
+    
+    exercise.questions.forEach(question => {
+      const selectedAnswer = selectedAnswers[question.id];
+      if (selectedAnswer === question.correctAnswer) {
+        correct++;
+      }
+    });
+    
+    const finalScore = Math.round(correct * pointsPerQuestion);
+    setCorrectAnswers(correct);
+    setScore(finalScore);
+    setIsSubmitted(true);
+    setShowFeedback(true);
+    
+    // Chamar onComplete com a pontuação real
+    onComplete(finalScore);
+  };
+
+  const getQuestionFeedback = (question: any) => {
+    if (!showFeedback) return null;
+    
+    const selectedAnswer = selectedAnswers[question.id];
+    const isCorrect = selectedAnswer === question.correctAnswer;
+    
+    return (
+      <div className={`mt-3 p-3 rounded-lg ${
+        isCorrect ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'
+      }`}>
+        <div className="flex items-center gap-2 mb-2">
+          {isCorrect ? (
+            <span className="text-green-600 font-semibold">✓ Correto!</span>
+          ) : (
+            <span className="text-red-600 font-semibold">✗ Incorreto</span>
+          )}
+        </div>
+        {!isCorrect && (
+          <p className="text-sm text-red-700 mb-2">
+            <strong>Resposta esperada:</strong> {question.correctAnswer}
+          </p>
+        )}
+        <p className="text-sm text-gray-700">
+          <strong>Explicação:</strong> {question.explanation}
+        </p>
+      </div>
+    );
+  };
+
+  const allQuestionsAnswered = exercise.questions?.every(q => selectedAnswers[q.id]) || false;
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <h3 className="text-lg font-semibold mb-4">Quiz</h3>
+      
       {exercise.questions?.map((question, index) => (
         <div key={question.id} className="mb-6 p-4 bg-gray-50 rounded">
-          <p className="font-medium mb-3">{question.text}</p>
-          {question.options?.map((option, optionIndex) => (
-            <label key={optionIndex} className="flex items-center mb-2">
-              <input 
-                type="radio" 
-                name={`question-${question.id}`} 
-                value={option}
-                className="mr-2"
-              />
-              {option}
-            </label>
-          ))}
+          <p className="font-medium mb-3">
+            <span className="text-blue-600 font-semibold">Questão {index + 1}:</span> {question.text}
+          </p>
+          
+          {question.options?.map((option, optionIndex) => {
+            const isSelected = selectedAnswers[question.id] === option;
+            const isCorrect = option === question.correctAnswer;
+            const showCorrectAnswer = showFeedback && isCorrect;
+            const showIncorrectAnswer = showFeedback && isSelected && !isCorrect;
+            
+            return (
+              <label 
+                key={optionIndex} 
+                className={`flex items-center mb-2 p-2 rounded cursor-pointer transition-colors ${
+                  isSubmitted ? 'cursor-not-allowed' : 'hover:bg-gray-100'
+                } ${
+                  showCorrectAnswer ? 'bg-green-100 border border-green-300' :
+                  showIncorrectAnswer ? 'bg-red-100 border border-red-300' :
+                  isSelected ? 'bg-blue-100 border border-blue-300' : ''
+                }`}
+              >
+                <input 
+                  type="radio" 
+                  name={`question-${question.id}`} 
+                  value={option}
+                  checked={isSelected}
+                  onChange={() => handleAnswerSelect(question.id, option)}
+                  disabled={isSubmitted}
+                  className="mr-3"
+                />
+                <span className={`${
+                  showCorrectAnswer ? 'text-green-800 font-semibold' :
+                  showIncorrectAnswer ? 'text-red-800' : ''
+                }`}>
+                  {option}
+                  {showCorrectAnswer && ' ✓'}
+                  {showIncorrectAnswer && ' ✗'}
+                </span>
+              </label>
+            );
+          })}
+          
           {question.realDataContext && (
             <p className="text-sm text-blue-600 mt-2">📊 {question.realDataContext}</p>
           )}
+          
+          {getQuestionFeedback(question)}
         </div>
       ))}
-      <button
-        onClick={() => onComplete(exercise.points)}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        Submeter Respostas
-      </button>
+      
+      {!isSubmitted ? (
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={handleSubmit}
+            disabled={!allQuestionsAnswered}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              allQuestionsAnswered
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Submeter Respostas
+          </button>
+          
+          {!allQuestionsAnswered && (
+            <p className="text-sm text-amber-600 text-center">
+              ⚠️ Responda todas as questões para submeter
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+          <h4 className="text-lg font-semibold text-blue-900 mb-3">📊 Resultado do Quiz</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{correctAnswers}</div>
+              <div className="text-sm text-gray-600">Corretas</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-600">{exercise.questions?.length || 0}</div>
+              <div className="text-sm text-gray-600">Total</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{score}</div>
+              <div className="text-sm text-gray-600">Pontos</div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-3 rounded border">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">Desempenho:</span>
+              <span className="text-sm font-bold">
+                {Math.round((correctAnswers / (exercise.questions?.length || 1)) * 100)}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(correctAnswers / (exercise.questions?.length || 1)) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          <p className="text-sm text-center text-gray-600 mt-3">
+            Quiz concluído! Você pode revisar suas respostas acima.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

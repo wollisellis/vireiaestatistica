@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect } from 'react'
@@ -30,50 +31,47 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
     // Don't redirect while loading
     if (authLoading || rbacLoading) return
 
-    // Check for guest modes
-    const isStudentGuest = typeof window !== 'undefined' && 
-      document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
-    const isProfessorGuest = typeof window !== 'undefined' && 
-      document.cookie.split(';').some(cookie => cookie.trim().startsWith('professor-guest-mode=true'))
+    // Get current path to avoid unnecessary redirects
+    const currentPath = window.location.pathname
 
-    // Handle guest users - simple redirect
-    if (isStudentGuest) {
-      if (requiredRole === 'professor') {
-        router.push('/professor')
-        return
-      }
-      // Allow student guests to continue
-      return
-    }
 
-    if (isProfessorGuest) {
-      if (requiredRole === 'student') {
-        router.push('/jogos')
-        return
-      }
-      // Allow professor guests to continue
-      return
-    }
-
-    // Handle authenticated users - simple redirect
+    // Handle authenticated users
     if (firebaseUser && rbacUser) {
-      // If user has required role, allow access
+      // If user has required role and is already on correct page, allow access
       if (requiredRole && rbacUser.role === requiredRole) {
         return
       }
 
-      // Simple redirect based on role
+      // If no specific role required and no redirectTo specified, allow access
+      if (!requiredRole && !redirectTo) {
+        return
+      }
+      
+      // If no specific role required but redirectTo is specified, redirect only if not already there
+      if (!requiredRole && redirectTo && currentPath !== redirectTo) {
+        router.push(redirectTo)
+        return
+      }
+
+      // User doesn't have required role, redirect to appropriate page only if not already there
       if (rbacUser.role === 'professor') {
-        router.push('/professor')
+        if (!currentPath.startsWith('/professor')) {
+          router.push(professorRedirect)
+        }
       } else {
-        router.push('/jogos')
+        if (!currentPath.startsWith('/jogos')) {
+          router.push(studentRedirect)
+        }
       }
       return
     }
 
-    // No user authenticated and no guest mode - redirect to login
-    if (!firebaseUser && !rbacUser && requiredRole) {
-      router.push('/')
+    // No user authenticated and no guest mode
+    if (!firebaseUser && !rbacUser) {
+      // Only redirect to login if explicitly required and not already on login page
+      if (requiredRole && !allowGuests && currentPath !== '/') {
+        router.push('/')
+      }
     }
   }, [
     firebaseUser,
@@ -81,6 +79,10 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
     authLoading,
     rbacLoading,
     requiredRole,
+    redirectTo,
+    allowGuests,
+    studentRedirect,
+    professorRedirect,
     router
   ])
 
@@ -88,18 +90,6 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
     user: rbacUser,
     loading: authLoading || rbacLoading,
     hasAccess: () => {
-      // Check for guest access
-      const isStudentGuest = typeof window !== 'undefined' && 
-        document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
-      const isProfessorGuest = typeof window !== 'undefined' && 
-        document.cookie.split(';').some(cookie => cookie.trim().startsWith('professor-guest-mode=true'))
-
-      if (allowGuests && (isStudentGuest || isProfessorGuest)) {
-        if (!requiredRole) return true
-        if (requiredRole === 'student' && isStudentGuest) return true
-        if (requiredRole === 'professor' && isProfessorGuest) return true
-      }
-
       // Check authenticated user access
       if (rbacUser) {
         if (!requiredRole) return true
@@ -111,23 +101,29 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
   }
 }
 
-// Simplified specialized hooks
-export function useStudentAccess(allowGuests: boolean = true) {
+// Specialized hooks for common use cases
+export function useStudentAccess() {
   return useRoleRedirect({
     requiredRole: 'student',
-    allowGuests
+    allowGuests: false,
+    studentRedirect: '/jogos',
+    professorRedirect: '/professor'
   })
 }
 
-export function useProfessorAccess(allowGuests: boolean = true) {
+export function useProfessorAccess() {
   return useRoleRedirect({
     requiredRole: 'professor',
-    allowGuests
+    allowGuests: false,
+    studentRedirect: '/jogos',
+    professorRedirect: '/professor'
   })
 }
 
 export function useAuthRedirect() {
   return useRoleRedirect({
-    allowGuests: false
+    allowGuests: false,
+    studentRedirect: '/jogos',
+    professorRedirect: '/professor'
   })
 }

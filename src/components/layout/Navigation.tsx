@@ -63,8 +63,6 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
     if (typeof window !== 'undefined') {
       // Clear cookies
       const cookiesToClear = [
-        'guest-mode',
-        'professor-guest-mode',
         'auth-token',
         'firebase-auth-token',
         'user-role',
@@ -78,8 +76,6 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
 
       // Clear localStorage and sessionStorage
       const localStorageKeysToRemove = [
-        'guest-mode',
-        'professor-guest-mode',
         'firebase-auth-token',
         'user-data',
         'auth-state'
@@ -93,7 +89,7 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
     }
 
     // Sign out from Firebase if user is authenticated
-    if (user && user.id !== 'guest-user' && user.id !== 'professor-guest-user') {
+    if (user) {
       await signOut()
     }
 

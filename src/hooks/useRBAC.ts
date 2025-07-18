@@ -41,50 +41,7 @@ export function useRBAC(userId?: string): UseRBACReturn {
         }
         setUser(rbacUser)
       } else {
-        // Check for guest modes
-        const isStudentGuest = typeof window !== 'undefined' && 
-          document.cookie.split(';').some(cookie => cookie.trim().startsWith('guest-mode=true'))
-        const isProfessorGuest = typeof window !== 'undefined' && 
-          document.cookie.split(';').some(cookie => cookie.trim().startsWith('professor-guest-mode=true'))
-
-        if (isStudentGuest) {
-          const guestUser: RBACUser = {
-            id: 'guest-user',
-            email: 'guest@example.com',
-            fullName: 'Usuário Visitante',
-            role: 'student',
-            anonymousId: 'GUEST001',
-            institutionId: 'unicamp',
-            totalScore: 0,
-            levelReached: 1,
-            gamesCompleted: 0,
-            collaborationHistory: [],
-            preferredPartners: [],
-            achievements: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
-          setUser(guestUser)
-        } else if (isProfessorGuest) {
-          const professorGuestUser: RBACUser = {
-            id: 'professor-guest-user',
-            email: 'professor@example.com',
-            fullName: 'Professor Visitante',
-            role: 'professor',
-            institutionId: 'unicamp',
-            totalScore: 0,
-            levelReached: 1,
-            gamesCompleted: 0,
-            collaborationHistory: [],
-            preferredPartners: [],
-            achievements: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
-          setUser(professorGuestUser)
-        } else {
-          setUser(null)
-        }
+        setUser(null)
       }
     }
   }, [firebaseUser, profile, authLoading, profileLoading])

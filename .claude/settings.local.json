@@ -1,19 +1,43 @@
 {
+  "env": {
+    "ANTHROPIC_CUSTOM_HEADERS": "anthropic-beta: interleaved-thinking-2025-05-14",
+    "MAX_THINKING_TOKENS": "30000"
+  },
   "permissions": {
     "allow": [
+      "Bash(claude:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
+      "Bash(rm:*)",
+      "Bash(git init:*)",
       "Bash(npm run build:*)",
-      "Bash(npx next build:*)",
-      "Bash(npx tsc:*)",
-      "Bash(node:*)",
-      "Bash(true)",
-      "Bash(git config:*)",
-      "Bash(ls:*)",
-      "Bash(GIT_ASKPASS=echo git push origin main)",
+      "Bash(mv:*)",
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(npm run dev:*)",
       "Bash(mkdir:*)",
-      "Bash(npm run dev:*)"
+      "Bash(ls:*)",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__list_directory",
+      "Bash(npm run lint)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 30 npm run dev)",
+      "Bash(git config:*)",
+      "Bash(git remote add:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh auth:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 5 npx tsc --noEmit)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(diff:*)",
+      "Bash(cat:*)",
+      "Bash(GIT_ASKPASS=echo git push origin main)",
+      "Bash(npx next build:*)",
+      "Bash(true)"
     ],
     "deny": []
   }
