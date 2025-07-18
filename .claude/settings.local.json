@@ -19,7 +19,10 @@
       "Bash(mkdir:*)",
       "Bash(ls:*)",
       "mcp__filesystem__directory_tree",
-      "mcp__filesystem__list_directory"
+      "mcp__filesystem__list_directory",
+      "Bash(npm run lint)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 30 npm run dev)"
     ],
     "deny": []
   }
