@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Função para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Função para verificar se é o próprio usuário
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Função para verificar se é professor
+    function isProfessor() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor';
+    }
+    
+    // Função para verificar se é aluno de uma turma
+    function isStudentInClass(classId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/classes/$(classId)/students/$(request.auth.uid));
+    }
+    
+    // Regras para usuários
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isProfessor();
+      allow write: if isOwner(userId);
+    }
+    
+    // Regras para progresso dos módulos
+    match /module_progress/{progressId} {
+      allow read: if isOwner(progressId) || isProfessor();
+      allow write: if isOwner(progressId);
+    }
+    
+    // Regras para turmas
+    match /classes/{classId} {
+      allow read: if isAuthenticated();
+      allow write: if isProfessor();
+      
+      // Subcoleção de estudantes
+      match /students/{studentId} {
+        allow read: if isAuthenticated();
+        allow write: if isProfessor() || isOwner(studentId);
+      }
+    }
+    
+    // Regras para notificações
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.recipientId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        resource.data.recipientId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+    }
+    
+    // Regras para tentativas de exercícios
+    match /exercise_attempts/{attemptId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.studentId == request.auth.uid || isProfessor());
+      allow write: if isAuthenticated() && 
+        request.resource.data.studentId == request.auth.uid;
+    }
+    
+    // Regras para conquistas
+    match /achievements/{achievementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.resource.data.studentId == request.auth.uid;
+    }
+    
+    // Regras para rankings (apenas leitura)
+    match /rankings/{rankingId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Apenas sistema pode escrever
+    }
+    
+    // Configurações do professor
+    match /professor_settings/{professorId} {
+      allow read, write: if isOwner(professorId) && isProfessor();
+    }
+    
+    // Regra padrão - negar tudo que não foi explicitamente permitido
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
