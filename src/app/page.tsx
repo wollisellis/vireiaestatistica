@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AuthForm } from '@/components/auth/AuthForm'
 import FirebaseConfigWarning from '@/components/FirebaseConfigWarning'
 import { isFirebaseConfigured } from '@/lib/firebase'
@@ -8,6 +9,7 @@ import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useRBAC } from '@/hooks/useRBAC'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [isCleared, setIsCleared] = useState(false)
   const [showFirebaseWarning, setShowFirebaseWarning] = useState(false)
   const { user: firebaseUser } = useFirebaseAuth()
@@ -93,14 +95,20 @@ export default function LoginPage() {
             
             <div className="space-y-4">
               <button
-                onClick={() => window.location.href = '/professor'}
+                onClick={() => {
+                  // Navegação usando Next.js router para melhor performance
+                  router.push('/professor')
+                }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
               >
                 Acessar como Professor
               </button>
               
               <button
-                onClick={() => window.location.href = '/jogos'}
+                onClick={() => {
+                  // Navegação usando Next.js router para melhor performance
+                  router.push('/jogos')
+                }}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
               >
                 Acessar como Estudante

@@ -110,8 +110,12 @@ export function AuthForm() {
         const { error } = await signIn(data.email, data.password)
         if (error) throw new Error(error.message)
 
-        // Will be handled by useRoleRedirect hook
-        window.location.reload()
+        // Redirect directly based on selected role
+        if (selectedRole === 'professor') {
+          window.location.href = '/professor'
+        } else {
+          window.location.href = '/jogos'
+        }
       }
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Erro desconhecido'
