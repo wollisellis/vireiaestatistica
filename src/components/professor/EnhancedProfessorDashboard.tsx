@@ -99,32 +99,6 @@ export function EnhancedProfessorDashboard({
     }
   }
 
-  const createNewClass = async () => {
-    if (!user?.uid) return
-    
-    try {
-      const className = prompt('Nome da nova turma:')
-      if (!className) return
-      
-      const semester = prompt('Semestre (ex: 1º Semestre):')
-      if (!semester) return
-      
-      const year = new Date().getFullYear()
-      
-      const newClassId = await ProfessorClassService.createClass(
-        user.uid,
-        user.displayName || 'Professor',
-        className,
-        semester,
-        year
-      )
-      
-      await loadProfessorClasses()
-      setSelectedClassId(newClassId)
-    } catch (error) {
-      console.error('Erro ao criar turma:', error)
-    }
-  }
 
   if (!user) {
     return (
@@ -149,10 +123,9 @@ export function EnhancedProfessorDashboard({
         <p className="text-gray-600 mb-4">
           Crie sua primeira turma para começar a gerenciar estudantes.
         </p>
-        <Button onClick={createNewClass} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Criar Primeira Turma
-        </Button>
+        <div className="text-gray-600">
+          Acesse a aba "Turmas" para criar sua primeira turma.
+        </div>
       </div>
     )
   }
@@ -187,13 +160,6 @@ export function EnhancedProfessorDashboard({
                 ))}
               </select>
               
-              <Button 
-                onClick={createNewClass}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Turma
-              </Button>
             </div>
           </div>
         </CardContent>

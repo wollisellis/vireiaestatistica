@@ -17,6 +17,12 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor';
     }
     
+    // Função para verificar se é estudante
+    function isStudent() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+    
     // Função para verificar se é aluno de uma turma
     function isStudentInClass(classId) {
       return isAuthenticated() && 
@@ -35,16 +41,69 @@ service cloud.firestore {
       allow write: if isOwner(progressId);
     }
     
-    // Regras para turmas
+    // CLASSES COLLECTION - Turmas do professor (atualizada - sistema principal)
     match /classes/{classId} {
-      allow read: if isAuthenticated();
-      allow write: if isProfessor();
+      // Permitir criação apenas pelo próprio professor
+      allow create: if isProfessor() && 
+        request.resource.data.professorId == request.auth.uid;
+      
+      // Professores podem ler/escrever apenas suas próprias turmas
+      allow read, update, delete: if isProfessor() && 
+        resource.data.professorId == request.auth.uid;
+      
+      // Estudantes podem ler turmas onde estão matriculados
+      allow read: if isStudent() && 
+        exists(/databases/$(database)/documents/class_students/$(classId + '_' + request.auth.uid));
       
       // Subcoleção de estudantes
       match /students/{studentId} {
         allow read: if isAuthenticated();
         allow write: if isProfessor() || isOwner(studentId);
       }
+    }
+    
+    // CLASS STUDENTS COLLECTION - Estudantes das turmas
+    match /class_students/{studentClassId} {
+      // Professores podem ler/escrever estudantes de suas turmas
+      allow read, write: if isProfessor();
+      
+      // Estudantes podem ler apenas suas próprias matrículas
+      allow read: if isAuthenticated() && 
+        resource.data.studentId == request.auth.uid;
+      
+      // Permitir criação por professores ou pelo próprio estudante (matrícula)
+      allow create: if isProfessor() || 
+        (isAuthenticated() && request.resource.data.studentId == request.auth.uid);
+    }
+    
+    // MODULE SETTINGS COLLECTION - Configurações de módulos por turma
+    match /module_settings/{settingId} {
+      // Apenas professores podem ler/escrever configurações de módulos
+      allow read, write: if isProfessor();
+      
+      // Estudantes podem ler configurações dos módulos de suas turmas
+      allow read: if isStudent();
+    }
+    
+    // CLASS ANALYTICS COLLECTION - Analytics por turma
+    match /class_analytics/{analyticsId} {
+      // Apenas professores podem acessar analytics de suas turmas
+      allow read, write: if isProfessor() && 
+        resource.data.professorId == request.auth.uid;
+    }
+    
+    // CLASS INVITES COLLECTION - Códigos de convite das turmas
+    match /class_invites/{inviteId} {
+      // Professores podem criar/gerenciar convites de suas turmas
+      allow read, write: if isProfessor() && 
+        resource.data.professorId == request.auth.uid;
+      
+      // Estudantes podem ler convites para se matricularem
+      allow read: if isStudent();
+      
+      // Permitir criação por professores
+      allow create: if isProfessor() && 
+        request.resource.data.professorId == request.auth.uid;
     }
     
     // Regras para notificações
@@ -81,6 +140,15 @@ service cloud.firestore {
     // Configurações do professor
     match /professor_settings/{professorId} {
       allow read, write: if isOwner(professorId) && isProfessor();
+    }
+    
+    // SETTINGS COLLECTION - Configurações gerais (incluindo módulos)
+    match /settings/{settingId} {
+      // Todos os usuários autenticados podem ler configurações
+      allow read: if isAuthenticated();
+      
+      // Apenas professores podem escrever configurações
+      allow write: if isProfessor();
     }
     
     // Regra padrão - negar tudo que não foi explicitamente permitido

@@ -32,7 +32,6 @@ export interface ClassFormData {
   name: string
   semester: string
   year: number
-  description: string
   capacity: number
 }
 
@@ -41,7 +40,6 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
     name: '',
     semester: '',
     year: new Date().getFullYear(),
-    description: '',
     capacity: 50
   })
   
@@ -92,7 +90,6 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
         name: '',
         semester: '',
         year: new Date().getFullYear(),
-        description: '',
         capacity: 50
       })
       setErrors({})
@@ -172,56 +169,31 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                   )}
                 </div>
 
-                {/* Grid para campos menores em desktop */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {/* Semestre */}
-                  <div>
-                    <Label htmlFor="semester" className="text-base font-medium text-gray-900 mb-3 block">
-                      Semestre *
-                    </Label>
-                    <Select value={formData.semester} onValueChange={(value) => handleInputChange('semester', value)}>
-                      <SelectTrigger className={`h-14 text-base bg-white border-2 rounded-xl ${
-                        errors.semester ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-indigo-500'
-                      }`}>
-                        <SelectValue placeholder="Selecione o semestre" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {semesterOptions.map((semester) => (
-                          <SelectItem key={semester} value={semester} className="text-base py-3">
-                            {semester}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.semester && (
-                      <div className="flex items-center space-x-2 mt-3">
-                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                        <span className="text-sm text-red-600">{errors.semester}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Ano */}
-                  <div>
-                    <Label htmlFor="year" className="text-base font-medium text-gray-900 mb-3 block">
-                      Ano
-                    </Label>
-                    <Select 
-                      value={formData.year.toString()} 
-                      onValueChange={(value) => handleInputChange('year', parseInt(value))}
-                    >
-                      <SelectTrigger className="h-14 text-base bg-white border-2 border-gray-300 focus:border-indigo-500 rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {yearOptions.map((year) => (
-                          <SelectItem key={year} value={year.toString()} className="text-base py-3">
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Semestre */}
+                <div>
+                  <Label htmlFor="semester" className="text-base font-medium text-gray-900 mb-3 block">
+                    Semestre *
+                  </Label>
+                  <Select value={formData.semester} onValueChange={(value) => handleInputChange('semester', value)}>
+                    <SelectTrigger className={`h-14 text-base bg-white border-2 rounded-xl ${
+                      errors.semester ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-indigo-500'
+                    }`}>
+                      <SelectValue placeholder="Selecione o semestre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {semesterOptions.map((semester) => (
+                        <SelectItem key={semester} value={semester} className="text-base py-3">
+                          {semester}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.semester && (
+                    <div className="flex items-center space-x-2 mt-3">
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      <span className="text-sm text-red-600">{errors.semester}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Capacidade */}
@@ -248,24 +220,6 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                   )}
                   <p className="text-sm text-gray-500 mt-2">
                     Número máximo de estudantes que podem se matricular
-                  </p>
-                </div>
-
-                {/* Descrição */}
-                <div>
-                  <Label htmlFor="description" className="text-base font-medium text-gray-900 mb-3 block">
-                    Descrição (opcional)
-                  </Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder="Descreva os objetivos, horários, metodologia..."
-                    rows={4}
-                    className="text-base bg-white border-2 border-gray-300 focus:border-indigo-500 resize-none rounded-xl"
-                  />
-                  <p className="text-sm text-gray-500 mt-2">
-                    Esta informação será visível para os estudantes
                   </p>
                 </div>
               </div>
