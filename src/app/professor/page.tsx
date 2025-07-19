@@ -219,8 +219,8 @@ export default function ProfessorDashboardPage() {
                 <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
                   <span>Bem-vindo,</span>
                   <span className="font-medium">
-                    {user.displayName ? 
-                      `Prof. ${user.displayName.split(' ')[0]}` : 
+                    {user.displayName || user.fullName ? 
+                      `Prof. ${(user.displayName || user.fullName || '').split(' ')[0]}` : 
                       'Professor'
                     }
                   </span>
@@ -313,14 +313,7 @@ export default function ProfessorDashboardPage() {
 
                 <TabsContent value="classes" className="space-y-6">
                   {/* Gerenciamento de turmas */}
-                  {user?.uid ? (
-                    <ImprovedClassManagement professorId={user.uid} />
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Carregando dados do professor...</p>
-                    </div>
-                  )}
+                  <ImprovedClassManagement professorId={user?.uid || 'demo'} />
                 </TabsContent>
 
                 <TabsContent value="modules" className="space-y-6">
@@ -498,14 +491,7 @@ export default function ProfessorDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-6">
-                  {user?.uid ? (
-                    <AnalyticsDashboard professorId={user.uid} />
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Carregando analytics...</p>
-                    </div>
-                  )}
+                  <AnalyticsDashboard professorId={user?.uid || 'demo'} />
                 </TabsContent>
               </main>
             </Tabs>

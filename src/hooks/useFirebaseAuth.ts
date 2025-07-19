@@ -122,13 +122,12 @@ export function useFirebaseAuth() {
       // Generate anonymous ID for students
       const anonymousId = role === 'student' ? generateAnonymousId() : undefined
 
-      // Create user profile in Firestore
-      const userProfile: User = {
+      // Create user profile in Firestore (remove undefined fields)
+      const userProfile: any = {
         id: firebaseUser.uid,
         email: firebaseUser.email!,
         fullName,
         role,
-        anonymousId,
         institutionId: 'unicamp', // Default institution
         totalScore: 0,
         levelReached: 1,
@@ -138,6 +137,11 @@ export function useFirebaseAuth() {
         achievements: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
+      }
+
+      // Only add anonymousId if it's not undefined
+      if (anonymousId) {
+        userProfile.anonymousId = anonymousId
       }
 
       await setDoc(doc(db, 'users', firebaseUser.uid), {
@@ -234,13 +238,12 @@ export function useFirebaseAuth() {
           extractFirstNameFromEmail(firebaseUser.email!) ||
           'Usuário'
 
-        const userProfile: User = {
+        const userProfile: any = {
           id: firebaseUser.uid,
           email: firebaseUser.email!,
           fullName,
           role,
           roleHistory: [role], // Initialize with current role
-          anonymousId,
           institutionId: 'unicamp',
           totalScore: 0,
           levelReached: 1,
@@ -251,6 +254,11 @@ export function useFirebaseAuth() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           authProvider: 'google'
+        }
+
+        // Only add anonymousId if it's not undefined
+        if (anonymousId) {
+          userProfile.anonymousId = anonymousId
         }
 
         await setDoc(doc(db, 'users', firebaseUser.uid), {

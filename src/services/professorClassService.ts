@@ -452,6 +452,49 @@ export class ProfessorClassService {
     }
   }
 
+  // Deletar turma
+  static async deleteClass(classId: string, professorId: string): Promise<void> {
+    try {
+      // Verificar se o professor é dono da turma
+      const classInfo = await this.getClassInfo(classId)
+      if (!classInfo || classInfo.professorId !== professorId) {
+        throw new Error('Não autorizado a deletar esta turma')
+      }
+
+      const batch = writeBatch(db)
+      
+      // Deletar turma principal
+      const classDocRef = doc(db, this.CLASSES_COLLECTION, classId)
+      batch.delete(classDocRef)
+      
+      // Deletar estudantes da turma
+      const studentsQuery = query(
+        collection(db, this.CLASS_STUDENTS_COLLECTION),
+        where('classId', '==', classId)
+      )
+      const studentsSnapshot = await getDocs(studentsQuery)
+      studentsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref)
+      })
+      
+      // Deletar configurações de módulos
+      const moduleSettingsQuery = query(
+        collection(db, this.MODULE_SETTINGS_COLLECTION),
+        where('classId', '==', classId)
+      )
+      const moduleSettingsSnapshot = await getDocs(moduleSettingsQuery)
+      moduleSettingsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref)
+      })
+      
+      await batch.commit()
+      console.log('Turma deletada com sucesso:', classId)
+    } catch (error) {
+      console.error('Erro ao deletar turma:', error)
+      throw error
+    }
+  }
+
   // Resetar progresso de estudante
   static async resetStudentProgress(classId: string, studentId: string): Promise<void> {
     try {

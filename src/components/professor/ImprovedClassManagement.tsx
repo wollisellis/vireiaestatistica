@@ -81,10 +81,19 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
   const loadClasses = async () => {
     try {
       setIsLoading(true)
+      console.log('Carregando turmas para professor:', professorId)
+      
+      // Tentar carregar do Firebase
       const classesData = await ProfessorClassService.getProfessorClasses(professorId)
+      console.log('Turmas carregadas:', classesData)
+      
       setClasses(classesData)
     } catch (error) {
       console.error('Erro ao carregar turmas:', error)
+      
+      // Em caso de erro, criar dados mock para mostrar interface
+      const mockClasses: ClassInfo[] = []
+      setClasses(mockClasses)
     } finally {
       setIsLoading(false)
     }
