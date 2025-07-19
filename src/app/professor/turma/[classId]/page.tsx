@@ -28,7 +28,6 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react'
-import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 
 export default function ClassDetailsPage() {
@@ -63,12 +62,14 @@ export default function ClassDetailsPage() {
         setClassInfo(info)
         setStudents(studentsList)
       } else {
-        toast.error('Turma não encontrada')
+        console.error('Turma não encontrada')
+        window.alert('Turma não encontrada')
         router.push('/professor')
       }
     } catch (error) {
       console.error('Erro ao carregar dados da turma:', error)
-      toast.error('Erro ao carregar dados da turma')
+      console.error('Erro ao carregar dados da turma')
+      window.alert('Erro ao carregar dados da turma')
     } finally {
       setLoading(false)
     }
@@ -77,7 +78,8 @@ export default function ClassDetailsPage() {
   const copyInviteCode = () => {
     if (classInfo?.code) {
       navigator.clipboard.writeText(classInfo.code)
-      toast.success('Código copiado!')
+      console.log('Código copiado!')
+      window.alert('Código copiado!')
     }
   }
 
@@ -86,17 +88,20 @@ export default function ClassDetailsPage() {
 
     try {
       await ProfessorClassService.removeStudentFromClass(classId, studentId)
-      toast.success('Aluno removido da turma com sucesso')
+      console.log('Aluno removido da turma com sucesso')
+      window.alert('Aluno removido da turma com sucesso')
       loadClassData() // Recarregar dados
     } catch (error) {
       console.error('Erro ao remover aluno:', error)
-      toast.error('Erro ao remover aluno')
+      console.error('Erro ao remover aluno')
+      window.alert('Erro ao remover aluno')
     }
   }
 
   const handleAddStudent = async () => {
     if (!newStudentEmail) {
-      toast.error('Digite o email do aluno')
+      console.error('Digite o email do aluno')
+      window.alert('Digite o email do aluno')
       return
     }
 
@@ -105,18 +110,21 @@ export default function ClassDetailsPage() {
       const user = await UserService.getUserByEmail(newStudentEmail)
       
       if (!user) {
-        toast.error('Usuário não encontrado. Verifique o email.')
+        console.error('Usuário não encontrado. Verifique o email.')
+        window.alert('Usuário não encontrado. Verifique o email.')
         return
       }
       
       if (user.role !== 'student') {
-        toast.error('Este email pertence a um professor, não a um aluno.')
+        console.error('Este email pertence a um professor, não a um aluno.')
+        window.alert('Este email pertence a um professor, não a um aluno.')
         return
       }
       
       // Verificar se o aluno já está na turma
       if (students.some(s => s.studentId === user.uid)) {
-        toast.error('Este aluno já está matriculado na turma.')
+        console.error('Este aluno já está matriculado na turma.')
+        window.alert('Este aluno já está matriculado na turma.')
         return
       }
       
@@ -128,13 +136,15 @@ export default function ClassDetailsPage() {
         user.email
       )
       
-      toast.success('Aluno adicionado com sucesso!')
+      console.log('Aluno adicionado com sucesso!')
+      window.alert('Aluno adicionado com sucesso!')
       setNewStudentEmail('')
       setShowAddStudent(false)
       loadClassData() // Recarregar dados
     } catch (error) {
       console.error('Erro ao adicionar aluno:', error)
-      toast.error('Erro ao adicionar aluno')
+      console.error('Erro ao adicionar aluno')
+      window.alert('Erro ao adicionar aluno')
     }
   }
 
@@ -142,9 +152,11 @@ export default function ClassDetailsPage() {
     try {
       const data = await ProfessorClassService.exportClassData(classId)
       // Implementar download do CSV
-      toast.success('Dados exportados com sucesso')
+      console.log('Dados exportados com sucesso')
+      window.alert('Dados exportados com sucesso')
     } catch (error) {
-      toast.error('Erro ao exportar dados')
+      console.error('Erro ao exportar dados')
+      window.alert('Erro ao exportar dados')
     }
   }
 

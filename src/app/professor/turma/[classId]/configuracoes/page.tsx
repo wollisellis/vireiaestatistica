@@ -23,7 +23,6 @@ import {
   Trash2,
   Settings
 } from 'lucide-react'
-import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import { modules } from '@/data/modules'
 
@@ -85,12 +84,14 @@ export default function ClassSettingsPage() {
 
         setModuleSettings(allModuleSettings)
       } else {
-        toast.error('Turma não encontrada')
+        console.error('Turma não encontrada')
+        window.alert('Turma não encontrada')
         router.push('/professor')
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error)
-      toast.error('Erro ao carregar configurações')
+      console.error('Erro ao carregar configurações')
+      window.alert('Erro ao carregar configurações')
     } finally {
       setLoading(false)
     }
@@ -102,10 +103,12 @@ export default function ClassSettingsPage() {
       
       if (isAvailable) {
         await ProfessorClassService.unlockModuleForClass(classId, moduleId)
-        toast.success('Módulo desbloqueado')
+        console.log('Módulo desbloqueado')
+        window.alert('Módulo desbloqueado')
       } else {
         await ProfessorClassService.lockModuleForClass(classId, moduleId)
-        toast.success('Módulo bloqueado')
+        console.log('Módulo bloqueado')
+        window.alert('Módulo bloqueado')
       }
 
       // Atualizar estado local
@@ -113,7 +116,8 @@ export default function ClassSettingsPage() {
         prev.map(m => m.moduleId === moduleId ? { ...m, isAvailable } : m)
       )
     } catch (error) {
-      toast.error('Erro ao atualizar módulo')
+      console.error('Erro ao atualizar módulo')
+      window.alert('Erro ao atualizar módulo')
     } finally {
       setSaving(false)
     }
@@ -134,12 +138,14 @@ export default function ClassSettingsPage() {
           await ProfessorClassService.configureModule(classId, moduleId, {
             [field]: value
           })
-          toast.success('Configuração salva')
+          console.log('Configuração salva')
+          window.alert('Configuração salva')
         }
         setSaving(false)
       }
     } catch (error) {
-      toast.error('Erro ao salvar configuração')
+      console.error('Erro ao salvar configuração')
+      window.alert('Erro ao salvar configuração')
       setSaving(false)
     }
   }
@@ -148,10 +154,12 @@ export default function ClassSettingsPage() {
     try {
       setSaving(true)
       // Implementar atualização dos dados da turma
-      toast.success('Configurações da turma salvas')
+      console.log('Configurações da turma salvas')
+      window.alert('Configurações da turma salvas')
       setEditingClass(false)
     } catch (error) {
-      toast.error('Erro ao salvar configurações')
+      console.error('Erro ao salvar configurações')
+      window.alert('Erro ao salvar configurações')
     } finally {
       setSaving(false)
     }
@@ -164,10 +172,12 @@ export default function ClassSettingsPage() {
 
     try {
       await ProfessorClassService.deleteClass(classId, user!.uid)
-      toast.success('Turma excluída com sucesso')
+      console.log('Turma excluída com sucesso')
+      window.alert('Turma excluída com sucesso')
       router.push('/professor')
     } catch (error) {
-      toast.error('Erro ao excluir turma')
+      console.error('Erro ao excluir turma')
+      window.alert('Erro ao excluir turma')
     }
   }
 
