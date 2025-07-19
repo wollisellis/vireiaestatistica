@@ -48,9 +48,10 @@ rm -rf .next
 ```
 
 ## Workflow de Desenvolvimento
-- Sempre fazer git add, commit e push após completar atualizações
-- Usar mensagens de commit descritivas
+- **OBRIGATÓRIO**: Sempre fazer `git add .` e `git commit` após completar qualquer alteração no código
+- Usar mensagens de commit descritivas em português
 - Fazer commit frequentes durante o desenvolvimento
+- Nunca deixar alterações sem commit ao finalizar uma tarefa
 
 ## Contexto do Projeto
 **bioestat-platform** (anteriormente AvaliaNutri) - Plataforma educacional para avaliação nutricional e estatística em saúde
