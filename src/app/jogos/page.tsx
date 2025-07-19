@@ -281,6 +281,16 @@ export default function JogosPage() {
                       AvaliaNutri
                     </Button>
                   </Link>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleLogout}
+                    className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
+                    title="Sair e voltar ao login"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sair
+                  </Button>
                 </div>
               </div>
             </div>
