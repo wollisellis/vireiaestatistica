@@ -4,6 +4,7 @@ import React from 'react'
 import { ModuleProgressProvider } from '@/contexts/ModuleProgressContext'
 import EnhancedProfessorDashboard from '@/components/professor/EnhancedProfessorDashboard'
 import ImprovedClassManagement from '@/components/professor/ImprovedClassManagement'
+import AnalyticsDashboard from '@/components/professor/AnalyticsDashboard'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useProfessorAccess } from '@/hooks/useRoleRedirect'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -490,32 +491,7 @@ export default function ProfessorDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-6">
-                  {/* Header da seção */}
-                  <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-3">
-                        <Activity className="w-8 h-8 text-purple-600" />
-                        <div>
-                          <h2 className="text-xl font-bold text-purple-900">
-                            Analytics
-                          </h2>
-                          <p className="text-purple-700">
-                            Análise detalhada de performance e engajamento dos estudantes
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <div className="text-center py-8">
-                    <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Analytics em Desenvolvimento
-                    </h3>
-                    <p className="text-gray-600">
-                      Relatórios detalhados e visualizações avançadas estarão disponíveis em breve.
-                    </p>
-                  </div>
+                  <AnalyticsDashboard professorId={user.uid} />
                 </TabsContent>
               </main>
             </Tabs>
