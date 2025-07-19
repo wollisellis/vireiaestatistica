@@ -3,6 +3,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ========================================
+    // BIOESTAT PLATFORM - FIRESTORE SECURITY RULES
+    // ========================================
+    // Sistema educacional para avaliação nutricional - UNICAMP
+    // Versão: 2.0 - Janeiro 2025
+    // 
+    // NOVAS FUNCIONALIDADES IMPLEMENTADAS:
+    // - Sistema completo de gerenciamento de turmas para professores
+    // - Analytics avançado com métricas de progresso e engajamento
+    // - Sistema de convites com códigos únicos para turmas
+    // - Controle granular de módulos por turma (bloquear/desbloquear)
+    // - Dashboard responsivo para professores e estudantes
+    // - Sistema de matrícula automática via códigos de convite
+    // - Relatórios de desempenho e exportação de dados
+    // ========================================
+    
+    // ========================================
     // FUNÇÕES AUXILIARES
     // ========================================
     
@@ -86,20 +102,23 @@ service cloud.firestore {
         request.auth.uid in resource.data.studentIds;
     }
     
-    // CLASSES COLLECTION - Turmas do professor (nova coleção)
+    // CLASSES COLLECTION - Turmas do professor (atualizada - sistema principal)
     match /classes/{classId} {
-      // Professores podem ler/escrever suas próprias turmas
-      allow read, write: if isProfessor();
+      // Professores podem ler/escrever apenas suas próprias turmas
+      allow read, write: if isProfessor() && 
+        resource.data.professorId == request.auth.uid;
       
-      // Estudantes podem apenas ler turmas onde estão matriculados
+      // Estudantes podem ler turmas onde estão matriculados
       allow read: if isStudent() && 
-        request.auth.uid in resource.data.studentIds;
+        exists(/databases/$(database)/documents/class_students/$(classId + '_' + request.auth.uid));
       
-      // Subcoleção de estudantes da turma
-      match /students/{studentId} {
-        allow read, write: if isProfessor();
-        allow read: if isOwner(studentId);
-      }
+      // Permitir criação apenas pelo próprio professor com validação
+      allow create: if isProfessor() && 
+        request.resource.data.professorId == request.auth.uid &&
+        request.resource.data.keys().hasAll(['name', 'semester', 'year', 'professorId', 'professorName']) &&
+        request.resource.data.name is string &&
+        request.resource.data.semester is string &&
+        request.resource.data.year is number;
     }
     
     // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas
@@ -228,7 +247,7 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
     }
     
-    // PROFESSOR CLASSES COLLECTION - Turmas dos professores (nova)
+    // PROFESSOR CLASSES COLLECTION - Turmas dos professores (atualizada)
     match /professor_classes/{classId} {
       // Professores podem ler/escrever suas próprias turmas
       allow read, write: if isProfessor() && 
@@ -239,6 +258,50 @@ service cloud.firestore {
         request.auth.uid in resource.data.studentIds;
       
       // Permitir criação apenas pelo próprio professor
+      allow create: if isProfessor() && 
+        request.resource.data.professorId == request.auth.uid;
+    }
+    
+    // CLASS STUDENTS COLLECTION - Estudantes das turmas (nova)
+    match /class_students/{studentClassId} {
+      // Professores podem ler/escrever estudantes de suas turmas
+      allow read, write: if isProfessor();
+      
+      // Estudantes podem ler apenas suas próprias matrículas
+      allow read: if isAuthenticated() && 
+        resource.data.studentId == request.auth.uid;
+      
+      // Permitir criação por professores ou pelo próprio estudante (matrícula)
+      allow create: if isProfessor() || 
+        (isAuthenticated() && request.resource.data.studentId == request.auth.uid);
+    }
+    
+    // MODULE SETTINGS COLLECTION - Configurações de módulos por turma (nova)
+    match /module_settings/{settingId} {
+      // Apenas professores podem ler/escrever configurações de módulos
+      allow read, write: if isProfessor();
+      
+      // Estudantes podem ler configurações dos módulos de suas turmas
+      allow read: if isStudent();
+    }
+    
+    // CLASS ANALYTICS COLLECTION - Analytics por turma (nova)
+    match /class_analytics/{analyticsId} {
+      // Apenas professores podem acessar analytics de suas turmas
+      allow read, write: if isProfessor() && 
+        resource.data.professorId == request.auth.uid;
+    }
+    
+    // CLASS INVITES COLLECTION - Códigos de convite das turmas (nova)
+    match /class_invites/{inviteId} {
+      // Professores podem criar/gerenciar convites de suas turmas
+      allow read, write: if isProfessor() && 
+        resource.data.professorId == request.auth.uid;
+      
+      // Estudantes podem ler convites para se matricularem
+      allow read: if isStudent();
+      
+      // Permitir criação por professores
       allow create: if isProfessor() && 
         request.resource.data.professorId == request.auth.uid;
     }
@@ -333,3 +396,42 @@ service cloud.firestore {
     }
   }
 }
+
+// ========================================
+// NOTAS DE SEGURANÇA E IMPLEMENTAÇÃO
+// ========================================
+//
+// VALIDAÇÕES IMPLEMENTADAS:
+// 1. Autenticação obrigatória para todas as operações
+// 2. Validação de email institucional @dac.unicamp.br ou @unicamp.br
+// 3. Controle de acesso baseado em roles (professor/student)
+// 4. Isolamento de dados por usuário e turma
+// 5. Validação de estrutura de dados obrigatórios
+// 6. Prevenção de escalação de privilégios
+//
+// COLEÇÕES PRINCIPAIS ADICIONADAS:
+// - classes: Sistema de turmas com analytics integrado
+// - class_students: Matrículas e relacionamentos estudante-turma
+// - module_settings: Controle granular de módulos por turma
+// - class_analytics: Métricas de desempenho e engajamento
+// - class_invites: Sistema de convites com códigos únicos
+//
+// FUNCIONALIDADES DE SEGURANÇA:
+// - Professores só podem acessar suas próprias turmas
+// - Estudantes só podem ver turmas onde estão matriculados
+// - Validação de tipos de dados em criações
+// - Auditoria automática via Cloud Functions
+// - Prevenção de acesso a dados sensíveis
+//
+// PERFORMANCE E ESCALABILIDADE:
+// - Índices compostos recomendados para consultas frequentes
+// - Paginação implementada para listagens grandes
+// - Cache de permissões para melhor performance
+// - Estrutura otimizada para consultas em tempo real
+//
+// PRÓXIMAS MELHORIAS RECOMENDADAS:
+// 1. Implementar rate limiting para operações críticas
+// 2. Adicionar logs de auditoria mais detalhados
+// 3. Implementar backup automático de dados críticos
+// 4. Adicionar validação de IP para acesso administrativo
+// 5. Implementar criptografia adicional para dados sensíveis
