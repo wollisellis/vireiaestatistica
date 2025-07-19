@@ -40,6 +40,7 @@ export default function ProfessorDashboardPage() {
   const { signOut } = useFirebaseAuth()
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1'])
   const [moduleLoading, setModuleLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('dashboard')
 
   // Carregar módulos desbloqueados do Firebase
   useEffect(() => {
@@ -253,7 +254,7 @@ export default function ProfessorDashboardPage() {
         {/* Navigation */}
         <nav className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Tabs defaultValue="dashboard" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="w-full justify-start bg-transparent border-0 h-auto p-0">
                 <TabsTrigger 
                   value="dashboard" 
@@ -308,7 +309,7 @@ export default function ProfessorDashboardPage() {
                   </Card>
 
                   {/* Dashboard Principal */}
-                  <EnhancedProfessorDashboard />
+                  <EnhancedProfessorDashboard onNavigateToTab={setActiveTab} />
                 </TabsContent>
 
                 <TabsContent value="classes" className="space-y-6">
