@@ -115,14 +115,14 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-4xl max-h-[95vh] p-0 overflow-hidden">
-        <div className="flex flex-col h-full">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] p-0 overflow-hidden">
+        <div className="flex flex-col max-h-[95vh]">
           {/* Header */}
-          <DialogHeader className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-6 pb-8">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-2xl lg:text-3xl flex items-center space-x-3">
-                <div className="p-2 bg-white bg-opacity-20 rounded-lg">
-                  <GraduationCap className="w-6 h-6 lg:w-8 lg:h-8" />
+          <DialogHeader className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 sm:p-6 pb-6 sm:pb-8">
+            <div className="flex items-start justify-between">
+              <DialogTitle className="text-xl sm:text-2xl lg:text-3xl flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 flex-1 min-w-0">
+                <div className="p-2 bg-white bg-opacity-20 rounded-lg flex-shrink-0">
+                  <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8" />
                 </div>
                 <span className="font-bold">Criar Nova Turma</span>
               </DialogTitle>
@@ -130,26 +130,26 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                 variant="ghost" 
                 size="sm" 
                 onClick={onClose}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2"
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 flex-shrink-0 ml-2"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
-            <p className="text-indigo-100 mt-2 text-sm lg:text-base">
+            <p className="text-indigo-100 mt-2 text-xs sm:text-sm lg:text-base">
               Configure sua turma e gere um código único para convites automáticos
             </p>
           </DialogHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="space-y-6 lg:space-y-8"
+              className="space-y-4 sm:space-y-6 lg:space-y-8"
             >
               {/* Form Fields */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 {/* Nome da Turma */}
                 <div className="lg:col-span-2">
                   <Label htmlFor="className" className="text-base font-semibold text-gray-900 mb-2 block">
@@ -231,8 +231,8 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                     type="number"
                     min="1"
                     max="200"
-                    value={formData.capacity}
-                    onChange={(e) => handleInputChange('capacity', parseInt(e.target.value) || 0)}
+                    value={formData.capacity || 50}
+                    onChange={(e) => handleInputChange('capacity', parseInt(e.target.value) || 50)}
                     className={`h-12 text-base bg-white border-2 focus:border-indigo-500 ${
                       errors.capacity ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
@@ -340,7 +340,7 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
           </div>
 
           {/* Footer */}
-          <div className="border-t bg-gray-50 p-6">
+          <div className="border-t bg-gray-50 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
               <Button
                 onClick={handleSubmit}

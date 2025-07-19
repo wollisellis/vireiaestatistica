@@ -102,6 +102,10 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
   }
 
   const createClass = async (classData: ClassFormData) => {
+    if (!professorId) {
+      throw new Error('Professor ID não disponível')
+    }
+
     try {
       await ProfessorClassService.createClass(
         professorId,

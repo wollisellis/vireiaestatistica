@@ -313,7 +313,14 @@ export default function ProfessorDashboardPage() {
 
                 <TabsContent value="classes" className="space-y-6">
                   {/* Gerenciamento de turmas */}
-                  <ImprovedClassManagement professorId={user.uid} />
+                  {user?.uid ? (
+                    <ImprovedClassManagement professorId={user.uid} />
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Carregando dados do professor...</p>
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="modules" className="space-y-6">
@@ -491,7 +498,14 @@ export default function ProfessorDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-6">
-                  <AnalyticsDashboard professorId={user.uid} />
+                  {user?.uid ? (
+                    <AnalyticsDashboard professorId={user.uid} />
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Carregando analytics...</p>
+                    </div>
+                  )}
                 </TabsContent>
               </main>
             </Tabs>
