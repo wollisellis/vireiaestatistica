@@ -43,7 +43,8 @@
       "Bash(cp:*)",
       "Bash(git clone:*)",
       "Bash(npm cache clean:*)",
-      "Bash(sudo apt-get:*)"
+      "Bash(sudo apt-get:*)",
+      "Bash(npx next lint:*)"
     ],
     "deny": []
   }

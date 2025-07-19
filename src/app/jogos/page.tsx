@@ -35,6 +35,7 @@ import { StudentProgressProvider } from '@/contexts/StudentProgressContext';
 import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearningDashboard';
 import { Footer } from '@/components/layout';
 import { useStudentAccess } from '@/hooks/useRoleRedirect';
+import { StudentClassInfo } from '@/components/student/StudentClassInfo';
 
 interface ModuleProgress {
   [moduleId: string]: {
@@ -318,6 +319,20 @@ export default function JogosPage() {
                     )}
                   </p>
                 </div>
+              </motion.div>
+            )}
+
+            {/* Student Class Information */}
+            {user && user.role === 'student' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="mb-8"
+              >
+                <StudentClassInfo 
+                  studentId={user.id} 
+                />
               </motion.div>
             )}
 

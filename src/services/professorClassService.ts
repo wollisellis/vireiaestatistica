@@ -522,6 +522,41 @@ export class ProfessorClassService {
     }
   }
 
+  // Obter turmas onde o estudante está matriculado
+  static async getStudentClasses(studentId: string): Promise<ClassInfo[]> {
+    try {
+      // Buscar onde o estudante está matriculado
+      const q = query(
+        collection(db, this.CLASS_STUDENTS_COLLECTION),
+        where('studentId', '==', studentId)
+      )
+      
+      const querySnapshot = await getDocs(q)
+      const classIds: string[] = []
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data()
+        if (data.isActive) {
+          classIds.push(data.classId)
+        }
+      })
+      
+      // Buscar informações das turmas
+      const classes: ClassInfo[] = []
+      for (const classId of classIds) {
+        const classInfo = await this.getClassInfo(classId)
+        if (classInfo) {
+          classes.push(classInfo)
+        }
+      }
+      
+      return classes
+    } catch (error) {
+      console.error('Erro ao obter turmas do estudante:', error)
+      return []
+    }
+  }
+
   // Resetar progresso de estudante
   static async resetStudentProgress(classId: string, studentId: string): Promise<void> {
     try {

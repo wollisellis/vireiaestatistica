@@ -94,10 +94,10 @@ export function Footer() {
                     <Code className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">AvaliaNutri</h4>
-                    <p className="text-sm text-emerald-600 mb-2">Plataforma Educacional</p>
+                    <h4 className="font-semibold text-gray-900">Ellis Wollis</h4>
+                    <p className="text-sm text-emerald-600 mb-2">Mestrando CNEM</p>
                     <p className="text-xs text-gray-600 mb-3">
-                      Sistema de Avaliação Nutricional
+                      Desenvolvedor da Plataforma AvaliaNutri
                     </p>
                     <div className="flex items-center space-x-3">
                       <a

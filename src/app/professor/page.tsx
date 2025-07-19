@@ -314,7 +314,10 @@ export default function ProfessorDashboardPage() {
 
                 <TabsContent value="classes" className="space-y-6">
                   {/* Gerenciamento de turmas */}
-                  <ImprovedClassManagement professorId={user?.uid || 'demo'} />
+                  <ImprovedClassManagement 
+                    professorId={user?.uid || 'demo'} 
+                    professorName={user?.fullName || 'Professor Dennys Esper'}
+                  />
                 </TabsContent>
 
                 <TabsContent value="modules" className="space-y-6">

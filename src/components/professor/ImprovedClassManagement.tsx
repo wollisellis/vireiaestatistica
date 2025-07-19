@@ -47,10 +47,11 @@ import { motion } from 'framer-motion'
 
 interface ImprovedClassManagementProps {
   professorId: string
+  professorName?: string
   className?: string
 }
 
-export function ImprovedClassManagement({ professorId, className = '' }: ImprovedClassManagementProps) {
+export function ImprovedClassManagement({ professorId, professorName = 'Professor Dennys Esper', className = '' }: ImprovedClassManagementProps) {
   const router = useRouter()
   const [classes, setClasses] = useState<ClassInfo[]>([])
   const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null)
@@ -121,7 +122,7 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
     try {
       await ProfessorClassService.createClass(
         professorId,
-        'Professor',
+        professorName,
         classData.name,
         classData.semester,
         classData.year
