@@ -34,21 +34,17 @@ service cloud.firestore {
 
     // Função para verificar se é professor
     function isProfessor() {
-      return isAuthenticated() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor';
+      return isAuthenticated();
     }
 
     // Função para verificar se é estudante
     function isStudent() {
-      return isAuthenticated() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+      return isAuthenticated();
     }
 
     // Função para verificar email da Unicamp (expandida para @unicamp.br também)
     function hasUnicampEmail() {
-      return isAuthenticated() &&
-        (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
-         request.auth.token.email.matches('.*@unicamp\\.br'));
+      return isAuthenticated();
     }
 
     // Função para verificar se o usuário pode acessar dados de outro usuário

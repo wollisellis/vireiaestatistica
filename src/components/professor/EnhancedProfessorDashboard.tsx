@@ -162,17 +162,32 @@ export function EnhancedProfessorDashboard({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Button size="sm" variant="outline" className="w-full justify-start">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleNavigateToTab('analytics')}
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Exportar Relatórios
               </Button>
-              <Button size="sm" variant="outline" className="w-full justify-start">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleNavigateToTab('modulos')}
+              >
                 <Settings className="w-4 h-4 mr-2" />
-                Configurações
+                Gerenciar Módulos
               </Button>
-              <Button size="sm" variant="outline" className="w-full justify-start">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleNavigateToTab('turmas')}
+              >
                 <Calendar className="w-4 h-4 mr-2" />
-                Cronograma
+                Ver Turmas
               </Button>
             </div>
           </CardContent>
