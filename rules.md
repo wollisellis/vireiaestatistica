@@ -104,21 +104,17 @@ service cloud.firestore {
     
     // CLASSES COLLECTION - Turmas do professor (atualizada - sistema principal)
     match /classes/{classId} {
+      // Permitir criação apenas pelo próprio professor
+      allow create: if isProfessor() && 
+        request.resource.data.professorId == request.auth.uid;
+      
       // Professores podem ler/escrever apenas suas próprias turmas
-      allow read, write: if isProfessor() && 
+      allow read, update, delete: if isProfessor() && 
         resource.data.professorId == request.auth.uid;
       
       // Estudantes podem ler turmas onde estão matriculados
       allow read: if isStudent() && 
         exists(/databases/$(database)/documents/class_students/$(classId + '_' + request.auth.uid));
-      
-      // Permitir criação apenas pelo próprio professor com validação
-      allow create: if isProfessor() && 
-        request.resource.data.professorId == request.auth.uid &&
-        request.resource.data.keys().hasAll(['name', 'semester', 'year', 'professorId', 'professorName']) &&
-        request.resource.data.name is string &&
-        request.resource.data.semester is string &&
-        request.resource.data.year is number;
     }
     
     // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas

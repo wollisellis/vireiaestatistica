@@ -141,6 +141,8 @@ export class ProfessorClassService {
     year: number
   ): Promise<string> {
     try {
+      console.log('Criando turma para professor:', professorId)
+      
       const classId = `class_${professorId}_${Date.now()}`
       const classCode = this.generateClassCode()
       
@@ -160,6 +162,7 @@ export class ProfessorClassService {
         updatedAt: serverTimestamp()
       }
 
+      console.log('Dados da turma:', classInfo)
       await setDoc(doc(db, this.CLASSES_COLLECTION, classId), classInfo)
       
       // Criar configurações padrão dos módulos

@@ -115,7 +115,7 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 sm:w-[95vw] sm:max-w-4xl sm:max-h-[95vh] sm:m-6 sm:rounded-lg overflow-hidden touch-pan-y">
+      <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 sm:w-[90vw] sm:max-w-3xl sm:max-h-[90vh] sm:m-4 sm:rounded-lg overflow-hidden touch-pan-y">
         <div className="flex flex-col h-full">
           {/* Header */}
           <DialogHeader className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 pb-6 sm:p-6 sm:pb-8">
@@ -270,109 +270,20 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                 </div>
               </div>
 
-              {/* Preview - Hidden on mobile to save space */}
-              <Card className="hidden sm:block bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 bg-indigo-100 rounded-lg">
-                      <BookOpen className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <h3 className="text-lg font-bold text-indigo-900">Pré-visualização da Turma</h3>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <span className="font-semibold text-indigo-900">Nome:</span>
-                      <span className="ml-2 text-indigo-800">
-                        {formData.name || 'Nome da turma...'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-indigo-900">Período:</span>
-                      <span className="ml-2 text-indigo-800">
-                        {formData.semester || 'Semestre...'} {formData.year}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-indigo-900">Capacidade:</span>
-                      <span className="ml-2 text-indigo-800">
-                        {formData.capacity} estudantes
-                      </span>
-                    </div>
-                    {formData.description && (
-                      <div>
-                        <span className="font-semibold text-indigo-900">Descrição:</span>
-                        <p className="ml-2 text-indigo-800 mt-1">{formData.description}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Mobile Preview - Simplified version for mobile */}
-              <Card className="sm:hidden bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <BookOpen className="w-4 h-4 text-indigo-600" />
-                    <h3 className="text-base font-bold text-indigo-900">Preview</h3>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="flex flex-wrap">
-                      <span className="font-semibold text-indigo-900 mr-2">Nome:</span>
-                      <span className="text-indigo-800 break-all">
-                        {formData.name || 'Nome da turma...'}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap">
-                      <span className="font-semibold text-indigo-900 mr-2">Período:</span>
-                      <span className="text-indigo-800">
-                        {formData.semester || 'Semestre...'} {formData.year}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap">
-                      <span className="font-semibold text-indigo-900 mr-2">Capacidade:</span>
-                      <span className="text-indigo-800">
-                        {formData.capacity} estudantes
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Info Box - Simplified on mobile */}
+              {/* Info Box - Compact version */}
               <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-4 sm:p-6">
+                <CardContent className="p-4">
                   <div className="flex items-start space-x-3">
-                    <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                      <Info className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                    <div className="p-1 bg-blue-100 rounded flex-shrink-0">
+                      <Info className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">
-                        Como funciona o sistema de convites:
+                      <h4 className="font-semibold text-blue-900 mb-2 text-sm">
+                        Sistema de convites automático
                       </h4>
-                      <ul className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-2">
-                        <li className="flex items-center space-x-2">
-                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-                          <span>Um código único será gerado automaticamente</span>
-                        </li>
-                        <li className="flex items-center space-x-2">
-                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-                          <span>Compartilhe via WhatsApp, email ou presencial</span>
-                        </li>
-                        <li className="flex items-center space-x-2 hidden sm:flex">
-                          <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          <span>Estudantes se cadastram automaticamente na turma</span>
-                        </li>
-                        <li className="flex items-center space-x-2 hidden sm:flex">
-                          <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          <span>Você acompanha matrículas e progresso em tempo real</span>
-                        </li>
-                        <li className="flex items-center space-x-2 sm:hidden">
-                          <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0" />
-                          <span>Acompanhe progresso em tempo real</span>
-                        </li>
-                      </ul>
+                      <p className="text-xs text-blue-800">
+                        Um código único será gerado para sua turma. Compartilhe com os estudantes para matrícula automática.
+                      </p>
                     </div>
                   </div>
                 </CardContent>
