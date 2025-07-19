@@ -40,6 +40,38 @@ export default function ProfessorDashboardPage() {
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1'])
   const [moduleLoading, setModuleLoading] = useState(true)
 
+  // Carregar módulos desbloqueados do Firebase
+  useEffect(() => {
+    if (!db) {
+      setModuleLoading(false)
+      return
+    }
+
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'modules'), (doc) => {
+      if (doc.exists()) {
+        setUnlockedModules(doc.data().unlocked || ['module-1'])
+      }
+      setModuleLoading(false)
+    }, (error) => {
+      console.error('Erro ao buscar módulos desbloqueados:', error)
+      setModuleLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  const handleNotificationClick = () => {
+    console.log('Abrir notificações')
+  }
+
+  const handleSettingsClick = () => {
+    console.log('Abrir configurações')
+  }
+
+  const handleHelpClick = () => {
+    console.log('Abrir ajuda')
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -75,38 +107,6 @@ export default function ProfessorDashboardPage() {
       </div>
     )
   }
-
-  const handleNotificationClick = () => {
-    console.log('Abrir notificações')
-  }
-
-  const handleSettingsClick = () => {
-    console.log('Abrir configurações')
-  }
-
-  const handleHelpClick = () => {
-    console.log('Abrir ajuda')
-  }
-
-  // Carregar módulos desbloqueados do Firebase
-  useEffect(() => {
-    if (!db) {
-      setModuleLoading(false)
-      return
-    }
-
-    const unsubscribe = onSnapshot(doc(db, 'settings', 'modules'), (doc) => {
-      if (doc.exists()) {
-        setUnlockedModules(doc.data().unlocked || ['module-1'])
-      }
-      setModuleLoading(false)
-    }, (error) => {
-      console.error('Erro ao buscar módulos desbloqueados:', error)
-      setModuleLoading(false)
-    })
-
-    return () => unsubscribe()
-  }, [])
 
   const getModuleIcon = (moduleIcon: string) => {
     switch (moduleIcon) {
