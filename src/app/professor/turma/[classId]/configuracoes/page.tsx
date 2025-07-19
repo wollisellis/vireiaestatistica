@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
+import { useProfessorAccess } from '@/hooks/useRoleRedirect'
 import ProfessorClassService, { ClassInfo, ModuleSettings } from '@/services/professorClassService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -30,7 +30,7 @@ import { modules } from '@/data/modules'
 export default function ClassSettingsPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading, hasAccess } = useProfessorAccess()
   const classId = params.classId as string
 
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
@@ -46,10 +46,10 @@ export default function ClassSettingsPage() {
   })
 
   useEffect(() => {
-    if (user && classId) {
+    if (user && classId && hasAccess) {
       loadSettings()
     }
-  }, [user, classId])
+  }, [user, classId, hasAccess])
 
   const loadSettings = async () => {
     try {
@@ -171,12 +171,16 @@ export default function ClassSettingsPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     )
+  }
+
+  if (!hasAccess) {
+    return null // useProfessorAccess handles redirects
   }
 
   return (

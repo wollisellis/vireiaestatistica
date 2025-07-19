@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
+import { useProfessorAccess } from '@/hooks/useRoleRedirect'
 import ProfessorClassService, { ClassInfo, StudentOverview } from '@/services/professorClassService'
 import UserService from '@/services/userService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -34,7 +34,7 @@ import { motion } from 'framer-motion'
 export default function ClassDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading, hasAccess } = useProfessorAccess()
   const classId = params.classId as string
 
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
@@ -46,10 +46,10 @@ export default function ClassDetailsPage() {
   const [newStudentEmail, setNewStudentEmail] = useState('')
 
   useEffect(() => {
-    if (user && classId) {
+    if (user && classId && hasAccess) {
       loadClassData()
     }
-  }, [user, classId])
+  }, [user, classId, hasAccess])
 
   const loadClassData = async () => {
     try {
@@ -153,12 +153,16 @@ export default function ClassDetailsPage() {
     student.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     )
+  }
+
+  if (!hasAccess) {
+    return null // useProfessorAccess handles redirects
   }
 
   return (
