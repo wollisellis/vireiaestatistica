@@ -115,7 +115,7 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 sm:w-[95vw] sm:max-w-4xl sm:max-h-[95vh] sm:m-6 sm:rounded-lg overflow-hidden">
+      <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 sm:w-[95vw] sm:max-w-4xl sm:max-h-[95vh] sm:m-6 sm:rounded-lg overflow-hidden touch-pan-y">
         <div className="flex flex-col h-full">
           {/* Header */}
           <DialogHeader className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 pb-6 sm:p-6 sm:pb-8">
@@ -141,12 +141,12 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
           </DialogHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 overscroll-contain">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="space-y-4 sm:space-y-6 lg:space-y-8"
+              className="space-y-5 sm:space-y-6 lg:space-y-8"
             >
               {/* Form Fields */}
               <div className="space-y-5 sm:space-y-6">
@@ -270,8 +270,8 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                 </div>
               </div>
 
-              {/* Preview */}
-              <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
+              {/* Preview - Hidden on mobile to save space */}
+              <Card className="hidden sm:block bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="p-2 bg-indigo-100 rounded-lg">
@@ -309,33 +309,68 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                 </CardContent>
               </Card>
 
-              {/* Info Box */}
+              {/* Mobile Preview - Simplified version for mobile */}
+              <Card className="sm:hidden bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <BookOpen className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-base font-bold text-indigo-900">Preview</h3>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex flex-wrap">
+                      <span className="font-semibold text-indigo-900 mr-2">Nome:</span>
+                      <span className="text-indigo-800 break-all">
+                        {formData.name || 'Nome da turma...'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap">
+                      <span className="font-semibold text-indigo-900 mr-2">Período:</span>
+                      <span className="text-indigo-800">
+                        {formData.semester || 'Semestre...'} {formData.year}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap">
+                      <span className="font-semibold text-indigo-900 mr-2">Capacidade:</span>
+                      <span className="text-indigo-800">
+                        {formData.capacity} estudantes
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Info Box - Simplified on mobile */}
               <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start space-x-3">
                     <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                      <Info className="w-5 h-5 text-blue-600" />
+                      <Info className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-blue-900 mb-2">
+                      <h4 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">
                         Como funciona o sistema de convites:
                       </h4>
-                      <ul className="text-sm text-blue-800 space-y-2">
+                      <ul className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-2">
                         <li className="flex items-center space-x-2">
-                          <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          <span>Um código único será gerado automaticamente para sua turma</span>
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+                          <span>Um código único será gerado automaticamente</span>
                         </li>
                         <li className="flex items-center space-x-2">
-                          <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          <span>Você pode compartilhar o link de convite ou código via WhatsApp, email</span>
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+                          <span>Compartilhe via WhatsApp, email ou presencial</span>
                         </li>
-                        <li className="flex items-center space-x-2">
+                        <li className="flex items-center space-x-2 hidden sm:flex">
                           <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
                           <span>Estudantes se cadastram automaticamente na turma</span>
                         </li>
-                        <li className="flex items-center space-x-2">
+                        <li className="flex items-center space-x-2 hidden sm:flex">
                           <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
                           <span>Você acompanha matrículas e progresso em tempo real</span>
+                        </li>
+                        <li className="flex items-center space-x-2 sm:hidden">
+                          <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                          <span>Acompanhe progresso em tempo real</span>
                         </li>
                       </ul>
                     </div>
@@ -346,12 +381,12 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
           </div>
 
           {/* Footer */}
-          <div className="border-t bg-gray-50 p-4 sm:p-6">
+          <div className="border-t bg-gray-50 p-4 sm:p-6 safe-area-inset-bottom">
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting || loading}
-                className="flex-1 h-12 text-base bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                className="flex-1 h-12 sm:h-12 text-base bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 font-semibold shadow-lg active:scale-95 transition-transform"
               >
                 {isSubmitting || loading ? (
                   <>
@@ -369,13 +404,13 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                 variant="outline"
                 onClick={onClose}
                 disabled={isSubmitting || loading}
-                className="flex-1 h-12 text-base border-2 border-gray-300 hover:bg-gray-50"
+                className="flex-1 h-12 sm:h-12 text-base border-2 border-gray-300 hover:bg-gray-50 font-medium active:scale-95 transition-transform"
               >
                 Cancelar
               </Button>
             </div>
             
-            <p className="text-xs text-gray-500 text-center mt-3">
+            <p className="text-xs text-gray-500 text-center mt-3 leading-relaxed">
               Após criar a turma, você poderá compartilhar o código de convite imediatamente
             </p>
           </div>
