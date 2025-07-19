@@ -3,7 +3,7 @@
 import React from 'react'
 import { ModuleProgressProvider } from '@/contexts/ModuleProgressContext'
 import EnhancedProfessorDashboard from '@/components/professor/EnhancedProfessorDashboard'
-import ClassManagement from '@/components/professor/ClassManagement'
+import ImprovedClassManagement from '@/components/professor/ImprovedClassManagement'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useProfessorAccess } from '@/hooks/useRoleRedirect'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -311,25 +311,8 @@ export default function ProfessorDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="classes" className="space-y-6">
-                  {/* Header da seção */}
-                  <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-3">
-                        <Users className="w-8 h-8 text-green-600" />
-                        <div>
-                          <h2 className="text-xl font-bold text-green-900">
-                            Gerenciamento de Turmas
-                          </h2>
-                          <p className="text-green-700">
-                            Crie turmas, adicione estudantes e gerencie matrículas
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
                   {/* Gerenciamento de turmas */}
-                  <ClassManagement professorId={user.uid} />
+                  <ImprovedClassManagement professorId={user.uid} />
                 </TabsContent>
 
                 <TabsContent value="modules" className="space-y-6">
