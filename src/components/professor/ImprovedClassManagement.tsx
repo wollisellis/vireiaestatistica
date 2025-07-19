@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Textarea } from '@/components/ui/Textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
+import CreateClassModal, { ClassFormData } from './CreateClassModal'
 import { 
   ProfessorClassService, 
   ClassInfo, 
@@ -100,35 +101,21 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
     }
   }
 
-  const createClass = async () => {
+  const createClass = async (classData: ClassFormData) => {
     try {
-      if (!classForm.name || !classForm.semester) {
-        alert('Preencha todos os campos obrigatórios')
-        return
-      }
-
       await ProfessorClassService.createClass(
         professorId,
         'Professor',
-        classForm.name,
-        classForm.semester,
-        classForm.year
+        classData.name,
+        classData.semester,
+        classData.year
       )
-
-      // Resetar formulário
-      setClassForm({
-        name: '',
-        semester: '',
-        year: new Date().getFullYear(),
-        description: '',
-        capacity: 50
-      })
       
       setIsCreatingClass(false)
       await loadClasses()
     } catch (error) {
       console.error('Erro ao criar turma:', error)
-      alert('Erro ao criar turma')
+      throw error // Re-throw para o modal tratar
     }
   }
 
@@ -176,153 +163,67 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
         transition={{ duration: 0.5 }}
       >
         <Card className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-0 overflow-hidden">
-          <CardContent className="p-8 relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -translate-y-16 translate-x-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full translate-y-12 -translate-x-12"></div>
+          <CardContent className="p-4 sm:p-6 lg:p-8 relative">
+            <div className="absolute top-0 right-0 w-20 h-20 sm:w-32 sm:h-32 bg-white opacity-10 rounded-full -translate-y-8 translate-x-8 sm:-translate-y-16 sm:translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-16 h-16 sm:w-24 sm:h-24 bg-white opacity-10 rounded-full translate-y-8 -translate-x-8 sm:translate-y-12 sm:-translate-x-12"></div>
             
             <div className="relative z-10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center space-x-3 mb-4">
-                    <GraduationCap className="w-10 h-10 text-white" />
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
+                <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 mb-6">
+                    <GraduationCap className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                     <div>
-                      <h1 className="text-3xl font-bold">Gerenciamento de Turmas</h1>
-                      <p className="text-indigo-100 text-lg">
+                      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">Gerenciamento de Turmas</h1>
+                      <p className="text-indigo-100 text-sm sm:text-base lg:text-lg mt-1">
                         Crie turmas, convide estudantes e acompanhe o progresso
                       </p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-6 mt-6">
+                  <div className="grid grid-cols-3 gap-3 sm:gap-6">
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{classes.length}</div>
-                      <div className="text-indigo-200 text-sm">Turmas Ativas</div>
+                      <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{classes.length}</div>
+                      <div className="text-indigo-200 text-xs sm:text-sm">Turmas Ativas</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold">
+                      <div className="text-xl sm:text-2xl lg:text-3xl font-bold">
                         {classes.reduce((total, cls) => total + cls.studentsCount, 0)}
                       </div>
-                      <div className="text-indigo-200 text-sm">Total de Estudantes</div>
+                      <div className="text-indigo-200 text-xs sm:text-sm">Total de Estudantes</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold">
+                      <div className="text-xl sm:text-2xl lg:text-3xl font-bold">
                         {classes.length > 0 ? Math.round(classes.reduce((total, cls) => total + cls.avgProgress, 0) / classes.length) : 0}%
                       </div>
-                      <div className="text-indigo-200 text-sm">Progresso Médio</div>
+                      <div className="text-indigo-200 text-xs sm:text-sm">Progresso Médio</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Botão Nova Turma */}
-                <Dialog open={isCreatingClass} onOpenChange={setIsCreatingClass}>
-                  <DialogTrigger asChild>
-                    <Button size="lg" className="bg-white text-indigo-600 hover:bg-indigo-50 shadow-lg">
-                      <Plus className="w-5 h-5 mr-2" />
-                      Nova Turma
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle className="text-2xl flex items-center space-x-2">
-                        <GraduationCap className="w-6 h-6 text-indigo-600" />
-                        <span>Criar Nova Turma</span>
-                      </DialogTitle>
-                    </DialogHeader>
-                    
-                    <div className="space-y-6 mt-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                          <Label htmlFor="className" className="text-base font-medium">Nome da Turma *</Label>
-                          <Input
-                            id="className"
-                            value={classForm.name}
-                            onChange={(e) => setClassForm(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Ex: Avaliação Nutricional - Turma A"
-                            className="mt-2 h-12"
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="semester" className="text-base font-medium">Semestre *</Label>
-                          <Input
-                            id="semester"
-                            value={classForm.semester}
-                            onChange={(e) => setClassForm(prev => ({ ...prev, semester: e.target.value }))}
-                            placeholder="Ex: 1º Semestre"
-                            className="mt-2 h-12"
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="year" className="text-base font-medium">Ano</Label>
-                          <Input
-                            id="year"
-                            type="number"
-                            value={classForm.year}
-                            onChange={(e) => setClassForm(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                            className="mt-2 h-12"
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="capacity" className="text-base font-medium">Capacidade Máxima</Label>
-                          <Input
-                            id="capacity"
-                            type="number"
-                            value={classForm.capacity}
-                            onChange={(e) => setClassForm(prev => ({ ...prev, capacity: parseInt(e.target.value) }))}
-                            placeholder="50"
-                            className="mt-2 h-12"
-                          />
-                        </div>
-                        
-                        <div className="md:col-span-1">
-                          <Label htmlFor="description" className="text-base font-medium">Descrição (opcional)</Label>
-                          <Textarea
-                            id="description"
-                            value={classForm.description}
-                            onChange={(e) => setClassForm(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Descrição da turma, horários, objetivos..."
-                            rows={3}
-                            className="mt-2"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <CheckCircle className="w-5 h-5 text-blue-600" />
-                          <span className="font-medium text-blue-900">Como funciona o sistema de convites:</span>
-                        </div>
-                        <ul className="text-sm text-blue-800 space-y-1 ml-7">
-                          <li>• Um código único será gerado para sua turma</li>
-                          <li>• Você pode compartilhar o link de convite ou código</li>
-                          <li>• Estudantes se cadastram automaticamente na turma</li>
-                          <li>• Você acompanha matrículas em tempo real</li>
-                        </ul>
-                      </div>
-                      
-                      <div className="flex space-x-3 pt-4">
-                        <Button onClick={createClass} className="flex-1 h-12 text-base">
-                          <Plus className="w-5 h-5 mr-2" />
-                          Criar Turma
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setIsCreatingClass(false)}
-                          className="flex-1 h-12 text-base"
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <div className="flex justify-center lg:justify-end">
+                  <Button 
+                    onClick={() => setIsCreatingClass(true)}
+                    size="lg" 
+                    className="w-full sm:w-auto bg-white text-indigo-600 hover:bg-indigo-50 shadow-lg h-12 px-6"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Nova Turma
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Modal de criação de turma */}
+      <CreateClassModal
+        isOpen={isCreatingClass}
+        onClose={() => setIsCreatingClass(false)}
+        onCreateClass={createClass}
+        loading={isLoading}
+      />
 
       {/* Lista de turmas */}
       {classes.length === 0 ? (
@@ -353,7 +254,7 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
           </Card>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {classes.map((cls, index) => (
             <motion.div
               key={cls.id}
@@ -381,56 +282,59 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
           transition={{ duration: 0.5 }}
         >
           <Card className="border-2 border-indigo-200">
-            <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-3 text-xl">
-                    <Users className="w-6 h-6 text-indigo-600" />
-                    <span>{selectedClass.name}</span>
-                    <Badge className="bg-indigo-100 text-indigo-800">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 sm:p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 text-lg sm:text-xl">
+                    <div className="flex items-center space-x-3">
+                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 flex-shrink-0" />
+                      <span className="truncate">{selectedClass.name}</span>
+                    </div>
+                    <Badge className="bg-indigo-100 text-indigo-800 self-start sm:self-auto">
                       {students.length} estudante(s)
                     </Badge>
                   </CardTitle>
-                  <div className="text-sm text-gray-600 mt-2 flex items-center space-x-4">
+                  <div className="text-xs sm:text-sm text-gray-600 mt-2 flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4">
                     <span className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                       <span>{selectedClass.semester} {selectedClass.year}</span>
                     </span>
                     <span className="flex items-center space-x-1">
-                      <Target className="w-4 h-4" />
-                      <span>Código: {selectedClass.code}</span>
+                      <Target className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span>Código: <span className="font-mono">{selectedClass.code}</span></span>
                     </span>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => copyInviteLink(selectedClass.code)}
-                    className="border-green-200 text-green-700 hover:bg-green-50"
+                    className="border-green-200 text-green-700 hover:bg-green-50 text-xs sm:text-sm h-8 sm:h-9"
                   >
-                    <Share className="w-4 h-4 mr-2" />
-                    Compartilhar Convite
+                    <Share className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Compartilhar Convite</span>
+                    <span className="sm:hidden">Compartilhar</span>
                   </Button>
-                  <Button variant="outline" size="sm" onClick={loadClassStudents}>
-                    <RefreshCw className="w-4 h-4 mr-2" />
+                  <Button variant="outline" size="sm" onClick={loadClassStudents} className="text-xs sm:text-sm h-8 sm:h-9">
+                    <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                     Atualizar
                   </Button>
                 </div>
               </div>
             </CardHeader>
             
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               {/* Busca de estudantes */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                   <Input
                     placeholder="Buscar estudante por nome ou email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-12 text-base"
+                    className="pl-9 sm:pl-10 h-10 sm:h-12 text-sm sm:text-base"
                   />
                 </div>
               </div>
@@ -523,33 +427,33 @@ function EnhancedClassCard({
 
   return (
     <Card 
-      className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
+      className={`cursor-pointer transition-all duration-300 hover:shadow-lg h-full ${
         isSelected 
           ? 'ring-2 ring-indigo-500 border-indigo-200 shadow-lg' 
           : 'hover:shadow-md border-gray-200'
       }`}
       onClick={onSelect}
     >
-      <CardContent className="p-6">
-        <div className="space-y-4">
+      <CardContent className="p-4 sm:p-6 h-full flex flex-col">
+        <div className="space-y-4 flex-1">
           {/* Header */}
           <div>
-            <h3 className="font-bold text-lg text-gray-900 mb-1">{classInfo.name}</h3>
-            <div className="text-sm text-gray-600 flex items-center space-x-2">
-              <Calendar className="w-4 h-4" />
-              <span>{classInfo.semester} {classInfo.year}</span>
+            <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 line-clamp-2">{classInfo.name}</h3>
+            <div className="text-xs sm:text-sm text-gray-600 flex items-center space-x-2">
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="truncate">{classInfo.semester} {classInfo.year}</span>
             </div>
           </div>
           
           {/* Status e Badges */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
             <div className="flex items-center space-x-2">
-              <StatusIcon className={`w-4 h-4 ${
+              <StatusIcon className={`w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ${
                 status.color === 'green' ? 'text-green-600' :
                 status.color === 'blue' ? 'text-blue-600' :
                 status.color === 'yellow' ? 'text-yellow-600' : 'text-gray-600'
               }`} />
-              <span className={`text-xs font-medium ${
+              <span className={`text-xs font-medium truncate ${
                 status.color === 'green' ? 'text-green-700' :
                 status.color === 'blue' ? 'text-blue-700' :
                 status.color === 'yellow' ? 'text-yellow-700' : 'text-gray-700'
@@ -558,44 +462,46 @@ function EnhancedClassCard({
               </span>
             </div>
             
-            <Badge variant="outline" className="text-xs font-mono">
+            <Badge variant="outline" className="text-xs font-mono self-start sm:self-auto">
               {classInfo.code}
             </Badge>
           </div>
           
           {/* Estatísticas */}
-          <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 py-3 border-t border-gray-100">
             <div className="text-center">
-              <div className="text-xl font-bold text-indigo-600">{classInfo.studentsCount}</div>
+              <div className="text-lg sm:text-xl font-bold text-indigo-600">{classInfo.studentsCount}</div>
               <div className="text-xs text-gray-600">Estudantes</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold text-green-600">{classInfo.avgProgress}%</div>
+              <div className="text-lg sm:text-xl font-bold text-green-600">{classInfo.avgProgress}%</div>
               <div className="text-xs text-gray-600">Progresso</div>
             </div>
           </div>
+        </div>
           
-          {/* Ações */}
-          <div className="flex space-x-2 pt-2" onClick={(e) => e.stopPropagation()}>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onCopyCode}
-              className="flex-1 text-xs"
-            >
-              <Copy className="w-3 h-3 mr-1" />
-              Código
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onCopyInviteLink}
-              className="flex-1 text-xs border-green-200 text-green-700 hover:bg-green-50"
-            >
-              <Share className="w-3 h-3 mr-1" />
-              Convite
-            </Button>
-          </div>
+        {/* Ações */}
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onCopyCode}
+            className="flex-1 text-xs h-8"
+          >
+            <Copy className="w-3 h-3 mr-1" />
+            <span className="hidden sm:inline">Código</span>
+            <span className="sm:hidden">Copiar Código</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onCopyInviteLink}
+            className="flex-1 text-xs h-8 border-green-200 text-green-700 hover:bg-green-50"
+          >
+            <Share className="w-3 h-3 mr-1" />
+            <span className="hidden sm:inline">Convite</span>
+            <span className="sm:hidden">Compartilhar</span>
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -609,42 +515,42 @@ interface EnhancedStudentRowProps {
 function EnhancedStudentRow({ student }: EnhancedStudentRowProps) {
   return (
     <Card className="hover:shadow-md transition-shadow border-l-4 border-l-indigo-500">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:justify-between">
+          <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
             {/* Avatar com ranking */}
             <div className={`
-              w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shadow-sm
+              w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-sm flex-shrink-0
               ${student.isActive ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-gray-100 text-gray-600'}
             `}>
               #{student.classRank}
             </div>
             
             {/* Info do estudante */}
-            <div>
-              <div className="font-semibold text-gray-900 text-base">{student.studentName}</div>
-              <div className="text-sm text-gray-600 flex items-center space-x-2">
-                <Mail className="w-3 h-3" />
-                <span>{student.email}</span>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">{student.studentName}</div>
+              <div className="text-xs sm:text-sm text-gray-600 flex items-center space-x-2 mt-1">
+                <Mail className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{student.email}</span>
               </div>
             </div>
           </div>
           
           {/* Métricas */}
-          <div className="flex items-center space-x-6">
-            <div className="text-center">
-              <div className="text-lg font-bold text-indigo-600">{student.overallProgress}%</div>
+          <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-6">
+            <div className="text-center flex-shrink-0">
+              <div className="text-base sm:text-lg font-bold text-indigo-600">{student.overallProgress}%</div>
               <div className="text-xs text-gray-600">Progresso</div>
             </div>
             
-            <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{student.totalNormalizedScore}</div>
+            <div className="text-center flex-shrink-0">
+              <div className="text-base sm:text-lg font-bold text-green-600">{student.totalNormalizedScore}</div>
               <div className="text-xs text-gray-600">Pontuação</div>
             </div>
             
             <Badge 
               variant={student.isActive ? 'default' : 'secondary'}
-              className={`px-3 py-1 ${
+              className={`px-2 sm:px-3 py-1 text-xs flex-shrink-0 ${
                 student.isActive 
                   ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                   : 'bg-gray-100 text-gray-600'
