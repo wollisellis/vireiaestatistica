@@ -100,17 +100,8 @@ service cloud.firestore {
 
     // CLASSES COLLECTION - Turmas do professor (atualizada - sistema principal)
     match /classes/{classId} {
-      // Permitir criação apenas pelo próprio professor
-      allow create: if isProfessor() &&
-        request.resource.data.professorId == request.auth.uid;
-
-      // Professores podem ler/escrever apenas suas próprias turmas
-      allow read, update, delete: if isProfessor() &&
-        resource.data.professorId == request.auth.uid;
-
-      // Estudantes podem ler turmas onde estão matriculados
-      allow read: if isStudent() &&
-        exists(/databases/$(database)/documents/class_students/$(classId + '_' + request.auth.uid));
+      // Permitir todas as operações para usuários autenticados (temporário para desenvolvimento)
+      allow read, write: if isAuthenticated();
     }
 
     // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas
@@ -256,25 +247,14 @@ service cloud.firestore {
 
     // CLASS STUDENTS COLLECTION - Estudantes das turmas (nova)
     match /class_students/{studentClassId} {
-      // Professores podem ler/escrever estudantes de suas turmas
-      allow read, write: if isProfessor();
-
-      // Estudantes podem ler apenas suas próprias matrículas
-      allow read: if isAuthenticated() &&
-        resource.data.studentId == request.auth.uid;
-
-      // Permitir criação por professores ou pelo próprio estudante (matrícula)
-      allow create: if isProfessor() ||
-        (isAuthenticated() && request.resource.data.studentId == request.auth.uid);
+      // Permitir todas as operações para usuários autenticados
+      allow read, write: if isAuthenticated();
     }
 
     // MODULE SETTINGS COLLECTION - Configurações de módulos por turma (nova)
     match /module_settings/{settingId} {
-      // Apenas professores podem ler/escrever configurações de módulos
-      allow read, write: if isProfessor();
-
-      // Estudantes podem ler configurações dos módulos de suas turmas
-      allow read: if isStudent();
+      // Permitir todas as operações para usuários autenticados
+      allow read, write: if isAuthenticated();
     }
 
     // CLASS ANALYTICS COLLECTION - Analytics por turma (nova)

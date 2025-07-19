@@ -246,6 +246,30 @@ export class ProfessorClassService {
     }
   }
 
+  // Remover estudante da turma
+  static async removeStudentFromClass(classId: string, studentId: string): Promise<void> {
+    try {
+      const batch = writeBatch(db)
+      
+      // Remover estudante da turma
+      const studentDocRef = doc(db, this.CLASS_STUDENTS_COLLECTION, `${classId}_${studentId}`)
+      batch.delete(studentDocRef)
+      
+      // Atualizar contador de estudantes
+      const classDocRef = doc(db, this.CLASSES_COLLECTION, classId)
+      batch.update(classDocRef, {
+        studentsCount: increment(-1),
+        updatedAt: serverTimestamp()
+      })
+      
+      await batch.commit()
+      console.log('Estudante removido da turma:', studentId)
+    } catch (error) {
+      console.error('Erro ao remover estudante:', error)
+      throw error
+    }
+  }
+
   // Obter estudantes da turma
   static async getClassStudents(classId: string): Promise<StudentOverview[]> {
     try {

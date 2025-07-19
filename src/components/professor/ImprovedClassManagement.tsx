@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -39,7 +40,8 @@ import {
   Clock,
   Target,
   Star,
-  TrendingUp
+  TrendingUp,
+  Eye
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
@@ -49,6 +51,7 @@ interface ImprovedClassManagementProps {
 }
 
 export function ImprovedClassManagement({ professorId, className = '' }: ImprovedClassManagementProps) {
+  const router = useRouter()
   const [classes, setClasses] = useState<ClassInfo[]>([])
   const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null)
   const [students, setStudents] = useState<StudentOverview[]>([])
@@ -281,6 +284,7 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
                 onSelect={() => setSelectedClass(cls)}
                 onCopyCode={() => copyClassCode(cls.code)}
                 onCopyInviteLink={() => copyInviteLink(cls.code)}
+                onViewDetails={() => router.push(`/professor/turma/${cls.id}`)}
               />
             </motion.div>
           ))}
@@ -333,6 +337,15 @@ export function ImprovedClassManagement({ professorId, className = '' }: Improve
                   <Button variant="outline" size="sm" onClick={loadClassStudents} className="text-xs sm:text-sm h-8 sm:h-9">
                     <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                     Atualizar
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => router.push(`/professor/turma/${selectedClass.id}`)}
+                    className="text-xs sm:text-sm h-8 sm:h-9 bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    Ver Detalhes Completos
                   </Button>
                 </div>
               </div>
@@ -413,6 +426,7 @@ interface EnhancedClassCardProps {
   onSelect: () => void
   onCopyCode: () => void
   onCopyInviteLink: () => void
+  onViewDetails?: () => void
 }
 
 function EnhancedClassCard({ 
@@ -420,7 +434,8 @@ function EnhancedClassCard({
   isSelected, 
   onSelect, 
   onCopyCode, 
-  onCopyInviteLink 
+  onCopyInviteLink,
+  onViewDetails 
 }: EnhancedClassCardProps) {
   const getStatusInfo = () => {
     if (classInfo.studentsCount === 0) {
@@ -515,6 +530,17 @@ function EnhancedClassCard({
             <span className="hidden sm:inline">Convite</span>
             <span className="sm:hidden">Compartilhar</span>
           </Button>
+          {onViewDetails && (
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={onViewDetails}
+              className="flex-1 text-xs h-8 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              <Eye className="w-3 h-3 mr-1" />
+              <span>Detalhes</span>
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

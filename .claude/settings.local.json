@@ -37,7 +37,13 @@
       "Bash(cat:*)",
       "Bash(GIT_ASKPASS=echo git push origin main)",
       "Bash(npx next build:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(test:*)",
+      "Bash(cp:*)",
+      "Bash(git clone:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(sudo apt-get:*)"
     ],
     "deny": []
   }
