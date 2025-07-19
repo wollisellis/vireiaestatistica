@@ -358,6 +358,15 @@ service cloud.firestore {
       allow read, write: if isProfessor();
     }
     
+    // SETTINGS COLLECTION - Configurações gerais (incluindo módulos)
+    match /settings/{settingId} {
+      // Todos os usuários autenticados podem ler configurações
+      allow read: if isAuthenticated();
+      
+      // Apenas professores podem escrever configurações
+      allow write: if isProfessor();
+    }
+    
     // AUDIT LOGS COLLECTION - Logs de auditoria
     match /auditLogs/{logId} {
       // Apenas professores podem ler logs de auditoria
