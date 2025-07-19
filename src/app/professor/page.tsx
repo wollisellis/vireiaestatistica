@@ -10,6 +10,10 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
+import { modules } from '@/data/modules'
+import { useState, useEffect } from 'react'
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { 
   BookOpen, 
   Users, 
@@ -20,13 +24,21 @@ import {
   Activity,
   Bell,
   HelpCircle,
-  LogOut
+  LogOut,
+  Clock,
+  Target,
+  Scale,
+  Play,
+  Lock,
+  CheckCircle
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 export default function ProfessorDashboardPage() {
   const { user, loading, hasAccess } = useProfessorAccess()
   const { signOut } = useFirebaseAuth()
+  const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1'])
+  const [moduleLoading, setModuleLoading] = useState(true)
 
   if (loading) {
     return (
@@ -74,6 +86,63 @@ export default function ProfessorDashboardPage() {
 
   const handleHelpClick = () => {
     console.log('Abrir ajuda')
+  }
+
+  // Carregar módulos desbloqueados do Firebase
+  useEffect(() => {
+    if (!db) {
+      setModuleLoading(false)
+      return
+    }
+
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'modules'), (doc) => {
+      if (doc.exists()) {
+        setUnlockedModules(doc.data().unlocked || ['module-1'])
+      }
+      setModuleLoading(false)
+    }, (error) => {
+      console.error('Erro ao buscar módulos desbloqueados:', error)
+      setModuleLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  const getModuleIcon = (moduleIcon: string) => {
+    switch (moduleIcon) {
+      case '📊': return <BarChart3 className="w-6 h-6" />
+      case '🔬': return <Activity className="w-6 h-6" />
+      case '📏': return <Scale className="w-6 h-6" />
+      case '🎯': return <Target className="w-6 h-6" />
+      default: return <BookOpen className="w-6 h-6" />
+    }
+  }
+
+  const toggleModuleAccess = async (moduleId: string) => {
+    if (!db) return
+
+    try {
+      const isCurrentlyUnlocked = unlockedModules.includes(moduleId)
+      
+      let newUnlocked: string[]
+      if (isCurrentlyUnlocked) {
+        // Bloquear módulo (remover da lista)
+        newUnlocked = unlockedModules.filter(id => id !== moduleId)
+      } else {
+        // Desbloquear módulo (adicionar à lista)
+        newUnlocked = [...unlockedModules, moduleId]
+      }
+
+      await setDoc(doc(db, 'settings', 'modules'), {
+        unlocked: newUnlocked,
+        lastUpdated: new Date(),
+        lastUpdatedBy: user?.uid || 'unknown'
+      }, { merge: true })
+
+      console.log(`Módulo ${moduleId} ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`)
+    } catch (error) {
+      console.error('Erro ao alterar acesso do módulo:', error)
+    }
   }
 
   const handleLogout = async () => {
@@ -148,7 +217,12 @@ export default function ProfessorDashboardPage() {
               <div className="flex items-center space-x-4">
                 <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
                   <span>Bem-vindo,</span>
-                  <span className="font-medium">{user.displayName || 'Professor'}</span>
+                  <span className="font-medium">
+                    {user.displayName ? 
+                      `Prof. ${user.displayName.split(' ')[0]}` : 
+                      'Professor'
+                    }
+                  </span>
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -259,32 +333,177 @@ export default function ProfessorDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="modules" className="space-y-6">
-                  {/* Seção de módulos será renderizada pelo EnhancedProfessorDashboard */}
+                  {/* Header da seção */}
                   <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
                     <CardContent className="p-6">
                       <div className="flex items-center space-x-3">
                         <BookOpen className="w-8 h-8 text-blue-600" />
                         <div>
                           <h2 className="text-xl font-bold text-blue-900">
-                            Configuração de Módulos
+                            Módulos do Sistema
                           </h2>
                           <p className="text-blue-700">
-                            Configure módulos, defina pré-requisitos e controle acessibilidade
+                            Visualize todos os módulos disponíveis na plataforma AvaliaNutri
                           </p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <div className="text-center py-8">
-                    <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Selecione uma turma
-                    </h3>
-                    <p className="text-gray-600">
-                      Vá para a aba "Turmas" e selecione uma turma para configurar seus módulos.
-                    </p>
-                  </div>
+                  {/* Lista de módulos */}
+                  {moduleLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-gray-600 mt-2">Carregando módulos...</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {modules.map((module) => {
+                        const isUnlocked = unlockedModules.includes(module.id)
+                        return (
+                          <Card key={module.id} className="hover:shadow-lg transition-shadow">
+                            <CardContent className="p-6">
+                              <div className="flex items-start space-x-4">
+                                <div className={`
+                                  p-3 rounded-lg flex-shrink-0
+                                  ${!isUnlocked ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-600'}
+                                `}>
+                                  {!isUnlocked ? 
+                                    <Lock className="w-6 h-6" /> : 
+                                    getModuleIcon(module.icon)
+                                  }
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <h3 className="font-semibold text-gray-900 text-sm leading-tight">
+                                      {module.title}
+                                    </h3>
+                                    {isUnlocked && (
+                                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                    )}
+                                  </div>
+                                  <p className="text-gray-600 text-xs mb-3 line-clamp-2">
+                                    {module.description}
+                                  </p>
+                                  <div className="flex items-center justify-between text-xs mb-3">
+                                    <div className="flex items-center space-x-1 text-gray-500">
+                                      <Clock className="w-3 h-3" />
+                                      <span>{module.estimatedTime} min</span>
+                                    </div>
+                                    <Badge 
+                                      variant={!isUnlocked ? "secondary" : "default"}
+                                      className="text-xs px-2 py-1"
+                                    >
+                                      {!isUnlocked ? 'Bloqueado' : 'Disponível'}
+                                    </Badge>
+                                  </div>
+                                  <div className="mb-3 pb-3 border-b border-gray-100">
+                                    <div className="text-xs text-gray-500">
+                                      <strong>Conteúdos:</strong> {module.content.length} tópicos
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      <strong>Exercícios:</strong> {module.exercises.length} atividades
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Botão de controle de acesso */}
+                                  <Button
+                                    size="sm"
+                                    variant={isUnlocked ? "destructive" : "default"}
+                                    onClick={() => toggleModuleAccess(module.id)}
+                                    className="w-full text-xs"
+                                  >
+                                    {isUnlocked ? (
+                                      <>
+                                        <Lock className="w-3 h-3 mr-1" />
+                                        Bloquear Módulo
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                        Desbloquear Módulo
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Estatísticas dos módulos */}
+                  <Card className="bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200">
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-semibold text-emerald-900 mb-4">
+                        Estatísticas dos Módulos
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-emerald-600">
+                            {modules.length}
+                          </div>
+                          <div className="text-sm text-emerald-700">Total de Módulos</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-emerald-600">
+                            {unlockedModules.length}
+                          </div>
+                          <div className="text-sm text-emerald-700">Disponíveis</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-emerald-600">
+                            {modules.reduce((total, m) => total + m.content.length, 0)}
+                          </div>
+                          <div className="text-sm text-emerald-700">Conteúdos</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-emerald-600">
+                            {modules.reduce((total, m) => total + m.exercises.length, 0)}
+                          </div>
+                          <div className="text-sm text-emerald-700">Exercícios</div>
+                        </div>
+                      </div>
+                      
+                      {/* Ações rápidas */}
+                      <div className="mt-6 pt-4 border-t border-emerald-200">
+                        <h4 className="text-md font-medium text-emerald-900 mb-3">Ações Rápidas</h4>
+                        <div className="flex gap-3 flex-wrap">
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              modules.forEach(module => {
+                                if (!unlockedModules.includes(module.id)) {
+                                  toggleModuleAccess(module.id)
+                                }
+                              })
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Desbloquear Todos
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              modules.forEach(module => {
+                                if (unlockedModules.includes(module.id) && module.id !== 'module-1') {
+                                  toggleModuleAccess(module.id)
+                                }
+                              })
+                            }}
+                            className="border-red-200 text-red-700 hover:bg-red-50"
+                          >
+                            <Lock className="w-4 h-4 mr-2" />
+                            Bloquear Todos (exceto Módulo 1)
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-6">

@@ -159,16 +159,16 @@ export function EnhancedProfessorDashboard({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Header com seleção de turma */}
-      <Card className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0">
+      {/* Seleção de turma */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold mb-2">
-                Dashboard do Professor
-              </h1>
-              <p className="text-indigo-100">
-                Gerencie suas turmas, módulos e acompanhe o progresso dos estudantes
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                Gerenciamento de Turmas
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Selecione uma turma para visualizar estatísticas e gerenciar módulos
               </p>
             </div>
             
@@ -177,7 +177,7 @@ export function EnhancedProfessorDashboard({
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
-                className="px-3 py-2 bg-white text-gray-900 rounded-md border-0"
+                className="px-3 py-2 bg-white text-gray-900 rounded-md border border-gray-300"
               >
                 <option value="">Selecionar turma...</option>
                 {classes.map((cls) => (
@@ -189,8 +189,7 @@ export function EnhancedProfessorDashboard({
               
               <Button 
                 onClick={createNewClass}
-                variant="outline"
-                className="border-white text-white hover:bg-white hover:text-indigo-600"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Turma
