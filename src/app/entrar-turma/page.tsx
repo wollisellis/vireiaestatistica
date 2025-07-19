@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-export default function EntrarTurmaPage() {
+function EntrarTurmaContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user, signInWithGoogle, signUp } = useFirebaseAuth()
@@ -410,5 +410,17 @@ export default function EntrarTurmaPage() {
         </Card>
       </motion.div>
     </div>
+  )
+}
+
+export default function EntrarTurmaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      </div>
+    }>
+      <EntrarTurmaContent />
+    </Suspense>
   )
 }

@@ -115,28 +115,28 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] p-0 overflow-hidden">
-        <div className="flex flex-col max-h-[95vh]">
+      <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 sm:w-[95vw] sm:max-w-4xl sm:max-h-[95vh] sm:m-6 sm:rounded-lg overflow-hidden">
+        <div className="flex flex-col h-full">
           {/* Header */}
-          <DialogHeader className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 sm:p-6 pb-6 sm:pb-8">
-            <div className="flex items-start justify-between">
-              <DialogTitle className="text-xl sm:text-2xl lg:text-3xl flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 flex-1 min-w-0">
+          <DialogHeader className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 pb-6 sm:p-6 sm:pb-8">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg sm:text-2xl lg:text-3xl flex items-center space-x-3 flex-1 min-w-0">
                 <div className="p-2 bg-white bg-opacity-20 rounded-lg flex-shrink-0">
                   <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8" />
                 </div>
-                <span className="font-bold">Criar Nova Turma</span>
+                <span className="font-bold truncate">Nova Turma</span>
               </DialogTitle>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={onClose}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 flex-shrink-0 ml-2"
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 flex-shrink-0"
               >
-                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                <X className="w-5 h-5" />
               </Button>
             </div>
-            <p className="text-indigo-100 mt-2 text-xs sm:text-sm lg:text-base">
-              Configure sua turma e gere um código único para convites automáticos
+            <p className="text-indigo-100 mt-3 text-sm leading-relaxed">
+              Configure sua turma e gere um código único para convites
             </p>
           </DialogHeader>
 
@@ -149,10 +149,10 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
               className="space-y-4 sm:space-y-6 lg:space-y-8"
             >
               {/* Form Fields */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="space-y-5 sm:space-y-6">
                 {/* Nome da Turma */}
-                <div className="lg:col-span-2">
-                  <Label htmlFor="className" className="text-base font-semibold text-gray-900 mb-2 block">
+                <div>
+                  <Label htmlFor="className" className="text-base font-medium text-gray-900 mb-3 block">
                     Nome da Turma *
                   </Label>
                   <Input
@@ -160,70 +160,73 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="Ex: Avaliação Nutricional - Turma A"
-                    className={`h-12 text-base bg-white border-2 focus:border-indigo-500 ${
+                    className={`h-14 text-base bg-white border-2 focus:border-indigo-500 rounded-xl ${
                       errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                   />
                   {errors.name && (
-                    <div className="flex items-center space-x-2 mt-2">
-                      <AlertCircle className="w-4 h-4 text-red-500" />
+                    <div className="flex items-center space-x-2 mt-3">
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                       <span className="text-sm text-red-600">{errors.name}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Semestre */}
-                <div>
-                  <Label htmlFor="semester" className="text-base font-semibold text-gray-900 mb-2 block">
-                    Semestre *
-                  </Label>
-                  <Select value={formData.semester} onValueChange={(value) => handleInputChange('semester', value)}>
-                    <SelectTrigger className={`h-12 text-base bg-white border-2 ${
-                      errors.semester ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-indigo-500'
-                    }`}>
-                      <SelectValue placeholder="Selecione o semestre" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {semesterOptions.map((semester) => (
-                        <SelectItem key={semester} value={semester}>
-                          {semester}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.semester && (
-                    <div className="flex items-center space-x-2 mt-2">
-                      <AlertCircle className="w-4 h-4 text-red-500" />
-                      <span className="text-sm text-red-600">{errors.semester}</span>
-                    </div>
-                  )}
-                </div>
+                {/* Grid para campos menores em desktop */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {/* Semestre */}
+                  <div>
+                    <Label htmlFor="semester" className="text-base font-medium text-gray-900 mb-3 block">
+                      Semestre *
+                    </Label>
+                    <Select value={formData.semester} onValueChange={(value) => handleInputChange('semester', value)}>
+                      <SelectTrigger className={`h-14 text-base bg-white border-2 rounded-xl ${
+                        errors.semester ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-indigo-500'
+                      }`}>
+                        <SelectValue placeholder="Selecione o semestre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {semesterOptions.map((semester) => (
+                          <SelectItem key={semester} value={semester} className="text-base py-3">
+                            {semester}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.semester && (
+                      <div className="flex items-center space-x-2 mt-3">
+                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <span className="text-sm text-red-600">{errors.semester}</span>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Ano */}
-                <div>
-                  <Label htmlFor="year" className="text-base font-semibold text-gray-900 mb-2 block">
-                    Ano
-                  </Label>
-                  <Select 
-                    value={formData.year.toString()} 
-                    onValueChange={(value) => handleInputChange('year', parseInt(value))}
-                  >
-                    <SelectTrigger className="h-12 text-base bg-white border-2 border-gray-300 focus:border-indigo-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {yearOptions.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* Ano */}
+                  <div>
+                    <Label htmlFor="year" className="text-base font-medium text-gray-900 mb-3 block">
+                      Ano
+                    </Label>
+                    <Select 
+                      value={formData.year.toString()} 
+                      onValueChange={(value) => handleInputChange('year', parseInt(value))}
+                    >
+                      <SelectTrigger className="h-14 text-base bg-white border-2 border-gray-300 focus:border-indigo-500 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yearOptions.map((year) => (
+                          <SelectItem key={year} value={year.toString()} className="text-base py-3">
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {/* Capacidade */}
                 <div>
-                  <Label htmlFor="capacity" className="text-base font-semibold text-gray-900 mb-2 block">
+                  <Label htmlFor="capacity" className="text-base font-medium text-gray-900 mb-3 block">
                     Capacidade Máxima
                   </Label>
                   <Input
@@ -233,21 +236,24 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                     max="200"
                     value={formData.capacity || 50}
                     onChange={(e) => handleInputChange('capacity', parseInt(e.target.value) || 50)}
-                    className={`h-12 text-base bg-white border-2 focus:border-indigo-500 ${
+                    className={`h-14 text-base bg-white border-2 focus:border-indigo-500 rounded-xl ${
                       errors.capacity ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                   />
                   {errors.capacity && (
-                    <div className="flex items-center space-x-2 mt-2">
-                      <AlertCircle className="w-4 h-4 text-red-500" />
+                    <div className="flex items-center space-x-2 mt-3">
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                       <span className="text-sm text-red-600">{errors.capacity}</span>
                     </div>
                   )}
+                  <p className="text-sm text-gray-500 mt-2">
+                    Número máximo de estudantes que podem se matricular
+                  </p>
                 </div>
 
                 {/* Descrição */}
                 <div>
-                  <Label htmlFor="description" className="text-base font-semibold text-gray-900 mb-2 block">
+                  <Label htmlFor="description" className="text-base font-medium text-gray-900 mb-3 block">
                     Descrição (opcional)
                   </Label>
                   <Textarea
@@ -256,9 +262,9 @@ export function CreateClassModal({ isOpen, onClose, onCreateClass, loading = fal
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     placeholder="Descreva os objetivos, horários, metodologia..."
                     rows={4}
-                    className="text-base bg-white border-2 border-gray-300 focus:border-indigo-500 resize-none"
+                    className="text-base bg-white border-2 border-gray-300 focus:border-indigo-500 resize-none rounded-xl"
                   />
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 mt-2">
                     Esta informação será visível para os estudantes
                   </p>
                 </div>

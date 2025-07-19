@@ -849,4 +849,5 @@ const InteractiveExercise: React.FC<ExerciseRendererProps> = ({ exercise, onComp
   );
 };
 
+export { ExerciseRenderer };
 export default ExerciseRenderer;
