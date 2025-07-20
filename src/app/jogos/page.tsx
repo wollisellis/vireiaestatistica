@@ -546,13 +546,13 @@ export default function JogosPage() {
                               Módulo Bloqueado
                             </Button>
                           ) : (
-                            <Link href={`/jogos/module-${game.id}`}>
+                            <Link href={`/jogos/modulo-${game.id}/quiz`}>
                               <Button
                                 className="w-full mt-4 group-hover:bg-blue-600 transition-colors"
                                 size="lg"
                               >
                                 <Play className="w-4 h-4 mr-2" />
-                                Iniciar Módulo
+                                Iniciar Quiz
                               </Button>
                             </Link>
                           )}
