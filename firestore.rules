@@ -110,6 +110,21 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/class_students/$(classId + '_' + request.auth.uid));
     }
 
+    // DELETED CLASSES COLLECTION - Sistema de lixeira para turmas excluídas
+    match /deleted_classes/{classId} {
+      // Professores podem ler/escrever apenas suas próprias turmas excluídas
+      allow read, write: if isProfessor() &&
+        resource.data.deletedBy == request.auth.uid;
+
+      // Permitir criação apenas pelo professor que excluiu
+      allow create: if isProfessor() &&
+        request.resource.data.deletedBy == request.auth.uid;
+
+      // Permitir exclusão (para limpeza automática ou restauração)
+      allow delete: if isProfessor() &&
+        resource.data.deletedBy == request.auth.uid;
+    }
+
     // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas
     match /collaborativeSessions/{sessionId} {
       // Participantes podem ler/escrever na sessão
@@ -345,19 +360,16 @@ service cloud.firestore {
     // USER PROGRESS COLLECTION - Progresso unificado dos usuários
     match /userProgress/{userId} {
       // Usuários podem ler/escrever apenas seu próprio progresso
-      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow read, write, create: if isAuthenticated() && isOwner(userId);
 
       // Professores podem ler todo o progresso
       allow read: if isProfessor();
-
-      // Permitir criação apenas para o próprio usuário
-      allow create: if isAuthenticated() && request.auth.uid == userId;
     }
 
     // RANDOMIZED QUIZZES COLLECTION - Sistema de quiz aleatório estilo Khan Academy
     match /randomized_quizzes/{quizId} {
-      // Estudantes podem ler apenas seus próprios quizzes
-      allow read: if isAuthenticated() &&
+      // Estudantes podem ler/escrever apenas seus próprios quizzes
+      allow read, write: if isAuthenticated() &&
         resource.data.studentId == request.auth.uid;
 
       // Professores podem ler todos os quizzes
@@ -384,16 +396,14 @@ service cloud.firestore {
 
     // QUIZ SESSIONS COLLECTION - Sessões ativas de quiz
     match /quiz_sessions/{sessionId} {
-      // Estudantes podem ler/escrever apenas suas próprias sessões
-      allow read, write: if isAuthenticated() &&
-        resource.data.studentId == request.auth.uid;
+      // Estudantes podem ler/escrever suas próprias sessões (ID formato: studentId_quizId)
+      allow read, write, create: if isAuthenticated() && 
+        (sessionId.split('_')[0] == request.auth.uid ||
+         (resource != null && resource.data.studentId == request.auth.uid) ||
+         request.resource.data.studentId == request.auth.uid);
 
       // Professores podem ler todas as sessões
       allow read: if isProfessor();
-
-      // Permitir criação apenas para o próprio usuário
-      allow create: if isAuthenticated() &&
-        request.resource.data.studentId == request.auth.uid;
     }
 
     // ENHANCED RANKINGS COLLECTION - Sistema de ranking melhorado

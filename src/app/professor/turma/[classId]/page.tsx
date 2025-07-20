@@ -12,8 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Users, Trophy, Target, Clock, BookOpen, TrendingUp, Filter, Download, 
   Settings, UserPlus, UserMinus, Eye, BarChart3, Calendar, 
-  Search, ChevronRight, Activity, Star, ArrowLeft
+  Search, ChevronRight, Activity, Star, ArrowLeft, Trash2
 } from 'lucide-react';
+import { DeleteClassModal } from '@/components/professor/DeleteClassModal';
+import { ClassTrashService } from '@/services/classTrashService';
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 
 interface EnhancedStudent extends ClassEnrollment {
   name?: string;
@@ -28,6 +31,7 @@ export default function EnhancedClassDashboard() {
   const params = useParams();
   const router = useRouter();
   const classId = params.classId as string;
+  const { user } = useFirebaseAuth();
   
   const [classData, setClassData] = useState<EnhancedClass | null>(null);
   const [students, setStudents] = useState<EnhancedStudent[]>([]);
@@ -36,6 +40,8 @@ export default function EnhancedClassDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [progressFilter, setProgressFilter] = useState<string>('all');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingClass, setDeletingClass] = useState(false);
   
   useEffect(() => {
     const fetchClassData = async () => {
@@ -126,6 +132,29 @@ export default function EnhancedClassDashboard() {
     } catch (error) {
       console.error('Erro ao remover estudante:', error);
       alert('Erro ao remover estudante');
+    }
+  };
+  
+  const handleDeleteClass = async () => {
+    if (!user?.uid || !classData) return;
+    
+    try {
+      setDeletingClass(true);
+      
+      await ClassTrashService.deleteClass(
+        classId,
+        user.uid,
+        user.displayName || user.email || 'Professor',
+        'Excluída pelo professor'
+      );
+      
+      alert('Turma enviada para a lixeira com sucesso!');
+      router.push('/professor');
+    } catch (error) {
+      console.error('Erro ao excluir turma:', error);
+      alert('Erro ao excluir turma. Tente novamente.');
+    } finally {
+      setDeletingClass(false);
     }
   };
   
@@ -222,6 +251,15 @@ export default function EnhancedClassDashboard() {
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowDeleteModal(true)}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
               </Button>
             </div>
           </div>
@@ -562,6 +600,23 @@ export default function EnhancedClassDashboard() {
             </CardContent>
           </Card>
         </div>
+        
+        {/* Delete Class Modal */}
+        {showDeleteModal && classData && (
+          <DeleteClassModal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            onConfirmDelete={handleDeleteClass}
+            classInfo={{
+              id: classId,
+              name: classData.name,
+              studentsCount: stats.total,
+              semester: classData.semester,
+              year: classData.year
+            }}
+            loading={deletingClass}
+          />
+        )}
       </div>
     </div>
   );
