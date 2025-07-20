@@ -36,6 +36,8 @@ export interface ClassInfo {
   totalModules: number
   avgProgress: number
   avgScore: number
+  maxStudents?: number
+  capacity?: number
   createdAt: any
   updatedAt: any
 }
@@ -159,6 +161,7 @@ export class ProfessorClassService {
         totalModules: modules.length,
         avgProgress: 0,
         avgScore: 0,
+        maxStudents: 50, // Valor padrão
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       }

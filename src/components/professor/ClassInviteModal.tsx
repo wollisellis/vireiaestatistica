@@ -32,7 +32,8 @@ interface ClassInviteModalProps {
     semester: string
     year: number
     studentsCount: number
-    capacity: number
+    capacity?: number
+    maxStudents?: number
   }
 }
 
@@ -40,28 +41,45 @@ export function ClassInviteModal({ isOpen, onClose, classInfo }: ClassInviteModa
   const [copied, setCopied] = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
-  const inviteLink = `${typeof window !== 'undefined' ? window.location.origin : ''}/entrar-turma?codigo=${classInfo.code}`
+  // Verificações de segurança
+  if (!classInfo) {
+    return null
+  }
+
+  const safeClassInfo = {
+    ...classInfo,
+    code: classInfo.code || 'CÓDIGO_PENDENTE',
+    capacity: classInfo.capacity || classInfo.maxStudents || 50,
+    studentsCount: classInfo.studentsCount || 0
+  }
+
+  const inviteLink = `${typeof window !== 'undefined' ? window.location.origin : ''}/entrar-turma?codigo=${safeClassInfo.code}`
   
   const copyToClipboard = (text: string, type: string) => {
+    if (!text || text === 'CÓDIGO_PENDENTE') {
+      alert('Código ainda não foi gerado. Tente novamente em alguns segundos.')
+      return
+    }
+
     navigator.clipboard.writeText(text)
     setCopied(type)
     setTimeout(() => setCopied(null), 2000)
   }
 
   const shareViaEmail = () => {
-    const subject = `Convite para a turma: ${classInfo.name}`
+    const subject = `Convite para a turma: ${safeClassInfo.name}`
     const body = `Olá!
 
 Você foi convidado(a) para participar da turma:
 
-📚 ${classInfo.name}
-📅 ${classInfo.semester} ${classInfo.year}
-👥 ${classInfo.studentsCount}/${classInfo.capacity} estudantes
+📚 ${safeClassInfo.name}
+📅 ${safeClassInfo.semester} ${safeClassInfo.year}
+👥 ${safeClassInfo.studentsCount}/${safeClassInfo.capacity} estudantes
 
 Para entrar na turma, você pode:
 
 1. Clicar no link: ${inviteLink}
-2. Ou usar o código: ${classInfo.code}
+2. Ou usar o código: ${safeClassInfo.code}
 
 Acesse a plataforma AvaliaNutri e faça sua matrícula!
 
@@ -75,13 +93,13 @@ Professor`
   const shareViaWhatsApp = () => {
     const message = `🎓 *Convite para Turma - AvaliaNutri*
 
-📚 *Turma:* ${classInfo.name}
-📅 *Período:* ${classInfo.semester} ${classInfo.year}
-👥 *Vagas:* ${classInfo.capacity - classInfo.studentsCount} disponíveis
+📚 *Turma:* ${safeClassInfo.name}
+📅 *Período:* ${safeClassInfo.semester} ${safeClassInfo.year}
+👥 *Vagas:* ${safeClassInfo.capacity - safeClassInfo.studentsCount} disponíveis
 
 *Para entrar na turma:*
 1. Acesse: ${inviteLink}
-2. Ou use o código: *${classInfo.code}*
+2. Ou use o código: *${safeClassInfo.code}*
 
 Entre agora e comece a aprender! 🚀`
 
@@ -110,15 +128,15 @@ Entre agora e comece a aprender! 🚀`
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-indigo-900">{classInfo.name}</h3>
+                  <h3 className="text-lg font-bold text-indigo-900">{safeClassInfo.name}</h3>
                   <div className="flex items-center space-x-4 mt-2 text-indigo-700">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
-                      <span className="text-sm">{classInfo.semester} {classInfo.year}</span>
+                      <span className="text-sm">{safeClassInfo.semester} {safeClassInfo.year}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Users className="w-4 h-4" />
-                      <span className="text-sm">{classInfo.studentsCount}/{classInfo.capacity} estudantes</span>
+                      <span className="text-sm">{safeClassInfo.studentsCount}/{safeClassInfo.capacity} estudantes</span>
                     </div>
                   </div>
                 </div>
@@ -166,14 +184,17 @@ Entre agora e comece a aprender! 🚀`
             <Label className="text-base font-medium">Código da Turma</Label>
             <div className="flex space-x-2 mt-2">
               <Input
-                value={classInfo.code}
+                value={safeClassInfo.code}
                 readOnly
-                className="font-mono text-lg text-center tracking-wider bg-gray-50"
+                className={`font-mono text-lg text-center tracking-wider ${
+                  safeClassInfo.code === 'CÓDIGO_PENDENTE' ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50'
+                }`}
               />
               <Button
-                onClick={() => copyToClipboard(classInfo.code, 'code')}
+                onClick={() => copyToClipboard(safeClassInfo.code, 'code')}
                 variant="outline"
                 className={`px-4 ${copied === 'code' ? 'bg-green-50 border-green-200 text-green-700' : ''}`}
+                disabled={safeClassInfo.code === 'CÓDIGO_PENDENTE'}
               >
                 {copied === 'code' ? (
                   <CheckCircle className="w-4 h-4" />
@@ -183,7 +204,10 @@ Entre agora e comece a aprender! 🚀`
               </Button>
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              Compartilhe este código com os estudantes para que possam se matricular
+              {safeClassInfo.code === 'CÓDIGO_PENDENTE'
+                ? 'Código sendo gerado... Aguarde alguns segundos e reabra este modal.'
+                : 'Compartilhe este código com os estudantes para que possam se matricular'
+              }
             </p>
           </div>
 
