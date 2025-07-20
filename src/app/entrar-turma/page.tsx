@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/Label'
 import { Badge } from '@/components/ui/Badge'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { ProfessorClassService } from '@/services/professorClassService'
+import { ClassInviteService } from '@/services/classInviteService'
 import { 
   GraduationCap, 
   Users, 
@@ -63,26 +64,15 @@ function EntrarTurmaContent() {
       setLoading(true)
       setError('')
       
-      // Simular busca de turma pelo código
-      // Na implementação real, isso consultaria o Firebase
-      const mockClassInfo = {
-        id: 'class-123',
-        name: 'Avaliação Nutricional - Turma A',
-        semester: '1º Semestre',
-        year: 2025,
-        professorName: 'Prof. Dr. Maria Silva',
-        studentsCount: 23,
-        capacity: 50,
-        description: 'Disciplina focada nos métodos e técnicas para avaliação do estado nutricional.',
-        isActive: true
-      }
+      const validation = await ClassInviteService.validateInviteCode(classCode)
       
-      if (classCode.length >= 6) {
-        setClassInfo(mockClassInfo)
+      if (validation.isValid && validation.classInfo) {
+        setClassInfo(validation.classInfo)
       } else {
-        setError('Código de turma inválido')
+        setError(validation.error || 'Código de turma inválido')
       }
     } catch (err) {
+      console.error('Erro ao verificar código da turma:', err)
       setError('Erro ao verificar código da turma')
     } finally {
       setLoading(false)
@@ -90,22 +80,31 @@ function EntrarTurmaContent() {
   }
 
   const joinClass = async () => {
-    if (!user || !classInfo) return
+    if (!user || !classInfo || !classCode) return
     
     try {
       setJoining(true)
       setError('')
       
-      // Aqui seria feita a chamada real para adicionar o estudante à turma
-      await new Promise(resolve => setTimeout(resolve, 1500)) // Simular delay
+      const result = await ClassInviteService.registerStudentWithCode(
+        classCode,
+        user.uid,
+        user.displayName || user.email || 'Estudante',
+        user.email || ''
+      )
       
-      setSuccess(true)
-      
-      // Redirecionar para o dashboard dos jogos após 3 segundos
-      setTimeout(() => {
-        router.push('/jogos')
-      }, 3000)
+      if (result.success) {
+        setSuccess(true)
+        
+        // Redirecionar para o dashboard dos jogos após 3 segundos
+        setTimeout(() => {
+          router.push('/jogos')
+        }, 3000)
+      } else {
+        setError(result.error || 'Erro ao entrar na turma. Tente novamente.')
+      }
     } catch (err) {
+      console.error('Erro ao entrar na turma:', err)
       setError('Erro ao entrar na turma. Tente novamente.')
     } finally {
       setJoining(false)

@@ -21,6 +21,7 @@ import { db } from '@/lib/firebase'
 import { StudentModuleProgress } from '@/lib/moduleProgressSystem'
 import ModuleProgressService from './moduleProgressService'
 import { modules } from '@/data/modules'
+import { ClassInviteService } from './classInviteService'
 
 export interface ClassInfo {
   id: string
@@ -144,11 +145,11 @@ export class ProfessorClassService {
       console.log('Criando turma para professor:', professorId)
       
       const classId = `class_${professorId}_${Date.now()}`
-      const classCode = this.generateClassCode()
       
-      const classInfo: Omit<ClassInfo, 'id'> = {
+      // Primeiro criar a turma sem código
+      const classInfo: Omit<ClassInfo, 'id' | 'code'> & { code: string } = {
         name: className,
-        code: classCode,
+        code: '', // Será preenchido após criar o convite
         semester,
         year,
         professorId,
@@ -163,12 +164,23 @@ export class ProfessorClassService {
       }
 
       console.log('Dados da turma:', classInfo)
-      await setDoc(doc(db, this.CLASSES_COLLECTION, classId), classInfo)
+      const docRef = doc(db, this.CLASSES_COLLECTION, classId)
+      await setDoc(docRef, classInfo)
+
+      // Criar código de convite usando o ClassInviteService
+      const classCode = await ClassInviteService.createClassInvite(
+        classId,
+        className,
+        professorId
+      )
+      
+      // Atualizar turma com o código
+      await updateDoc(docRef, { code: classCode })
       
       // Criar configurações padrão dos módulos
       await this.createDefaultModuleSettings(classId)
       
-      console.log('Turma criada:', classId)
+      console.log('Turma criada:', classId, 'código:', classCode)
       return classId
     } catch (error) {
       console.error('Erro ao criar turma:', error)
@@ -273,23 +285,28 @@ export class ProfessorClassService {
   // Obter estudantes da turma
   static async getClassStudents(classId: string): Promise<StudentOverview[]> {
     try {
-      // Buscar estudantes da turma
+      // Buscar estudantes da turma na coleção 'classStudents' (usada pelo ClassInviteService)
       const q = query(
-        collection(db, this.CLASS_STUDENTS_COLLECTION),
-        where('classId', '==', classId)
+        collection(db, 'classStudents'),
+        where('studentId', '!=', null) // Buscar todos os estudantes
       )
       
       const querySnapshot = await getDocs(q)
       const students: StudentOverview[] = []
       
-      // Para cada estudante, buscar seu progresso detalhado
+      // Filtrar estudantes da turma específica e incluir apenas ativos
       for (const doc of querySnapshot.docs) {
         const studentData = doc.data()
-        const studentProgress = await ModuleProgressService.loadStudentProgress(studentData.studentId)
+        const docId = doc.id
         
-        if (studentProgress) {
-          const overview = this.createStudentOverview(studentData, studentProgress)
-          students.push(overview)
+        // Verificar se o documento pertence à turma específica
+        if (docId.startsWith(`${classId}_`) && studentData.status === 'active') {
+          const studentProgress = await ModuleProgressService.loadStudentProgress(studentData.studentId)
+          
+          if (studentProgress) {
+            const overview = this.createStudentOverview(studentData, studentProgress)
+            students.push(overview)
+          }
         }
       }
       
