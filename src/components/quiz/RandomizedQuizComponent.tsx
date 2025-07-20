@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Progress } from '@/components/ui/progress';
 import { 
   Clock, 
   CheckCircle, 
@@ -26,6 +25,16 @@ import { RandomizedQuiz, QuizAttempt, ProgressReport } from '@/types/randomizedQ
 import { RandomizedQuizService } from '@/services/randomizedQuizService';
 import { QuizScoringService } from '@/services/quizScoringService';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Componente Progress inline para evitar problemas de import
+const Progress: React.FC<{ value: number; className?: string }> = ({ value, className = '' }) => (
+  <div className={`w-full bg-gray-200 rounded-full overflow-hidden ${className}`}>
+    <div 
+      className="bg-blue-600 h-full transition-all duration-300 ease-out"
+      style={{ width: `${Math.min(Math.max(value || 0, 0), 100)}%` }}
+    />
+  </div>
+);
 
 interface RandomizedQuizComponentProps {
   moduleId: string;

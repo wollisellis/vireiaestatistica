@@ -25,7 +25,7 @@ import {
 import { QuizShuffler } from '@/utils/quizShuffler';
 import { QuizScoringService } from './quizScoringService';
 import { module1QuestionBank } from '@/data/questionBanks/module1QuestionBank';
-import { unifiedScoringService } from './unifiedScoringService';
+import unifiedScoringService from './unifiedScoringService';
 
 export class RandomizedQuizService {
   private static readonly COLLECTION_QUIZZES = 'randomized_quizzes';

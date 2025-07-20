@@ -9,6 +9,9 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { BookOpen, Target, Clock, Trophy } from 'lucide-react';
 
+// Disable static generation for this page since it requires authentication
+export const dynamic = 'force-dynamic';
+
 export default function Module1QuizPage() {
   const router = useRouter();
 
