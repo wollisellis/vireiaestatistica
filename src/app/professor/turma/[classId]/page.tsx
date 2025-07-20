@@ -43,16 +43,43 @@ export default function ClassDetailsPage() {
   const [selectedStudent, setSelectedStudent] = useState<StudentOverview | null>(null)
   const [showAddStudent, setShowAddStudent] = useState(false)
   const [newStudentEmail, setNewStudentEmail] = useState('')
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   useEffect(() => {
-    if (user && classId && hasAccess) {
+    if (!authLoading && user && classId && hasAccess() && !dataLoaded) {
+      setDataLoaded(true)
       loadClassData()
     }
-  }, [user, classId, hasAccess])
+  }, [user, classId, authLoading, dataLoaded])
 
   const loadClassData = async () => {
     try {
       setLoading(true)
+      
+      // Verificar se é uma turma demo
+      if (classId.startsWith('class_demo_')) {
+        console.log('Turma demo detectada:', classId)
+        // Para turmas demo, criar dados mockados
+        setClassInfo({
+          id: classId,
+          name: 'Avaliação Nutricional',
+          code: 'JK1P32TE',
+          semester: '1º Semestre',
+          year: 2025,
+          professorId: user?.uid || '',
+          professorName: user?.fullName || 'Professor',
+          studentsCount: 0,
+          activeStudents: 0,
+          totalModules: modules.length,
+          avgProgress: 0,
+          avgScore: 0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        setStudents([])
+        return
+      }
+      
       const [info, studentsList] = await Promise.all([
         ProfessorClassService.getClassInfo(classId),
         ProfessorClassService.getClassStudents(classId)
@@ -60,16 +87,31 @@ export default function ClassDetailsPage() {
 
       if (info) {
         setClassInfo(info)
-        setStudents(studentsList)
+        setStudents(studentsList || [])
       } else {
-        console.error('Turma não encontrada')
-        window.alert('Turma não encontrada')
+        console.error('Turma não encontrada:', classId)
         router.push('/professor')
       }
     } catch (error) {
       console.error('Erro ao carregar dados da turma:', error)
-      console.error('Erro ao carregar dados da turma')
-      window.alert('Erro ao carregar dados da turma')
+      // Tentar criar dados básicos para evitar erro completo
+      setClassInfo({
+        id: classId,
+        name: 'Turma',
+        code: 'CODIGO',
+        semester: '1º Semestre',
+        year: 2025,
+        professorId: user?.uid || '',
+        professorName: user?.fullName || 'Professor',
+        studentsCount: 0,
+        activeStudents: 0,
+        totalModules: modules.length,
+        avgProgress: 0,
+        avgScore: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      setStudents([])
     } finally {
       setLoading(false)
     }
@@ -78,8 +120,6 @@ export default function ClassDetailsPage() {
   const copyInviteCode = () => {
     if (classInfo?.code) {
       navigator.clipboard.writeText(classInfo.code)
-      console.log('Código copiado!')
-      window.alert('Código copiado!')
     }
   }
 
@@ -88,20 +128,14 @@ export default function ClassDetailsPage() {
 
     try {
       await ProfessorClassService.removeStudentFromClass(classId, studentId)
-      console.log('Aluno removido da turma com sucesso')
-      window.alert('Aluno removido da turma com sucesso')
       loadClassData() // Recarregar dados
     } catch (error) {
       console.error('Erro ao remover aluno:', error)
-      console.error('Erro ao remover aluno')
-      window.alert('Erro ao remover aluno')
     }
   }
 
   const handleAddStudent = async () => {
     if (!newStudentEmail) {
-      console.error('Digite o email do aluno')
-      window.alert('Digite o email do aluno')
       return
     }
 
@@ -111,20 +145,17 @@ export default function ClassDetailsPage() {
       
       if (!user) {
         console.error('Usuário não encontrado. Verifique o email.')
-        window.alert('Usuário não encontrado. Verifique o email.')
         return
       }
       
       if (user.role !== 'student') {
         console.error('Este email pertence a um professor, não a um aluno.')
-        window.alert('Este email pertence a um professor, não a um aluno.')
         return
       }
       
       // Verificar se o aluno já está na turma
       if (students.some(s => s.studentId === user.uid)) {
         console.error('Este aluno já está matriculado na turma.')
-        window.alert('Este aluno já está matriculado na turma.')
         return
       }
       
@@ -136,15 +167,11 @@ export default function ClassDetailsPage() {
         user.email
       )
       
-      console.log('Aluno adicionado com sucesso!')
-      window.alert('Aluno adicionado com sucesso!')
       setNewStudentEmail('')
       setShowAddStudent(false)
       loadClassData() // Recarregar dados
     } catch (error) {
       console.error('Erro ao adicionar aluno:', error)
-      console.error('Erro ao adicionar aluno')
-      window.alert('Erro ao adicionar aluno')
     }
   }
 
@@ -152,11 +179,8 @@ export default function ClassDetailsPage() {
     try {
       const data = await ProfessorClassService.exportClassData(classId)
       // Implementar download do CSV
-      console.log('Dados exportados com sucesso')
-      window.alert('Dados exportados com sucesso')
     } catch (error) {
       console.error('Erro ao exportar dados')
-      window.alert('Erro ao exportar dados')
     }
   }
 
@@ -165,16 +189,37 @@ export default function ClassDetailsPage() {
     student.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Adicionar timeout para evitar loading infinito
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (authLoading) {
+        console.error('Timeout de autenticação - redirecionando para login')
+        router.push('/')
+      }
+    }, 5000) // 5 segundos de timeout
+
+    return () => clearTimeout(timeout)
+  }, [authLoading, router])
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando turma...</p>
+        </div>
       </div>
     )
   }
 
-  if (!hasAccess) {
-    return null // useProfessorAccess handles redirects
+  if (!user || !hasAccess()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Redirecionando...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
