@@ -62,16 +62,23 @@ export class ClassInviteService {
       const code = this.generateClassCode(className, new Date().getFullYear())
       const now = new Date()
       
-      const invite: ClassInvite = {
+      const invite: any = {
         id: `invite_${classId}_${now.getTime()}`,
         classId,
         code,
         createdAt: now,
-        expiresAt: options?.expiresIn ? new Date(now.getTime() + options.expiresIn * 24 * 60 * 60 * 1000) : undefined,
         isActive: true,
-        maxUses: options?.maxUses,
         currentUses: 0,
         createdBy: professorId
+      }
+
+      // Adicionar campos opcionais somente se definidos
+      if (options?.expiresIn) {
+        invite.expiresAt = new Date(now.getTime() + options.expiresIn * 24 * 60 * 60 * 1000);
+      }
+      
+      if (options?.maxUses !== undefined) {
+        invite.maxUses = options.maxUses;
       }
 
       // Salvar convite no Firebase

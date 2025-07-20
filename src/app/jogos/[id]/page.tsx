@@ -49,15 +49,24 @@ function JogoPageContent() {
       const difficulty = module.exercises.some(ex => ex.difficulty === 'hard') ? 'hard' : 
                        module.exercises.some(ex => ex.difficulty === 'medium') ? 'medium' : 'easy';
       
-      updateModuleScore(
-        module.id,
-        totalScore,
-        maxScore,
-        timeElapsed,
-        completedExercises.length,
-        module.exercises.length,
-        difficulty
-      );
+      // Atualizar pontuação do módulo de forma assíncrona
+      const updateScore = async () => {
+        try {
+          await updateModuleScore(
+            module.id,
+            totalScore,
+            maxScore,
+            timeElapsed,
+            completedExercises.length,
+            module.exercises.length,
+            difficulty
+          );
+        } catch (error) {
+          console.error('Erro ao atualizar pontuação do módulo:', error);
+        }
+      };
+      
+      updateScore();
     }
   }, [completedExercises, totalScore, module, startTime, updateModuleScore]);
 

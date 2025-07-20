@@ -7,6 +7,8 @@ import { LeaderboardService } from '@/lib/leaderboardService'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { AdvancedScoringSystem, QuestionMetrics, ScoreCalculation } from '@/lib/scoringSystem'
 import { modules } from '@/data/modules'
+import unifiedScoringService from '@/services/unifiedScoringService'
+import rankingService from '@/services/rankingService'
 
 export interface GameScore {
   gameId: number
@@ -51,7 +53,7 @@ export interface StudentProgress {
 interface StudentProgressContextType {
   progress: StudentProgress
   updateGameScore: (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => void
-  updateModuleScore: (moduleId: string, score: number, maxScore: number, timeElapsed: number, exercisesCompleted: number, totalExercises: number, difficulty: string) => void
+  updateModuleScore: (moduleId: string, score: number, maxScore: number, timeElapsed: number, exercisesCompleted: number, totalExercises: number, difficulty: string) => Promise<void>
   updateGameScoreAdvanced: (
     gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt' | 'scoreCalculation'>,
     questionMetrics: QuestionMetrics[]
@@ -242,7 +244,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
   }
 
   // Nova função para atualizar com dados de módulos reais
-  const updateModuleScore = (moduleId: string, score: number, maxScore: number, timeElapsed: number, exercisesCompleted: number, totalExercises: number, difficulty: string) => {
+  const updateModuleScore = async (moduleId: string, score: number, maxScore: number, timeElapsed: number, exercisesCompleted: number, totalExercises: number, difficulty: string) => {
     const module = modules.find(m => m.id === moduleId)
     if (!module) return
 
@@ -259,7 +261,31 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
       moduleName: module.title
     }
 
+    // Atualizar progresso local
     updateGameScore(gameScore)
+
+    // Atualizar sistema de pontuação unificado
+    if (user && user.id) {
+      try {
+        // Calcular pontuação ponderada do módulo (0-100)
+        const normalizedScore = rankingService.calculateModuleScore(moduleId, { [moduleId]: (score / maxScore) * 100 });
+        
+        // Atualizar no serviço unificado
+        await unifiedScoringService.updateModuleScore(
+          user.id,
+          moduleId,
+          normalizedScore,
+          {
+            timeSpent: timeElapsed,
+            attempts: 1 // Por enquanto, será expandido futuramente
+          }
+        );
+
+        console.log(`Pontuação do módulo ${moduleId} atualizada:`, normalizedScore);
+      } catch (error) {
+        console.error('Erro ao atualizar pontuação unificada:', error);
+      }
+    }
   }
 
   const updateGameScore = (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => {

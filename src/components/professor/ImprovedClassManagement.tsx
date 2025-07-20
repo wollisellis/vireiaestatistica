@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/Label'
 import { Textarea } from '@/components/ui/Textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
 import CreateClassModal, { ClassFormData } from './CreateClassModal'
+import ClassInviteModal from './ClassInviteModal'
 import { 
   ProfessorClassService, 
   ClassInfo, 
@@ -60,6 +61,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   const [isCreatingClass, setIsCreatingClass] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteClass, setInviteClass] = useState<ClassInfo | null>(null)
 
   // Formulário de criação de turma
   const [classForm, setClassForm] = useState({
@@ -120,7 +122,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
     }
 
     try {
-      await ProfessorClassService.createClass(
+      const classId = await ProfessorClassService.createClass(
         professorId,
         professorName,
         classData.name,
@@ -130,6 +132,13 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       
       setIsCreatingClass(false)
       await loadClasses()
+      
+      // Buscar as informações da turma criada para mostrar o modal de convites
+      const newClassInfo = await ProfessorClassService.getClassInfo(classId)
+      if (newClassInfo) {
+        setInviteClass(newClassInfo)
+        setShowInviteModal(true)
+      }
     } catch (error) {
       console.error('Erro ao criar turma:', error)
       throw error // Re-throw para o modal tratar
@@ -150,6 +159,16 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   const copyClassCode = (code: string) => {
     navigator.clipboard.writeText(code)
     alert('Código da turma copiado!')
+  }
+
+  const showClassInvites = (classInfo: ClassInfo) => {
+    setInviteClass(classInfo)
+    setShowInviteModal(true)
+  }
+
+  const closeInviteModal = () => {
+    setShowInviteModal(false)
+    setInviteClass(null)
   }
 
   const filteredStudents = students.filter(student =>
@@ -286,6 +305,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                 onCopyCode={() => copyClassCode(cls.code)}
                 onCopyInviteLink={() => copyInviteLink(cls.code)}
                 onViewDetails={() => router.push(`/professor/turma/${cls.id}`)}
+                onShowInvites={() => showClassInvites(cls)}
               />
             </motion.div>
           ))}
@@ -328,7 +348,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyInviteLink(selectedClass.code)}
+                    onClick={() => showClassInvites(selectedClass)}
                     className="border-green-200 text-green-700 hover:bg-green-50 text-xs sm:text-sm h-8 sm:h-9"
                   >
                     <Share className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -417,6 +437,15 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
           </Card>
         </motion.div>
       )}
+
+      {/* Modal de convites */}
+      {showInviteModal && inviteClass && (
+        <ClassInviteModal
+          isOpen={showInviteModal}
+          onClose={closeInviteModal}
+          classInfo={inviteClass}
+        />
+      )}
     </div>
   )
 }
@@ -428,6 +457,7 @@ interface EnhancedClassCardProps {
   onCopyCode: () => void
   onCopyInviteLink: () => void
   onViewDetails?: () => void
+  onShowInvites?: () => void
 }
 
 function EnhancedClassCard({ 
@@ -436,7 +466,8 @@ function EnhancedClassCard({
   onSelect, 
   onCopyCode, 
   onCopyInviteLink,
-  onViewDetails 
+  onViewDetails,
+  onShowInvites 
 }: EnhancedClassCardProps) {
   const getStatusInfo = () => {
     if (classInfo.studentsCount === 0) {
@@ -525,7 +556,7 @@ function EnhancedClassCard({
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={onCopyInviteLink}
+                onClick={onShowInvites || (() => onCopyInviteLink())}
                 className="flex-1 text-xs h-7 sm:h-8 px-2 border-green-200 text-green-700 hover:bg-green-50"
               >
                 <Share className="w-3 h-3 mr-0.5 sm:mr-1" />

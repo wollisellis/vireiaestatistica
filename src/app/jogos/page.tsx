@@ -36,6 +36,7 @@ import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearni
 import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
+import { RankingPanel } from '@/components/ranking/RankingPanel';
 
 interface ModuleProgress {
   [moduleId: string]: {
@@ -299,6 +300,11 @@ export default function JogosPage() {
           </header>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Layout Principal com Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+              
+              {/* Conteúdo Principal - 3 colunas */}
+              <div className="lg:col-span-3 space-y-8">
             {/* User Welcome */}
             {user && (
               <motion.div
@@ -697,6 +703,40 @@ export default function JogosPage() {
               className="mt-16"
             >
             </motion.div>
+              </div>
+
+              {/* Sidebar de Ranking - 1 coluna */}
+              <div className="lg:col-span-1">
+                <div className="sticky top-8 space-y-6">
+                  {/* Ranking Panel */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
+                  >
+                    <RankingPanel 
+                      className="w-full"
+                      compact={false}
+                      showStats={true}
+                      moduleId="module-1" // Foca no módulo 1 disponível
+                    />
+                  </motion.div>
+
+                  {/* Ranking Geral */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.7 }}
+                  >
+                    <RankingPanel 
+                      className="w-full"
+                      compact={true}
+                      showStats={false}
+                    />
+                  </motion.div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
