@@ -6,7 +6,7 @@ import EnhancedProfessorDashboard from '@/components/professor/EnhancedProfessor
 import ImprovedClassManagement from '@/components/professor/ImprovedClassManagement'
 import AnalyticsDashboard from '@/components/professor/AnalyticsDashboard'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
-import { useProfessorAccess } from '@/hooks/useRoleRedirect'
+import { useFlexibleAccess } from '@/hooks/useRoleRedirect'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -36,7 +36,7 @@ import {
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 export default function ProfessorDashboardPage() {
-  const { user, loading, hasAccess } = useProfessorAccess()
+  const { user, loading, hasAccess } = useFlexibleAccess()
   const { signOut } = useFirebaseAuth()
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1'])
   const [moduleLoading, setModuleLoading] = useState(true)

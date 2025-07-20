@@ -62,17 +62,19 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
         return
       }
 
-      // User doesn't have required role, redirect to appropriate page only if not already there
-      if (effectiveRole === 'professor') {
-        if (!currentPath.startsWith('/professor')) {
-          router.push(professorRedirect)
+      // Only redirect if there's a specific role requirement and user doesn't meet it
+      if (requiredRole && effectiveRole !== requiredRole) {
+        if (effectiveRole === 'professor') {
+          if (!currentPath.startsWith('/professor')) {
+            router.push(professorRedirect)
+          }
+        } else {
+          if (!currentPath.startsWith('/jogos')) {
+            router.push(studentRedirect)
+          }
         }
-      } else {
-        if (!currentPath.startsWith('/jogos')) {
-          router.push(studentRedirect)
-        }
+        return
       }
-      return
     }
 
     // No user authenticated and no guest mode
@@ -134,5 +136,13 @@ export function useAuthRedirect() {
     allowGuests: false,
     studentRedirect: '/jogos',
     professorRedirect: '/professor'
+  })
+}
+
+// Hook flexível que permite navegação livre entre áreas para usuários autenticados
+export function useFlexibleAccess() {
+  return useRoleRedirect({
+    // Sem requiredRole = permite qualquer usuário autenticado acessar
+    allowGuests: false
   })
 }

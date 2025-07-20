@@ -34,7 +34,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { StudentProgressProvider } from '@/contexts/StudentProgressContext';
 import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearningDashboard';
 import { Footer } from '@/components/layout';
-import { useStudentAccess } from '@/hooks/useRoleRedirect';
+import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
 
 interface ModuleProgress {
@@ -84,8 +84,8 @@ const convertModulesToGames = (modules: any[]) => {
 };
 
 export default function JogosPage() {
-  // Use the role-based access hook - this handles all authentication and redirections
-  const { user, loading, hasAccess } = useStudentAccess();
+  // Use flexible access - allows both students and professors to access
+  const { user, loading, hasAccess } = useFlexibleAccess();
   
   // Firebase auth for logout functionality
   const { user: firebaseUser, signOut } = useFirebaseAuth();
@@ -252,8 +252,8 @@ export default function JogosPage() {
     );
   }
 
-  // At this point, useStudentAccess has already handled all authentication and redirections
-  // If we reach here, the user has valid student access
+  // At this point, useFlexibleAccess has already handled authentication
+  // Both students and professors can access this area
 
   return (
     <StudentProgressProvider>
