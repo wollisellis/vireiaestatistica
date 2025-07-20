@@ -20,6 +20,7 @@ export interface UnifiedScore {
   normalizedScore: number // 0-100
   moduleScores: Record<string, number>
   gameScores: Record<string, number>
+  exerciseScores?: Record<string, number> // Para exercícios individuais
   achievements: string[]
   lastActivity: Date
   streak: number
@@ -115,6 +116,62 @@ class UnifiedScoringService {
     } catch (error) {
       console.error('Erro ao buscar pontuação unificada:', error)
       return null
+    }
+  }
+
+  // Atualizar pontuação de exercício individual
+  async updateExerciseScore(
+    studentId: string,
+    moduleId: string,
+    exerciseId: string,
+    score: number,
+    maxScore: number
+  ): Promise<boolean> {
+    try {
+      // Criar um ID único para o exercício
+      const exerciseKey = `${moduleId}_${exerciseId}`
+      
+      // Calcular pontuação normalizada (0-100)
+      const normalizedScore = Math.round((score / maxScore) * 100)
+      
+      const currentScore = await this.getUnifiedScore(studentId) || this.createEmptyScore(studentId)
+      
+      // Atualizar pontuação do exercício específico
+      if (!currentScore.exerciseScores) {
+        currentScore.exerciseScores = {}
+      }
+      currentScore.exerciseScores[exerciseKey] = normalizedScore
+      
+      // Recalcular pontuação do módulo baseada nos exercícios concluídos
+      const moduleExercises = Object.keys(currentScore.exerciseScores)
+        .filter(key => key.startsWith(`${moduleId}_`))
+      
+      if (moduleExercises.length > 0) {
+        const moduleAverage = moduleExercises
+          .reduce((sum, key) => sum + currentScore.exerciseScores[key], 0) / moduleExercises.length
+        currentScore.moduleScores[moduleId] = Math.round(moduleAverage)
+      }
+      
+      // Recalcular totais
+      currentScore.totalScore = this.calculateTotalScore(currentScore)
+      currentScore.normalizedScore = this.calculateNormalizedScore(currentScore)
+      currentScore.level = this.calculateLevel(currentScore.totalScore)
+      
+      // Salvar no Firebase
+      await setDoc(doc(db, 'unified_scores', studentId), {
+        ...currentScore,
+        lastActivity: serverTimestamp()
+      })
+      
+      // Limpar cache
+      this.cache.delete(studentId)
+      
+      console.log(`Exercício ${exerciseId} salvo:`, { score, normalizedScore, moduleAverage: currentScore.moduleScores[moduleId] })
+      return true
+      
+    } catch (error) {
+      console.error('Erro ao salvar exercício:', error)
+      return false
     }
   }
 

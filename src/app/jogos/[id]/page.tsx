@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpen, Trophy, Clock, Users } from 'lucide-react';
+import { ArrowLeft, BookOpen, Trophy, Clock, Users, CheckCircle, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Module } from '@/types/modules';
 import { getModuleById } from '@/data/modules';
@@ -20,8 +20,9 @@ function JogoPageContent() {
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
   const [totalScore, setTotalScore] = useState(0);
   const [startTime, setStartTime] = useState<number>(Date.now());
+  const [showSuccessMessage, setShowSuccessMessage] = useState<{exerciseId: string, score: number} | null>(null);
   
-  const { updateModuleScore } = useStudentProgress();
+  const { updateModuleScore, updateExerciseScore } = useStudentProgress();
 
   // Redirecionamento baseado no papel - permite acesso de convidados
   useRoleRedirect({ allowGuests: true });
@@ -33,10 +34,28 @@ function JogoPageContent() {
     }
   }, [moduleId]);
 
-  const handleExerciseComplete = (exerciseId: string, score: number) => {
+  const handleExerciseComplete = async (exerciseId: string, score: number) => {
     if (!completedExercises.includes(exerciseId)) {
+      // Atualizar estado local imediatamente
       setCompletedExercises([...completedExercises, exerciseId]);
       setTotalScore(totalScore + score);
+      
+      // Mostrar feedback visual
+      setShowSuccessMessage({ exerciseId, score });
+      setTimeout(() => setShowSuccessMessage(null), 4000);
+      
+      // Salvar exercício individual no Firebase imediatamente
+      if (module) {
+        const exercise = module.exercises.find(ex => ex.id === exerciseId);
+        if (exercise) {
+          try {
+            await updateExerciseScore(moduleId, exerciseId, score, exercise.points);
+            console.log(`✅ Exercício ${exerciseId} salvo com sucesso!`);
+          } catch (error) {
+            console.error('❌ Erro ao salvar exercício:', error);
+          }
+        }
+      }
     }
     setSelectedExercise(null);
   };
@@ -326,6 +345,29 @@ function JogoPageContent() {
               exercise={selectedExerciseData}
               onComplete={(score) => handleExerciseComplete(selectedExercise, score)}
             />
+          </div>
+        )}
+
+        {/* Feedback Visual de Sucesso */}
+        {showSuccessMessage && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="bg-green-500 text-white rounded-lg shadow-lg p-4 flex items-center space-x-3 animate-in slide-in-from-right duration-500">
+              <div className="flex-shrink-0">
+                <CheckCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="font-semibold">Exercício Concluído!</p>
+                <p className="text-sm opacity-90">
+                  Você obteve {showSuccessMessage.score} pontos
+                </p>
+                <p className="text-xs opacity-75">
+                  Progresso salvo automaticamente ✨
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <Star className="w-5 h-5 text-yellow-300" />
+              </div>
+            </div>
           </div>
         )}
       </div>

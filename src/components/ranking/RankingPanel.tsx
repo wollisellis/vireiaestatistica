@@ -41,7 +41,7 @@ export function RankingPanel({
   const [expanded, setExpanded] = useState(!compact);
   const [error, setError] = useState<string | null>(null);
 
-  const displayLimit = compact ? 5 : 10;
+  const displayLimit = compact ? 5 : 8;
 
   useEffect(() => {
     loadRankingData();
@@ -56,7 +56,20 @@ export function RankingPanel({
       displayLimit
     );
 
-    return () => unsubscribe();
+    // Listener para atualizações após exercícios completados
+    const handleExerciseCompleted = () => {
+      console.log('Exercício completado - atualizando ranking...');
+      setTimeout(() => {
+        loadRankingData();
+      }, 1000); // Delay para permitir que o Firebase processe primeiro
+    };
+
+    window.addEventListener('exerciseCompleted', handleExerciseCompleted);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('exerciseCompleted', handleExerciseCompleted);
+    };
   }, [user?.id, moduleId, displayLimit]);
 
   const loadRankingData = async () => {
@@ -221,14 +234,16 @@ export function RankingPanel({
             animate={{ opacity: 1, height: 'auto' }}
             className="mt-3 space-y-2"
           >
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-              <div className="flex items-center space-x-1">
-                <Users className="w-3 h-3" />
-                <span>{stats.totalStudents} estudantes</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <TrendingUp className="w-3 h-3" />
-                <span>Média: {formatScore(stats.averageScore)}</span>
+            <div className="grid grid-cols-1 gap-2 text-xs text-gray-600">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1">
+                  <Users className="w-3 h-3" />
+                  <span>{stats.totalStudents} estudantes</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>Média: {formatScore(stats.averageScore)}</span>
+                </div>
               </div>
             </div>
             {user && stats.userPosition > 0 && (
@@ -268,52 +283,63 @@ export function RankingPanel({
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       className={`
-                        flex items-center space-x-3 p-3 rounded-lg border transition-all
+                        flex items-center justify-between p-4 rounded-lg border transition-all
                         ${entry.isCurrentUser 
                           ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' 
                           : 'bg-white border-gray-200 hover:bg-gray-50'
                         }
                       `}
                     >
-                      {/* Posição */}
-                      <div className={`
-                        w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
-                        ${getPositionColor(entry.position)}
-                      `}>
-                        {entry.position <= 3 ? getRankIcon(entry.position) : entry.position}
+                      {/* Lado Esquerdo: Posição e Info */}
+                      <div className="flex items-center space-x-3">
+                        {/* Posição */}
+                        <div className={`
+                          w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm
+                          ${getPositionColor(entry.position)}
+                        `}>
+                          {entry.position <= 3 ? getRankIcon(entry.position) : entry.position}
+                        </div>
+
+                        {/* Informações do estudante */}
+                        <div className="min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              ID: {entry.anonymousId}
+                            </p>
+                            {entry.isCurrentUser && (
+                              <Badge variant="secondary" className="text-xs">
+                                Você
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-1 mt-1">
+                            <Star className="w-3 h-3 text-yellow-500" />
+                            <span className="text-xs text-gray-600">
+                              {formatScore(entry.totalScore)} pts
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Informações do estudante */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            ID: {entry.anonymousId}
-                          </p>
-                          {entry.isCurrentUser && (
-                            <Badge variant="secondary" className="text-xs">
-                              Você
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Star className="w-3 h-3 text-yellow-500" />
-                          <span className="text-xs text-gray-600">
-                            {formatScore(entry.totalScore)} pts
-                          </span>
-                        </div>
+                      {/* Lado Direito: Atividade e Progresso */}
+                      <div className="flex items-center space-x-2">
+                        {/* Indicador de atividade recente */}
+                        {entry.lastActivity && (
+                          <div className="flex items-center space-x-1">
+                            <div className={`
+                              w-2 h-2 rounded-full
+                              ${Date.now() - new Date(entry.lastActivity).getTime() < 24 * 60 * 60 * 1000
+                                ? 'bg-green-400' : 'bg-gray-300'
+                              }
+                            `} />
+                            <span className="text-xs text-gray-500">
+                              {Date.now() - new Date(entry.lastActivity).getTime() < 24 * 60 * 60 * 1000
+                                ? 'Ativo' : 'Offline'
+                              }
+                            </span>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Indicador de atividade recente */}
-                      {entry.lastActivity && (
-                        <div className="flex items-center">
-                          <div className={`
-                            w-2 h-2 rounded-full
-                            ${Date.now() - new Date(entry.lastActivity).getTime() < 24 * 60 * 60 * 1000
-                              ? 'bg-green-400' : 'bg-gray-300'
-                            }
-                          `} />
-                        </div>
-                      )}
                     </motion.div>
                   ))}
 

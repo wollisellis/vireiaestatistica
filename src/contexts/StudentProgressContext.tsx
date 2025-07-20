@@ -54,6 +54,7 @@ interface StudentProgressContextType {
   progress: StudentProgress
   updateGameScore: (gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt'>) => void
   updateModuleScore: (moduleId: string, score: number, maxScore: number, timeElapsed: number, exercisesCompleted: number, totalExercises: number, difficulty: string) => Promise<void>
+  updateExerciseScore: (moduleId: string, exerciseId: string, score: number, maxScore: number) => Promise<void>
   updateGameScoreAdvanced: (
     gameScore: Omit<GameScore, 'normalizedScore' | 'isPersonalBest' | 'attempt' | 'scoreCalculation'>,
     questionMetrics: QuestionMetrics[]
@@ -241,6 +242,38 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
 
   const calculateNormalizedScore = (exercisesCompleted: number, totalExercises: number): number => {
     return Math.round((exercisesCompleted / totalExercises) * 100)
+  }
+
+  // Nova função para atualizar exercício individual
+  const updateExerciseScore = async (moduleId: string, exerciseId: string, score: number, maxScore: number) => {
+    if (user && user.id) {
+      try {
+        console.log(`Salvando exercício ${exerciseId} do módulo ${moduleId}:`, { score, maxScore });
+        
+        // Salvar exercício individual no unified scoring service
+        await unifiedScoringService.updateExerciseScore(
+          user.id,
+          moduleId,
+          exerciseId,
+          score,
+          maxScore
+        );
+
+        // Recalcular e atualizar ranking em tempo real
+        await rankingService.updateStudentRanking(user.id);
+        
+        console.log(`Exercício ${exerciseId} salvo e ranking atualizado!`);
+        
+        // Trigger re-render ou notificação aqui se necessário
+        // Para notificar outros componentes sobre a mudança
+        window.dispatchEvent(new CustomEvent('exerciseCompleted', { 
+          detail: { moduleId, exerciseId, score, maxScore }
+        }));
+        
+      } catch (error) {
+        console.error('Erro ao salvar exercício:', error);
+      }
+    }
   }
 
   // Nova função para atualizar com dados de módulos reais
@@ -511,6 +544,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
       progress,
       updateGameScore,
       updateModuleScore,
+      updateExerciseScore,
       updateGameScoreAdvanced,
       resetProgress,
       getGameProgress,
