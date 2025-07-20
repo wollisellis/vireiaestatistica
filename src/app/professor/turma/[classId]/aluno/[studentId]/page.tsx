@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { enhancedClassService } from '@/services/enhancedClassService';
 import { EnhancedClass, StudentProgress, StudentAnalytics } from '@/types/classes';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Progress } from '@/components/ui/Progress';
 import { 
   User, Trophy, Target, Clock, BookOpen, TrendingUp, ArrowLeft,
   Calendar, CheckCircle, XCircle, Star, Brain, Zap, Award,

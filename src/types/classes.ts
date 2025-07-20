@@ -234,3 +234,42 @@ export interface ClassAlert {
   resolved: boolean
   resolvedAt?: Date
 }
+
+// Tipos adicionais para compatibilidade com as páginas
+export interface ClassEnrollment {
+  id: string
+  classId: string
+  studentId: string
+  status: 'active' | 'inactive' | 'removed'
+  enrolledAt: Date
+  name?: string
+  email: string
+  totalScore: number
+  completedModules: number
+  lastActivity?: Date
+}
+
+export interface StudentProgress {
+  modules: Record<string, {
+    completed: boolean
+    score: number
+    completedAt?: Date
+    timeSpent?: number
+  }>
+  overallProgress: number
+  totalScore: number
+}
+
+export interface StudentAnalytics {
+  totalTimeSpent: number
+  averageScore: number
+  correctAnswers: number
+  totalAttempts: number
+  hintsUsed: number
+  studySessions: number
+  classRank?: number
+  preferredStudyTime?: string
+  mostActiveDay?: string
+  avgSessionTime?: number
+  consistencyScore?: number
+}

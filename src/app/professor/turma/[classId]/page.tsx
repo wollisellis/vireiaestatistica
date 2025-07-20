@@ -4,17 +4,16 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { enhancedClassService } from '@/services/enhancedClassService';
 import { EnhancedClass, ClassEnrollment, StudentProgress, ClassAnalytics } from '@/types/classes';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { 
   Users, Trophy, Target, Clock, BookOpen, TrendingUp, Filter, Download, 
   Settings, UserPlus, UserMinus, Eye, BarChart3, Calendar, 
   Search, ChevronRight, Activity, Star, ArrowLeft
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface EnhancedStudent extends ClassEnrollment {
   name?: string;
@@ -57,7 +56,7 @@ export default function EnhancedClassDashboard() {
         
       } catch (error) {
         console.error('Erro ao carregar dados da turma:', error);
-        toast.error('Erro ao carregar dados da turma');
+        alert('Erro ao carregar dados da turma');
       } finally {
         setLoading(false);
       }
@@ -111,10 +110,10 @@ export default function EnhancedClassDashboard() {
     try {
       await enhancedClassService.removeStudentFromClass(classId, studentId);
       setStudents(students.filter(s => s.studentId !== studentId));
-      toast.success('Estudante removido da turma');
+      alert('Estudante removido da turma');
     } catch (error) {
       console.error('Erro ao remover estudante:', error);
-      toast.error('Erro ao remover estudante');
+      alert('Erro ao remover estudante');
     }
   };
   
