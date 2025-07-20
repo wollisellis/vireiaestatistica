@@ -21,7 +21,9 @@ export interface ClassRegistration {
   studentId: string
   studentName: string
   studentEmail: string
+  email: string // Alias para compatibilidade
   registeredAt: Date
+  enrolledAt: Date // Alias para compatibilidade
   inviteCode: string
   status: 'pending' | 'active' | 'inactive'
 }
@@ -183,7 +185,9 @@ export class ClassInviteService {
         studentId,
         studentName,
         studentEmail,
+        email: studentEmail, // Adicionar campo 'email' para compatibilidade
         registeredAt: now,
+        enrolledAt: now, // Adicionar campo 'enrolledAt' para compatibilidade
         inviteCode: code,
         status: 'active'
       }
