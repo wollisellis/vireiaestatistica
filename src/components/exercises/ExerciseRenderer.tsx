@@ -276,42 +276,75 @@ const QuizExercise: React.FC<ExerciseRendererProps> = ({ exercise, onComplete })
           )}
         </div>
       ) : (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
-          <h4 className="text-lg font-semibold text-blue-900 mb-3">📊 Resultado do Quiz</h4>
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border border-green-200">
+          <h4 className="text-xl font-bold text-green-800 mb-4 text-center">✅ Exercício Concluído!</h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Resultado principal destacado */}
+          <div className="bg-white p-4 rounded-lg border-2 border-green-300 mb-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{correctAnswers}</div>
-              <div className="text-sm text-gray-600">Corretas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">{exercise.questions?.length || 0}</div>
-              <div className="text-sm text-gray-600">Total</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{score}</div>
-              <div className="text-sm text-gray-600">Pontos</div>
+              <div className="text-3xl font-bold text-green-600 mb-2">
+                {correctAnswers}/{exercise.questions?.length || 0}
+              </div>
+              <div className="text-lg font-medium text-gray-700 mb-1">questões corretas</div>
+              <div className="text-sm text-gray-600">
+                Você obteve <span className="font-bold text-green-600">{score} pontos</span>
+              </div>
             </div>
           </div>
           
-          <div className="bg-white p-3 rounded border">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium">Desempenho:</span>
-              <span className="text-sm font-bold">
+          {/* Métricas detalhadas */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="text-center bg-white p-3 rounded border">
+              <div className="text-xl font-bold text-blue-600">{correctAnswers}</div>
+              <div className="text-xs text-gray-600">Acertos</div>
+            </div>
+            <div className="text-center bg-white p-3 rounded border">
+              <div className="text-xl font-bold text-red-500">{(exercise.questions?.length || 0) - correctAnswers}</div>
+              <div className="text-xs text-gray-600">Erros</div>
+            </div>
+            <div className="text-center bg-white p-3 rounded border">
+              <div className="text-xl font-bold text-green-600">
                 {Math.round((correctAnswers / (exercise.questions?.length || 1)) * 100)}%
+              </div>
+              <div className="text-xs text-gray-600">Aproveitamento</div>
+            </div>
+          </div>
+          
+          {/* Barra de progresso melhorada */}
+          <div className="bg-white p-4 rounded border mb-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">Desempenho Visual:</span>
+              <span className="text-sm font-bold text-green-600">
+                {correctAnswers} de {exercise.questions?.length || 0} corretas
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                className={`h-3 rounded-full transition-all duration-500 ${
+                  (correctAnswers / (exercise.questions?.length || 1)) >= 0.8 
+                    ? 'bg-green-500' 
+                    : (correctAnswers / (exercise.questions?.length || 1)) >= 0.6 
+                    ? 'bg-yellow-500' 
+                    : 'bg-red-500'
+                }`}
                 style={{ width: `${(correctAnswers / (exercise.questions?.length || 1)) * 100}%` }}
               ></div>
             </div>
           </div>
           
-          <p className="text-sm text-center text-gray-600 mt-3">
-            Quiz concluído! Você pode revisar suas respostas acima.
-          </p>
+          {/* Feedback motivacional */}
+          <div className="text-center">
+            <p className="text-sm font-medium text-green-700 mb-1">
+              {(correctAnswers / (exercise.questions?.length || 1)) >= 0.8 
+                ? "🎉 Excelente trabalho! Você domina esse conteúdo!"
+                : (correctAnswers / (exercise.questions?.length || 1)) >= 0.6 
+                ? "👍 Bom desempenho! Continue praticando!"
+                : "💪 Continue estudando, você está no caminho certo!"}
+            </p>
+            <p className="text-xs text-gray-600">
+              Progresso salvo automaticamente ✨
+            </p>
+          </div>
         </div>
       )}
     </div>

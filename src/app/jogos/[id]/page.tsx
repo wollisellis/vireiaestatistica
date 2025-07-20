@@ -10,6 +10,7 @@ import { ExerciseRenderer } from '@/components/exercises/ExerciseRenderer';
 import { useRoleRedirect } from '@/hooks/useRoleRedirect';
 import { useStudentProgress } from '@/contexts/StudentProgressContext';
 import { StudentProgressProvider } from '@/contexts/StudentProgressContext';
+import { ModuleProgressProvider, useModuleProgress, useExerciseProgress } from '@/contexts/ModuleProgressContext';
 
 function JogoPageContent() {
   const params = useParams();

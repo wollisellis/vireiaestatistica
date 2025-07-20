@@ -1,483 +1,548 @@
-'use client'
+'use client';
 
-import React, { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { useProfessorAccess } from '@/hooks/useRoleRedirect'
-import ProfessorClassService, { ClassInfo, StudentOverview } from '@/services/professorClassService'
-import UserService from '@/services/userService'
-import { modules } from '@/data/modules'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { enhancedClassService } from '@/services/enhancedClassService';
+import { EnhancedClass, ClassEnrollment, StudentProgress, ClassAnalytics } from '@/types/classes';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  ArrowLeft,
-  Users,
-  UserPlus,
-  UserMinus,
-  Settings,
-  BarChart,
-  Copy,
-  Search,
-  Download,
-  Edit,
-  Trash2,
-  ChevronRight,
-  GraduationCap,
-  Trophy,
-  Clock,
-  AlertCircle,
-  CheckCircle
-} from 'lucide-react'
-import { motion } from 'framer-motion'
+  Users, Trophy, Target, Clock, BookOpen, TrendingUp, Filter, Download, 
+  Settings, UserPlus, UserMinus, Eye, BarChart3, Calendar, 
+  Search, ChevronRight, Activity, Star, ArrowLeft
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-export default function ClassDetailsPage() {
-  const params = useParams()
-  const router = useRouter()
-  const { user, loading: authLoading, hasAccess } = useProfessorAccess()
-  const classId = params.classId as string
+interface EnhancedStudent extends ClassEnrollment {
+  name?: string;
+  email: string;
+  progress?: StudentProgress;
+  totalScore: number;
+  completedModules: number;
+  lastActivity?: Date;
+}
 
-  const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
-  const [students, setStudents] = useState<StudentOverview[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedStudent, setSelectedStudent] = useState<StudentOverview | null>(null)
-  const [showAddStudent, setShowAddStudent] = useState(false)
-  const [newStudentEmail, setNewStudentEmail] = useState('')
-  const [dataLoaded, setDataLoaded] = useState(false)
-
+export default function EnhancedClassDashboard() {
+  const params = useParams();
+  const router = useRouter();
+  const classId = params.classId as string;
+  
+  const [classData, setClassData] = useState<EnhancedClass | null>(null);
+  const [students, setStudents] = useState<EnhancedStudent[]>([]);
+  const [analytics, setAnalytics] = useState<ClassAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [progressFilter, setProgressFilter] = useState<string>('all');
+  
   useEffect(() => {
-    if (!authLoading && user && classId && hasAccess() && !dataLoaded) {
-      setDataLoaded(true)
-      loadClassData()
+    const fetchClassData = async () => {
+      try {
+        // Buscar dados da turma
+        const classInfo = await enhancedClassService.getClassById(classId);
+        if (classInfo) {
+          setClassData(classInfo);
+        }
+        
+        // Buscar estudantes da turma
+        const studentsData = await enhancedClassService.getClassStudents(classId);
+        setStudents(studentsData);
+        
+        // Buscar analytics da turma
+        const analyticsData = await enhancedClassService.getClassAnalytics(classId);
+        setAnalytics(analyticsData);
+        
+      } catch (error) {
+        console.error('Erro ao carregar dados da turma:', error);
+        toast.error('Erro ao carregar dados da turma');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (classId) {
+      fetchClassData();
     }
-  }, [user, classId, authLoading, dataLoaded])
-
-  const loadClassData = async () => {
+  }, [classId]);
+  
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = !searchTerm || 
+      student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || student.status === statusFilter;
+    
+    const matchesProgress = progressFilter === 'all' || (
+      progressFilter === 'active' && student.completedModules > 0
+    ) || (
+      progressFilter === 'inactive' && student.completedModules === 0
+    );
+    
+    return matchesSearch && matchesStatus && matchesProgress;
+  });
+  
+  const getProgressStats = () => {
+    if (students.length === 0) return { 
+      total: 0, 
+      active: 0, 
+      avgProgress: 0, 
+      avgScore: 0,
+      topPerformers: [] as EnhancedStudent[]
+    };
+    
+    const total = students.length;
+    const active = students.filter(student => student.completedModules > 0).length;
+    const totalProgress = students.reduce((sum, student) => sum + (student.completedModules / 4) * 100, 0);
+    const totalScore = students.reduce((sum, student) => sum + student.totalScore, 0);
+    const avgProgress = total > 0 ? totalProgress / total : 0;
+    const avgScore = total > 0 ? totalScore / total : 0;
+    const topPerformers = students
+      .filter(s => s.totalScore > 0)
+      .sort((a, b) => b.totalScore - a.totalScore)
+      .slice(0, 5);
+    
+    return { total, active, avgProgress, avgScore, topPerformers };
+  };
+  
+  const handleRemoveStudent = async (studentId: string) => {
     try {
-      setLoading(true)
-      
-      // Verificar se é uma turma demo
-      if (classId.startsWith('class_demo_')) {
-        console.log('Turma demo detectada:', classId)
-        // Para turmas demo, criar dados mockados
-        setClassInfo({
-          id: classId,
-          name: 'Avaliação Nutricional',
-          code: 'JK1P32TE',
-          semester: '1º Semestre',
-          year: 2025,
-          professorId: user?.id || '',
-          professorName: user?.fullName || 'Prof. Dr. Dennys Esper',
-          studentsCount: 0,
-          activeStudents: 0,
-          totalModules: modules.length,
-          avgProgress: 0,
-          avgScore: 0,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        setStudents([])
-        return
-      }
-      
-      const [info, studentsList] = await Promise.all([
-        ProfessorClassService.getClassInfo(classId),
-        ProfessorClassService.getClassStudents(classId)
-      ])
-
-      if (info) {
-        setClassInfo(info)
-        setStudents(studentsList || [])
-      } else {
-        console.error('Turma não encontrada:', classId)
-        router.push('/professor')
-      }
+      await enhancedClassService.removeStudentFromClass(classId, studentId);
+      setStudents(students.filter(s => s.studentId !== studentId));
+      toast.success('Estudante removido da turma');
     } catch (error) {
-      console.error('Erro ao carregar dados da turma:', error)
-      // Tentar criar dados básicos para evitar erro completo
-      setClassInfo({
-        id: classId,
-        name: 'Turma',
-        code: 'CODIGO',
-        semester: '1º Semestre',
-        year: 2025,
-        professorId: user?.id || '',
-        professorName: user?.fullName || 'Prof. Dr. Dennys Esper',
-        studentsCount: 0,
-        activeStudents: 0,
-        totalModules: modules.length,
-        avgProgress: 0,
-        avgScore: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      setStudents([])
-    } finally {
-      setLoading(false)
+      console.error('Erro ao remover estudante:', error);
+      toast.error('Erro ao remover estudante');
     }
-  }
-
-  const copyInviteCode = () => {
-    if (classInfo?.code) {
-      navigator.clipboard.writeText(classInfo.code)
-    }
-  }
-
-  const handleRemoveStudent = async (studentId: string, studentName: string) => {
-    if (!confirm(`Tem certeza que deseja remover ${studentName} da turma?`)) return
-
-    try {
-      await ProfessorClassService.removeStudentFromClass(classId, studentId)
-      loadClassData() // Recarregar dados
-    } catch (error) {
-      console.error('Erro ao remover aluno:', error)
-    }
-  }
-
-  const handleAddStudent = async () => {
-    if (!newStudentEmail) {
-      return
-    }
-
-    try {
-      // Buscar usuário por email
-      const user = await UserService.getUserByEmail(newStudentEmail)
-      
-      if (!user) {
-        console.error('Usuário não encontrado. Verifique o email.')
-        return
-      }
-      
-      if (user.role !== 'student') {
-        console.error('Este email pertence a um professor, não a um aluno.')
-        return
-      }
-      
-      // Verificar se o aluno já está na turma
-      if (students.some(s => s.studentId === user.id)) {
-        console.error('Este aluno já está matriculado na turma.')
-        return
-      }
-      
-      // Adicionar aluno à turma
-      await ProfessorClassService.addStudentToClass(
-        classId,
-        user.id,
-        user.fullName || user.email,
-        user.email
-      )
-      
-      setNewStudentEmail('')
-      setShowAddStudent(false)
-      loadClassData() // Recarregar dados
-    } catch (error) {
-      console.error('Erro ao adicionar aluno:', error)
-    }
-  }
-
-  const exportData = async () => {
-    try {
-      const data = await ProfessorClassService.exportClassData(classId)
-      // Implementar download do CSV
-    } catch (error) {
-      console.error('Erro ao exportar dados')
-    }
-  }
-
-  const filteredStudents = students.filter(student => 
-    student.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  // Adicionar timeout para evitar loading infinito
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (authLoading) {
-        console.error('Timeout de autenticação - redirecionando para login')
-        router.push('/')
-      }
-    }, 5000) // 5 segundos de timeout
-
-    return () => clearTimeout(timeout)
-  }, [authLoading, router])
-
-  if (authLoading || loading) {
+  };
+  
+  const stats = getProgressStats();
+  
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando turma...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user || !hasAccess()) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Redirecionando...</p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                onClick={() => router.push('/professor')}
-                className="flex items-center space-x-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Voltar</span>
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{classInfo?.name}</h1>
-                <p className="text-sm text-gray-500">{classInfo?.semester} - {classInfo?.year}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/professor/turma/${classId}/configuracoes`)}
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Configurações
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/professor/turma/${classId}/relatorios`)}
-              >
-                <BarChart className="w-4 h-4 mr-2" />
-                Relatórios
-              </Button>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando dashboard da turma...</p>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Código de Convite */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <Card className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Código de Convite</h3>
-                <p className="text-sm text-indigo-100 mt-1">
-                  Compartilhe este código com seus alunos para que eles possam se matricular
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="bg-white bg-opacity-20 px-6 py-3 rounded-lg">
-                  <span className="text-2xl font-mono font-bold">{classInfo?.code}</span>
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={copyInviteCode}
-                  className="bg-white text-indigo-600 hover:bg-gray-100"
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copiar
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    );
+  }
+  
+  if (!classData) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Turma não encontrada</h2>
+            <p className="text-gray-600">A turma solicitada não existe ou você não tem permissão para visualizá-la.</p>
+            <Button 
+              onClick={() => router.push('/professor')}
+              className="mt-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar às Turmas
+            </Button>
+          </div>
+        </div>
       </div>
-
-      {/* Estatísticas Rápidas */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Total de Alunos</p>
-                  <p className="text-2xl font-bold">{classInfo?.studentsCount || 0}</p>
-                </div>
-                <Users className="w-8 h-8 text-indigo-600" />
+    );
+  }
+  
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Enhanced Header */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push('/professor')}
+                  className="p-2"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <h1 className="text-3xl font-bold text-gray-900">{classData.name}</h1>
+                <Badge 
+                  variant={classData.status === 'open' ? 'default' : classData.status === 'closed' ? 'secondary' : 'destructive'}
+                >
+                  {classData.status === 'open' ? 'Aberta' : classData.status === 'closed' ? 'Fechada' : 'Arquivada'}
+                </Badge>
               </div>
+              <p className="text-gray-600 text-lg">{classData.semester} - {classData.year}</p>
+              {classData.description && (
+                <p className="text-gray-700 mt-2">{classData.description}</p>
+              )}
+            </div>
+            
+            <div className="flex space-x-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push(`/professor/turma/${classId}/analytics`)}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push(`/professor/turma/${classId}/ranking`)}
+              >
+                <Trophy className="h-4 w-4 mr-2" />
+                Ranking
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push(`/professor/turma/${classId}/configuracoes`)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Configurações
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div className="flex items-center space-x-2 text-gray-600">
+              <Users className="h-4 w-4" />
+              <span>{stats.total} estudantes</span>
+            </div>
+            <div className="flex items-center space-x-2 text-green-600">
+              <Activity className="h-4 w-4" />
+              <span>{stats.active} ativos</span>
+            </div>
+            <div className="flex items-center space-x-2 text-blue-600">
+              <Target className="h-4 w-4" />
+              <span>{Math.round(stats.avgProgress)}% progresso</span>
+            </div>
+            <div className="flex items-center space-x-2 text-purple-600">
+              <Star className="h-4 w-4" />
+              <span>{Math.round(stats.avgScore)} pts médio</span>
+            </div>
+            <div className="flex items-center space-x-2 text-gray-600">
+              <BookOpen className="h-4 w-4" />
+              <code className="px-2 py-1 bg-gray-100 rounded text-xs">{classData.inviteCode}</code>
+            </div>
+          </div>
+        </div>
+        
+        {/* Enhanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">Total de Estudantes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.total}</div>
+              <p className="text-xs opacity-75 mt-1">
+                {classData.maxStudents ? `de ${classData.maxStudents} máximo` : 'sem limite'}
+              </p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Alunos Ativos</p>
-                  <p className="text-2xl font-bold">{classInfo?.activeStudents || 0}</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
+          
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">Estudantes Ativos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.active}</div>
+              <p className="text-xs opacity-75 mt-1">
+                {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% de engajamento
+              </p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Progresso Médio</p>
-                  <p className="text-2xl font-bold">{classInfo?.avgProgress || 0}%</p>
-                </div>
-                <BarChart className="w-8 h-8 text-blue-600" />
-              </div>
+          
+          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">Progresso Médio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{Math.round(stats.avgProgress)}%</div>
+              <p className="text-xs opacity-75 mt-1">dos módulos concluídos</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Pontuação Média</p>
-                  <p className="text-2xl font-bold">{classInfo?.avgScore || 0}</p>
-                </div>
-                <Trophy className="w-8 h-8 text-yellow-600" />
-              </div>
+          
+          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">Pontuação Média</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{Math.round(stats.avgScore)}</div>
+              <p className="text-xs opacity-75 mt-1">pontos por estudante</p>
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* Lista de Alunos */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-8">
+        
+        {/* Top Performers */}
+        {stats.topPerformers.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
+                Top 5 Performantes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {stats.topPerformers.map((student, index) => (
+                  <div key={student.studentId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        index === 0 ? 'bg-yellow-500 text-white' :
+                        index === 1 ? 'bg-gray-400 text-white' :
+                        index === 2 ? 'bg-orange-500 text-white' :
+                        'bg-gray-300 text-gray-700'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium">{student.name || 'Usuário Anônimo'}</div>
+                        <div className="text-sm text-gray-600">{student.completedModules}/4 módulos</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-lg">{student.totalScore}</div>
+                      <div className="text-sm text-gray-600">pontos</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Enhanced Students Management */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Alunos da Turma</CardTitle>
-              <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Buscar aluno..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-64"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAddStudent(true)}
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Adicionar Aluno
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={exportData}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Exportar
+            <div className="flex justify-between items-center">
+              <CardTitle>Gerenciamento de Estudantes</CardTitle>
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Convidar
                 </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {filteredStudents.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  {searchTerm ? 'Nenhum aluno encontrado' : 'Nenhum aluno matriculado ainda'}
+            
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 mt-4">
+              <div className="flex-1 min-w-[200px]">
+                <div className="relative">
+                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="Buscar por nome ou email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-              ) : (
-                filteredStudents.map((student) => (
-                  <motion.div
-                    key={student.studentId}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => setSelectedStudent(student)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                          <GraduationCap className="w-6 h-6 text-indigo-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-semibold">{student.studentName}</h4>
-                          <p className="text-sm text-gray-500">{student.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-6">
-                        <div className="text-center">
-                          <p className="text-sm text-gray-500">Progresso</p>
-                          <p className="font-semibold">{student.overallProgress}%</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-sm text-gray-500">Pontuação</p>
-                          <p className="font-semibold">{student.totalNormalizedScore}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-sm text-gray-500">Ranking</p>
-                          <Badge variant="secondary">#{student.classRank}</Badge>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveStudent(student.studentId, student.studentName)
-                          }}
-                        >
-                          <UserMinus className="w-4 h-4 text-red-500" />
-                        </Button>
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
+              </div>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Ativos</SelectItem>
+                  <SelectItem value="inactive">Inativos</SelectItem>
+                  <SelectItem value="removed">Removidos</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={progressFilter} onValueChange={setProgressFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Progresso" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Com progresso</SelectItem>
+                  <SelectItem value="inactive">Sem progresso</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium">Estudante</th>
+                    <th className="text-left py-3 px-4 font-medium">Progresso</th>
+                    <th className="text-left py-3 px-4 font-medium">Pontuação</th>
+                    <th className="text-left py-3 px-4 font-medium">Última Atividade</th>
+                    <th className="text-left py-3 px-4 font-medium">Status</th>
+                    <th className="text-left py-3 px-4 font-medium">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map(student => {
+                    const progressPercentage = (student.completedModules / 4) * 100;
+                    
+                    return (
+                      <tr key={student.studentId} className="border-b hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-4">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {student.name || 'Usuário Anônimo'}
+                            </div>
+                            <div className="text-sm text-gray-500">{student.email}</div>
+                          </div>
+                        </td>
+                        
+                        <td className="py-4 px-4">
+                          <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${progressPercentage}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {Math.round(progressPercentage)}% ({student.completedModules}/4)
+                          </span>
+                        </td>
+                        
+                        <td className="py-4 px-4">
+                          <div className="font-semibold text-lg">{student.totalScore}</div>
+                          <div className="text-sm text-gray-500">pontos</div>
+                        </td>
+                        
+                        <td className="py-4 px-4">
+                          <span className="text-sm text-gray-600">
+                            {student.lastActivity ? 
+                              new Date(student.lastActivity).toLocaleDateString('pt-BR') :
+                              'Nunca'
+                            }
+                          </span>
+                        </td>
+                        
+                        <td className="py-4 px-4">
+                          <Badge 
+                            variant={
+                              student.status === 'active' ? 'default' :
+                              student.status === 'inactive' ? 'secondary' : 'destructive'
+                            }
+                          >
+                            {student.status === 'active' ? 'Ativo' :
+                             student.status === 'inactive' ? 'Inativo' : 'Removido'
+                            }
+                          </Badge>
+                        </td>
+                        
+                        <td className="py-4 px-4">
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => router.push(`/professor/turma/${classId}/aluno/${student.studentId}`)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Ver
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleRemoveStudent(student.studentId)}
+                              disabled={student.status === 'removed'}
+                            >
+                              <UserMinus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              
+              {filteredStudents.length === 0 && students.length > 0 && (
+                <div className="text-center py-8">
+                  <Filter className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum estudante encontrado</h3>
+                  <p className="text-gray-600">Tente ajustar os filtros de busca.</p>
+                </div>
+              )}
+              
+              {students.length === 0 && (
+                <div className="text-center py-12">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum estudante cadastrado</h3>
+                  <p className="text-gray-600 mb-4">Compartilhe o código da turma para que os estudantes possam se inscrever.</p>
+                  <Button>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Convidar Estudantes
+                  </Button>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Modal de Adicionar Aluno */}
-      {showAddStudent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Adicionar Aluno à Turma</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Digite o email do aluno cadastrado na plataforma
-            </p>
-            <Input
-              placeholder="email@unicamp.br"
-              type="email"
-              value={newStudentEmail}
-              onChange={(e) => setNewStudentEmail(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddStudent()}
-              className="mb-4"
-              autoFocus
-            />
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <div className="flex items-start space-x-2">
-                <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-blue-800">
-                  <p className="font-semibold mb-1">Importante:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>O aluno precisa estar cadastrado na plataforma</li>
-                    <li>Use o mesmo email que o aluno usou no cadastro</li>
-                    <li>Você também pode compartilhar o código <span className="font-mono font-bold">{classInfo?.code}</span> para matrícula automática</li>
-                  </ul>
+        
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/professor/turma/${classId}/analytics`)}>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <BarChart3 className="h-6 w-6 text-blue-600" />
                 </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Analytics Detalhados</h3>
+                  <p className="text-sm text-gray-600">Métricas avançadas e insights</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => {
-                setShowAddStudent(false)
-                setNewStudentEmail('')
-              }}>
-                Cancelar
-              </Button>
-              <Button onClick={handleAddStudent}>
-                Adicionar
-              </Button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/professor/turma/${classId}/ranking`)}>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-yellow-100 rounded-lg">
+                  <Trophy className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Ranking da Turma</h3>
+                  <p className="text-sm text-gray-600">Competição e gamificação</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/professor/turma/${classId}/configuracoes`)}>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-gray-100 rounded-lg">
+                  <Settings className="h-6 w-6 text-gray-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Configurações</h3>
+                  <p className="text-sm text-gray-600">Gerencie a turma</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      </div>
     </div>
-  )
+  );
 }
