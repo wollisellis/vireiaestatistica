@@ -316,7 +316,7 @@ export default function ProfessorDashboardPage() {
                   {/* Gerenciamento de turmas */}
                   <ImprovedClassManagement 
                     professorId={user?.uid || 'demo'} 
-                    professorName={user?.fullName || 'Professor Dennys Esper'}
+                    professorName={user?.fullName || 'Prof. Dr. Dennys Esper'}
                   />
                 </TabsContent>
 

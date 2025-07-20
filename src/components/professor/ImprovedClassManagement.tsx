@@ -51,7 +51,7 @@ interface ImprovedClassManagementProps {
   className?: string
 }
 
-export function ImprovedClassManagement({ professorId, professorName = 'Professor Dennys Esper', className = '' }: ImprovedClassManagementProps) {
+export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr. Dennys Esper', className = '' }: ImprovedClassManagementProps) {
   const router = useRouter()
   const [classes, setClasses] = useState<ClassInfo[]>([])
   const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null)
