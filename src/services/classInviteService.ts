@@ -33,6 +33,8 @@ export class ClassInviteService {
    * Gera um código único para a turma
    */
   static generateClassCode(className: string, year: number): string {
+    console.log('Gerando código para:', { className, year })
+    
     // Pegar as primeiras letras da turma e combinar com ano
     const classPrefix = className
       .replace(/[^a-zA-Z]/g, '') // Remove caracteres especiais
@@ -40,10 +42,17 @@ export class ClassInviteService {
       .substring(0, 4) // Primeiros 4 caracteres
       .padEnd(4, 'X') // Preenche com X se necessário
     
+    console.log('Prefix gerado:', classPrefix)
+    
     const yearSuffix = year.toString().slice(-2) // Últimos 2 dígitos do ano
     const randomSuffix = Math.random().toString(36).substring(2, 4).toUpperCase()
     
-    return `${classPrefix}${yearSuffix}${randomSuffix}`
+    console.log('Year suffix:', yearSuffix, 'Random suffix:', randomSuffix)
+    
+    const finalCode = `${classPrefix}${yearSuffix}${randomSuffix}`
+    console.log('Código final gerado:', finalCode)
+    
+    return finalCode
   }
 
   /**
@@ -59,7 +68,11 @@ export class ClassInviteService {
     }
   ): Promise<string> {
     try {
+      console.log('ClassInviteService.createClassInvite chamado:', { classId, className, professorId })
+      
       const code = this.generateClassCode(className, new Date().getFullYear())
+      console.log('Código gerado:', code)
+      
       const now = new Date()
       
       const invite: any = {
@@ -81,17 +94,26 @@ export class ClassInviteService {
         invite.maxUses = options.maxUses;
       }
 
+      console.log('Dados do convite:', invite)
+
       // Salvar convite no Firebase
       if (db) {
+        console.log('Salvando convite no Firebase...')
         await setDoc(doc(db, 'classInvites', code), invite)
+        console.log('Convite salvo no Firebase')
         
         // Atualizar a turma com o código
+        console.log('Atualizando turma com inviteCode...')
         await updateDoc(doc(db, 'classes', classId), {
           inviteCode: code,
           lastInviteCreated: now
         })
+        console.log('Turma atualizada com inviteCode')
+      } else {
+        console.warn('Firebase db não disponível!')
       }
 
+      console.log('ClassInviteService retornando código:', code)
       return code
     } catch (error) {
       console.error('Erro ao criar convite:', error)

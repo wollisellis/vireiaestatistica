@@ -133,11 +133,18 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       setIsCreatingClass(false)
       await loadClasses()
       
+      // Aguardar um pouco para garantir que o Firebase processou todas as escritas
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
       // Buscar as informações da turma criada para mostrar o modal de convites
+      console.log('Buscando informações da turma criada:', classId)
       const newClassInfo = await ProfessorClassService.getClassInfo(classId)
+      console.log('Informações da turma para o modal:', newClassInfo)
       if (newClassInfo) {
         setInviteClass(newClassInfo)
         setShowInviteModal(true)
+      } else {
+        console.error('Não foi possível obter informações da turma criada')
       }
     } catch (error) {
       console.error('Erro ao criar turma:', error)

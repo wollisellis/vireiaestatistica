@@ -168,14 +168,18 @@ export class ProfessorClassService {
       await setDoc(docRef, classInfo)
 
       // Criar código de convite usando o ClassInviteService
+      console.log('Chamando ClassInviteService.createClassInvite...')
       const classCode = await ClassInviteService.createClassInvite(
         classId,
         className,
         professorId
       )
+      console.log('Código gerado pelo ClassInviteService:', classCode)
       
       // Atualizar turma com o código
+      console.log('Atualizando turma com código:', classCode)
       await updateDoc(docRef, { code: classCode })
+      console.log('Turma atualizada com código')
       
       // Criar configurações padrão dos módulos
       await this.createDefaultModuleSettings(classId)
@@ -191,12 +195,17 @@ export class ProfessorClassService {
   // Obter informações da turma
   static async getClassInfo(classId: string): Promise<ClassInfo | null> {
     try {
+      console.log('Buscando informações da turma:', classId)
       const docRef = doc(db, this.CLASSES_COLLECTION, classId)
       const docSnap = await getDoc(docRef)
       
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as ClassInfo
+        const classData = { id: docSnap.id, ...docSnap.data() } as ClassInfo
+        console.log('Informações da turma encontradas:', classData)
+        console.log('Código da turma:', classData.code)
+        return classData
       }
+      console.log('Turma não encontrada:', classId)
       return null
     } catch (error) {
       console.error('Erro ao obter informações da turma:', error)
