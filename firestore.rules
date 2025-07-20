@@ -41,7 +41,8 @@ service cloud.firestore {
     function hasUnicampEmail() {
       return isAuthenticated() &&
         (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
-         request.auth.token.email.matches('.*@unicamp\\.br'));
+         request.auth.token.email.matches('.*@unicamp\\.br') ||
+         request.auth.token.email.matches('.*@gmail\\.com')); // Temporário para desenvolvimento
     }
 
     // Função para verificar se o usuário pode acessar dados de outro usuário
@@ -253,6 +254,23 @@ service cloud.firestore {
 
       // Permitir criação de matrícula (para sistema de convites)
       allow create: if isAuthenticated();
+    }
+
+    // CLASSSTUDENTS COLLECTION - Compatibilidade (usado pelo ClassInviteService)
+    match /classStudents/{studentClassId} {
+      // Professores podem gerenciar matrículas de suas turmas
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler apenas suas próprias matrículas
+      allow read: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
+
+      // Permitir criação de matrícula (para sistema de convites)
+      allow create: if isAuthenticated();
+
+      // Permitir atualização para o próprio estudante
+      allow update: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
     }
 
     // MODULE SETTINGS COLLECTION - Configurações de módulos por turma

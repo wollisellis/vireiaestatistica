@@ -196,18 +196,43 @@ export class ClassInviteService {
     studentEmail: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log('registerStudentWithCode chamado:', { code, studentId, studentName, studentEmail })
+      
       if (!db) {
         throw new Error('Firebase não configurado')
       }
 
       // Validar código primeiro
+      console.log('Validando código:', code)
       const validation = await this.validateInviteCode(code)
+      console.log('Resultado da validação:', validation)
+      
       if (!validation.isValid) {
         return { success: false, error: validation.error }
       }
 
       const classInfo = validation.classInfo!
       const now = new Date()
+
+      // Verificar/criar perfil do estudante primeiro
+      console.log('Verificando perfil do estudante...')
+      const userRef = doc(db, 'users', studentId)
+      const userSnap = await getDoc(userRef)
+      
+      if (!userSnap.exists()) {
+        console.log('Criando perfil do estudante...')
+        await setDoc(userRef, {
+          uid: studentId,
+          email: studentEmail,
+          name: studentName,
+          role: 'student',
+          createdAt: now,
+          isActive: true
+        })
+        console.log('Perfil do estudante criado')
+      } else {
+        console.log('Perfil do estudante já existe')
+      }
 
       // Criar registro do estudante
       const registration: ClassRegistration = {
@@ -221,22 +246,30 @@ export class ClassInviteService {
         status: 'active'
       }
 
+      console.log('Criando registro de matrícula:', registration)
+      
       // Adicionar estudante à turma
       await setDoc(doc(db, 'classStudents', `${classInfo.id}_${studentId}`), registration)
+      console.log('Registro de matrícula criado')
 
       // Atualizar contador de estudantes na turma
+      console.log('Atualizando contador da turma...')
       await updateDoc(doc(db, 'classes', classInfo.id), {
         studentsCount: (classInfo.studentsCount || 0) + 1,
         lastStudentAdded: now,
         students: arrayUnion(studentId)
       })
+      console.log('Contador da turma atualizado')
 
       // Incrementar uso do convite
+      console.log('Atualizando uso do convite...')
       await updateDoc(doc(db, 'classInvites', code), {
         currentUses: (await getDoc(doc(db, 'classInvites', code))).data()?.currentUses + 1 || 1,
         lastUsed: now
       })
+      console.log('Uso do convite atualizado')
 
+      console.log('Matrícula concluída com sucesso!')
       return { success: true }
     } catch (error) {
       console.error('Erro ao registrar estudante:', error)
