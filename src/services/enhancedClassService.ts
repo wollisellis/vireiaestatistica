@@ -86,26 +86,31 @@ export class EnhancedClassService {
     filter?: ClassFilter
   ): Promise<EnhancedStudentOverview[]> {
     try {
-      const enrollmentsQuery = query(
-        collection(db, 'class_enrollments'),
-        where('classId', '==', classId),
-        where('status', '!=', 'removed')
+      // Buscar estudantes na coleção 'classStudents' (usada pelo ClassInviteService)
+      const studentsQuery = query(
+        collection(db, 'classStudents'),
+        where('status', '==', 'active')
       )
       
-      const enrollmentsSnapshot = await getDocs(enrollmentsQuery)
+      const studentsSnapshot = await getDocs(studentsQuery)
       const students: EnhancedStudentOverview[] = []
       
-      for (const enrollmentDoc of enrollmentsSnapshot.docs) {
-        const enrollmentData = enrollmentDoc.data()
+      // Filtrar estudantes desta turma específica
+      for (const doc of studentsSnapshot.docs) {
+        const studentData = doc.data()
+        const docId = doc.id
         
-        // Buscar dados detalhados do estudante
-        const studentProgress = await this.getStudentDetailedProgress(
-          enrollmentData.studentId,
-          classId
-        )
-        
-        if (studentProgress) {
-          students.push(studentProgress)
+        // Verificar se o documento pertence à turma específica
+        if (docId.startsWith(`${classId}_`)) {
+          // Buscar dados detalhados do estudante
+          const studentProgress = await this.getStudentDetailedProgress(
+            studentData.studentId,
+            classId
+          )
+          
+          if (studentProgress) {
+            students.push(studentProgress)
+          }
         }
       }
       
@@ -139,16 +144,11 @@ export class EnhancedClassService {
       
       const userData = userDoc.data()
       
-      // Buscar dados de matrícula
-      const enrollmentQuery = query(
-        collection(db, 'class_enrollments'),
-        where('classId', '==', classId),
-        where('studentId', '==', studentId)
-      )
-      const enrollmentSnapshot = await getDocs(enrollmentQuery)
-      if (enrollmentSnapshot.empty) return null
+      // Buscar dados de matrícula na coleção 'classStudents'
+      const enrollmentDoc = await getDoc(doc(db, 'classStudents', `${classId}_${studentId}`))
+      if (!enrollmentDoc.exists()) return null
       
-      const enrollmentData = enrollmentSnapshot.docs[0].data()
+      const enrollmentData = enrollmentDoc.data()
       
       // Buscar progresso dos módulos
       const moduleProgressQuery = query(
@@ -208,13 +208,13 @@ export class EnhancedClassService {
       
       return {
         studentId,
-        studentName: userData.fullName || userData.email,
-        email: userData.email,
+        studentName: userData.fullName || userData.name || enrollmentData.studentName || userData.email,
+        email: userData.email || enrollmentData.email || enrollmentData.studentEmail,
         avatarUrl: userData.avatarUrl,
-        enrolledAt: enrollmentData.enrolledAt?.toDate() || new Date(),
-        lastActivity: userData.lastActivity?.toDate() || new Date(),
+        enrolledAt: enrollmentData.enrolledAt?.toDate() || enrollmentData.registeredAt?.toDate() || new Date(),
+        lastActivity: userData.lastActivity?.toDate() || enrollmentData.enrolledAt?.toDate() || new Date(),
         status: enrollmentData.status || 'active',
-        role: enrollmentData.role || 'student',
+        role: 'student',
         
         overallProgress: Math.round(overallProgress),
         totalNormalizedScore: totalScore,
@@ -472,8 +472,41 @@ export class EnhancedClassService {
   // Métodos auxiliares privados
   
   private static async getClassStudentsBasic(classId: string): Promise<any[]> {
-    // Implementar busca básica de estudantes para cálculos
-    return []
+    try {
+      // Buscar estudantes na coleção 'classStudents' (usada pelo ClassInviteService)
+      const studentsQuery = query(
+        collection(db, 'classStudents'),
+        where('status', '==', 'active')
+      )
+      
+      const studentsSnapshot = await getDocs(studentsQuery)
+      const students: any[] = []
+      
+      // Filtrar estudantes desta turma específica
+      for (const doc of studentsSnapshot.docs) {
+        const studentData = doc.data()
+        const docId = doc.id
+        
+        // Verificar se o documento pertence à turma específica
+        if (docId.startsWith(`${classId}_`)) {
+          students.push({
+            studentId: studentData.studentId,
+            studentName: studentData.studentName || studentData.name || 'Usuário Anônimo',
+            email: studentData.email || studentData.studentEmail,
+            status: studentData.status || 'active',
+            lastActivity: studentData.lastActivity || studentData.enrolledAt || new Date(),
+            overallProgress: 0, // Será calculado
+            totalNormalizedScore: 0, // Será calculado
+            completedModules: 0 // Será calculado
+          })
+        }
+      }
+      
+      return students
+    } catch (error) {
+      console.error('Erro ao buscar estudantes básicos da turma:', error)
+      return []
+    }
   }
   
   private static getDefaultClassSettings() {
@@ -620,19 +653,14 @@ export class EnhancedClassService {
   
   static async getStudentDetail(classId: string, studentId: string) {
     try {
-      // Buscar dados do estudante na turma
-      const enrollmentQuery = query(
-        collection(db, 'class_enrollments'),
-        where('classId', '==', classId),
-        where('studentId', '==', studentId)
-      )
-      const enrollmentSnap = await getDocs(enrollmentQuery)
+      // Buscar dados do estudante na turma na coleção 'classStudents'
+      const enrollmentDoc = await getDoc(doc(db, 'classStudents', `${classId}_${studentId}`))
       
-      if (enrollmentSnap.empty) {
+      if (!enrollmentDoc.exists()) {
         return null
       }
       
-      const enrollment = enrollmentSnap.docs[0].data()
+      const enrollment = enrollmentDoc.data()
       
       // Buscar dados do usuário
       const userDoc = await getDoc(doc(db, 'users', studentId))
@@ -656,10 +684,10 @@ export class EnhancedClassService {
       return {
         student: {
           id: studentId,
-          name: userData.name || userData.fullName || 'Usuário Anônimo',
-          email: userData.email,
+          name: userData.name || userData.fullName || enrollment.studentName || 'Usuário Anônimo',
+          email: userData.email || enrollment.email || enrollment.studentEmail,
           status: enrollment.status || 'active',
-          enrolledAt: enrollment.createdAt?.toDate() || new Date(),
+          enrolledAt: enrollment.enrolledAt?.toDate() || enrollment.registeredAt?.toDate() || new Date(),
           totalScore,
           completedModules,
           lastActivity: userData.lastActivity?.toDate()
@@ -773,17 +801,12 @@ export class EnhancedClassService {
   
   static async removeStudentFromClass(classId: string, studentId: string) {
     try {
-      // Buscar o enrollment
-      const enrollmentQuery = query(
-        collection(db, 'class_enrollments'),
-        where('classId', '==', classId),
-        where('studentId', '==', studentId)
-      )
-      const enrollmentSnap = await getDocs(enrollmentQuery)
+      // Buscar o enrollment na coleção 'classStudents'
+      const enrollmentRef = doc(db, 'classStudents', `${classId}_${studentId}`)
+      const enrollmentDoc = await getDoc(enrollmentRef)
       
-      if (!enrollmentSnap.empty) {
-        const enrollmentDoc = enrollmentSnap.docs[0]
-        await updateDoc(enrollmentDoc.ref, {
+      if (enrollmentDoc.exists()) {
+        await updateDoc(enrollmentRef, {
           status: 'removed',
           removedAt: Timestamp.now()
         })
