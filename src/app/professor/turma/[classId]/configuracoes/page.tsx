@@ -171,7 +171,7 @@ export default function ClassSettingsPage() {
     }
 
     try {
-      await ProfessorClassService.deleteClass(classId, user!.uid)
+      await ProfessorClassService.deleteClass(classId, user!.id)
       console.log('Turma excluída com sucesso')
       window.alert('Turma excluída com sucesso')
       router.push('/professor')

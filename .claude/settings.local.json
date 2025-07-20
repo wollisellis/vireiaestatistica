@@ -48,7 +48,11 @@
       "Bash(grep:*)",
       "Bash(pkill:*)",
       "Bash(npx next:*)",
-      "Bash(timeout 30s npm run dev:*)"
+      "Bash(timeout 30s npm run dev:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)"
     ],
     "deny": []
   }

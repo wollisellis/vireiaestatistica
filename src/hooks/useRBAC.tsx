@@ -16,15 +16,17 @@ export function useRBAC(userId?: string): RBACHookReturn {
   const [isStudentGuest, setIsStudentGuest] = useState(false)
   const [isProfessorGuest, setIsProfessorGuest] = useState(false)
 
-  // Debug logging
+  // Debug logging (development only)
   useEffect(() => {
-    console.log('🔍 RBAC Debug:', {
-      userId: userId || 'not provided',
-      user: user ? { id: user.id, email: user.email, role: user.role } : 'null',
-      loading,
-      isStudentGuest,
-      isProfessorGuest
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 RBAC Debug:', {
+        userId: userId || 'not provided',
+        user: user ? { id: user.id, email: user.email, role: user.role } : 'null',
+        loading,
+        isStudentGuest,
+        isProfessorGuest
+      })
+    }
   }, [userId, user, loading, isStudentGuest, isProfessorGuest])
 
   useEffect(() => {

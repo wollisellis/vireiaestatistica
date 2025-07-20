@@ -3,18 +3,20 @@ import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive'
+  variant?: 'default' | 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'info'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   children: React.ReactNode
 }
 
 const buttonVariants = {
+  default: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg',
   primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg',
   secondary: 'bg-gray-600 hover:bg-gray-700 text-white shadow-lg',
   outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white',
   ghost: 'text-blue-600 hover:bg-blue-50',
   destructive: 'bg-red-600 hover:bg-red-700 text-white shadow-lg',
+  info: 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg',
 }
 
 const sizeVariants = {
@@ -24,7 +26,7 @@ const sizeVariants = {
 }
 
 export function Button({
-  variant = 'primary',
+  variant = 'default',
   size = 'md',
   loading = false,
   className,

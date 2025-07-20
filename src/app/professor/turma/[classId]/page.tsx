@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useProfessorAccess } from '@/hooks/useRoleRedirect'
 import ProfessorClassService, { ClassInfo, StudentOverview } from '@/services/professorClassService'
 import UserService from '@/services/userService'
+import { modules } from '@/data/modules'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -66,7 +67,7 @@ export default function ClassDetailsPage() {
           code: 'JK1P32TE',
           semester: '1º Semestre',
           year: 2025,
-          professorId: user?.uid || '',
+          professorId: user?.id || '',
           professorName: user?.fullName || 'Prof. Dr. Dennys Esper',
           studentsCount: 0,
           activeStudents: 0,
@@ -101,7 +102,7 @@ export default function ClassDetailsPage() {
         code: 'CODIGO',
         semester: '1º Semestre',
         year: 2025,
-        professorId: user?.uid || '',
+        professorId: user?.id || '',
         professorName: user?.fullName || 'Prof. Dr. Dennys Esper',
         studentsCount: 0,
         activeStudents: 0,
@@ -154,7 +155,7 @@ export default function ClassDetailsPage() {
       }
       
       // Verificar se o aluno já está na turma
-      if (students.some(s => s.studentId === user.uid)) {
+      if (students.some(s => s.studentId === user.id)) {
         console.error('Este aluno já está matriculado na turma.')
         return
       }
@@ -162,8 +163,8 @@ export default function ClassDetailsPage() {
       // Adicionar aluno à turma
       await ProfessorClassService.addStudentToClass(
         classId,
-        user.uid,
-        user.displayName || user.email,
+        user.id,
+        user.fullName || user.email,
         user.email
       )
       

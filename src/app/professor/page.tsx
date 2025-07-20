@@ -138,7 +138,7 @@ export default function ProfessorDashboardPage() {
       await setDoc(doc(db, 'settings', 'modules'), {
         unlocked: newUnlocked,
         lastUpdated: new Date(),
-        lastUpdatedBy: user?.uid || 'unknown'
+        lastUpdatedBy: user?.id || 'unknown'
       }, { merge: true })
 
       console.log(`Módulo ${moduleId} ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`)
@@ -183,7 +183,7 @@ export default function ProfessorDashboardPage() {
       }
 
       // Sign out from Firebase if user is authenticated
-      if (user && user.uid !== 'professor-guest-user') {
+      if (user && user.id !== 'professor-guest-user') {
         await signOut();
       }
 
@@ -220,8 +220,8 @@ export default function ProfessorDashboardPage() {
                 <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
                   <span>Bem-vindo,</span>
                   <span className="font-medium">
-                    {user.displayName || user.fullName ? 
-                      `Prof. ${(user.displayName || user.fullName || '').split(' ')[0]}` : 
+                    {user.fullName ? 
+                      `Prof. ${user.fullName.split(' ')[0]}` : 
                       'Professor'
                     }
                   </span>
@@ -315,7 +315,7 @@ export default function ProfessorDashboardPage() {
                 <TabsContent value="classes" className="space-y-6">
                   {/* Gerenciamento de turmas */}
                   <ImprovedClassManagement 
-                    professorId={user?.uid || 'demo'} 
+                    professorId={user?.id || 'demo'} 
                     professorName={user?.fullName || 'Prof. Dr. Dennys Esper'}
                   />
                 </TabsContent>
@@ -495,7 +495,7 @@ export default function ProfessorDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-6">
-                  <AnalyticsDashboard professorId={user?.uid || 'demo'} />
+                  <AnalyticsDashboard professorId={user?.id || 'demo'} />
                 </TabsContent>
               </main>
             </Tabs>

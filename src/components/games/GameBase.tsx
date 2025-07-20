@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { gameDefinitions } from '@/lib/gameData'
-import { useAuth, useGameProgress } from '@/hooks/useSupabase'
+import { useAuth, useGameProgress } from '@/hooks/useHybridAuth'
 
 export interface GameState {
   currentQuestion: number
