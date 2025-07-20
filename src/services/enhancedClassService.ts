@@ -82,24 +82,30 @@ export class EnhancedClassService {
   
   // Obter alunos com informações detalhadas
   static async getEnhancedClassStudents(
-    classId: string, 
+    classId: string,
     filter?: ClassFilter
   ): Promise<EnhancedStudentOverview[]> {
     try {
+      // Validar parâmetros
+      if (!classId) {
+        console.warn('ClassId não fornecido para getEnhancedClassStudents')
+        return []
+      }
+
       // Buscar estudantes na coleção 'classStudents' (usada pelo ClassInviteService)
       const studentsQuery = query(
         collection(db, 'classStudents'),
         where('status', '==', 'active')
       )
-      
+
       const studentsSnapshot = await getDocs(studentsQuery)
       const students: EnhancedStudentOverview[] = []
-      
+
       // Filtrar estudantes desta turma específica
       for (const doc of studentsSnapshot.docs) {
         const studentData = doc.data()
         const docId = doc.id
-        
+
         // Verificar se o documento pertence à turma específica
         if (docId.startsWith(`${classId}_`)) {
           // Buscar dados detalhados do estudante
@@ -107,25 +113,27 @@ export class EnhancedClassService {
             studentData.studentId,
             classId
           )
-          
+
           if (studentProgress) {
             students.push(studentProgress)
           }
         }
       }
-      
+
       // Aplicar filtros
-      let filteredStudents = students
-      
-      if (filter) {
-        filteredStudents = this.applyFilters(students, filter)
+      let filteredStudents = students || []
+
+      if (filter && filteredStudents.length > 0) {
+        filteredStudents = this.applyFilters(filteredStudents, filter)
       }
-      
+
       // Calcular rankings
-      filteredStudents = this.calculateClassRankings(filteredStudents)
-      
-      return filteredStudents
-      
+      if (filteredStudents.length > 0) {
+        filteredStudents = this.calculateClassRankings(filteredStudents)
+      }
+
+      return filteredStudents || []
+
     } catch (error) {
       console.error('Erro ao buscar alunos da turma:', error)
       return []
@@ -473,26 +481,32 @@ export class EnhancedClassService {
   
   private static async getClassStudentsBasic(classId: string): Promise<any[]> {
     try {
+      // Validar parâmetros
+      if (!classId) {
+        console.warn('ClassId não fornecido para getClassStudentsBasic')
+        return []
+      }
+
       // Buscar estudantes na coleção 'classStudents' (usada pelo ClassInviteService)
       const studentsQuery = query(
         collection(db, 'classStudents'),
         where('status', '==', 'active')
       )
-      
+
       const studentsSnapshot = await getDocs(studentsQuery)
       const students: any[] = []
-      
+
       // Filtrar estudantes desta turma específica
       for (const doc of studentsSnapshot.docs) {
         const studentData = doc.data()
         const docId = doc.id
-        
-        // Verificar se o documento pertence à turma específica
-        if (docId.startsWith(`${classId}_`)) {
+
+        // Verificar se o documento pertence à turma específica e se studentData é válido
+        if (docId.startsWith(`${classId}_`) && studentData) {
           students.push({
-            studentId: studentData.studentId,
+            studentId: studentData.studentId || '',
             studentName: studentData.studentName || studentData.name || 'Usuário Anônimo',
-            email: studentData.email || studentData.studentEmail,
+            email: studentData.email || studentData.studentEmail || '',
             status: studentData.status || 'active',
             lastActivity: studentData.lastActivity || studentData.enrolledAt || new Date(),
             overallProgress: 0, // Será calculado
@@ -501,8 +515,8 @@ export class EnhancedClassService {
           })
         }
       }
-      
-      return students
+
+      return students || []
     } catch (error) {
       console.error('Erro ao buscar estudantes básicos da turma:', error)
       return []
@@ -521,50 +535,71 @@ export class EnhancedClassService {
   }
   
   private static applyFilters(
-    students: EnhancedStudentOverview[], 
+    students: EnhancedStudentOverview[],
     filter: ClassFilter
   ): EnhancedStudentOverview[] {
-    let filtered = [...students]
-    
-    if (filter.status && filter.status !== 'all') {
-      filtered = filtered.filter(s => s.status === filter.status)
+    // Verificar se students é um array válido
+    if (!Array.isArray(students)) {
+      console.warn('applyFilters: students não é um array válido', students)
+      return []
     }
-    
+
+    let filtered = [...students]
+
+    if (filter.status && filter.status !== 'all') {
+      filtered = filtered.filter(s => s && s.status === filter.status)
+    }
+
     if (filter.progressRange) {
-      filtered = filtered.filter(s => 
+      filtered = filtered.filter(s =>
+        s &&
+        typeof s.overallProgress === 'number' &&
         s.overallProgress >= filter.progressRange!.min &&
         s.overallProgress <= filter.progressRange!.max
       )
     }
-    
+
     if (filter.search) {
       const search = filter.search.toLowerCase()
-      filtered = filtered.filter(s => 
-        s.studentName.toLowerCase().includes(search) ||
-        s.email.toLowerCase().includes(search)
+      filtered = filtered.filter(s =>
+        s &&
+        ((s.studentName && s.studentName.toLowerCase().includes(search)) ||
+         (s.email && s.email.toLowerCase().includes(search)))
       )
     }
-    
+
     if (filter.sortBy) {
       filtered.sort((a, b) => {
+        if (!a || !b) return 0
+
         const aVal = a[filter.sortBy as keyof EnhancedStudentOverview] as any
         const bVal = b[filter.sortBy as keyof EnhancedStudentOverview] as any
-        
+
         if (filter.sortOrder === 'desc') {
           return bVal > aVal ? 1 : -1
         }
         return aVal > bVal ? 1 : -1
       })
     }
-    
-    return filtered
+
+    return filtered || []
   }
   
   private static calculateClassRankings(
     students: EnhancedStudentOverview[]
   ): EnhancedStudentOverview[] {
-    const sorted = [...students].sort((a, b) => b.totalNormalizedScore - a.totalNormalizedScore)
-    
+    // Verificar se students é um array válido
+    if (!Array.isArray(students) || students.length === 0) {
+      console.warn('calculateClassRankings: students não é um array válido ou está vazio', students)
+      return []
+    }
+
+    const sorted = [...students].sort((a, b) => {
+      const scoreA = a?.totalNormalizedScore || 0
+      const scoreB = b?.totalNormalizedScore || 0
+      return scoreB - scoreA
+    })
+
     return sorted.map((student, index) => ({
       ...student,
       classRank: index + 1

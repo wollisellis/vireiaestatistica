@@ -40,76 +40,88 @@ export default function EnhancedClassDashboard() {
   useEffect(() => {
     const fetchClassData = async () => {
       try {
+        // Validar classId
+        if (!classId) {
+          console.error('ClassId não fornecido');
+          setLoading(false);
+          return;
+        }
+
         // Buscar dados da turma
         const classInfo = await enhancedClassService.getClassById(classId);
         if (classInfo) {
           setClassData(classInfo);
         }
-        
+
         // Buscar estudantes da turma
         const studentsData = await enhancedClassService.getClassStudents(classId);
-        setStudents(studentsData);
-        
+        // Garantir que studentsData é sempre um array
+        setStudents(Array.isArray(studentsData) ? studentsData : []);
+
         // Buscar analytics da turma
         const analyticsData = await enhancedClassService.getClassAnalytics(classId);
         setAnalytics(analyticsData);
-        
+
       } catch (error) {
         console.error('Erro ao carregar dados da turma:', error);
-        alert('Erro ao carregar dados da turma');
+        // Definir valores padrão em caso de erro
+        setStudents([]);
+        setAnalytics(null);
+        alert('Erro ao carregar dados da turma. Alguns dados podem não estar disponíveis.');
       } finally {
         setLoading(false);
       }
     };
-    
+
     if (classId) {
       fetchClassData();
     }
   }, [classId]);
   
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = !searchTerm || 
+  const filteredStudents = (students || []).filter(student => {
+    const matchesSearch = !searchTerm ||
       student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      student.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = statusFilter === 'all' || student.status === statusFilter;
-    
+
     const matchesProgress = progressFilter === 'all' || (
-      progressFilter === 'active' && student.completedModules > 0
+      progressFilter === 'active' && (student.completedModules || 0) > 0
     ) || (
-      progressFilter === 'inactive' && student.completedModules === 0
+      progressFilter === 'inactive' && (student.completedModules || 0) === 0
     );
-    
+
     return matchesSearch && matchesStatus && matchesProgress;
   });
   
   const getProgressStats = () => {
-    if (students.length === 0) return { 
-      total: 0, 
-      active: 0, 
-      avgProgress: 0, 
+    const safeStudents = students || [];
+    if (safeStudents.length === 0) return {
+      total: 0,
+      active: 0,
+      avgProgress: 0,
       avgScore: 0,
       topPerformers: [] as EnhancedStudent[]
     };
-    
-    const total = students.length;
-    const active = students.filter(student => student.completedModules > 0).length;
-    const totalProgress = students.reduce((sum, student) => sum + (student.completedModules / 4) * 100, 0);
-    const totalScore = students.reduce((sum, student) => sum + student.totalScore, 0);
+
+    const total = safeStudents.length;
+    const active = safeStudents.filter(student => (student.completedModules || 0) > 0).length;
+    const totalProgress = safeStudents.reduce((sum, student) => sum + ((student.completedModules || 0) / 4) * 100, 0);
+    const totalScore = safeStudents.reduce((sum, student) => sum + (student.totalScore || 0), 0);
     const avgProgress = total > 0 ? totalProgress / total : 0;
     const avgScore = total > 0 ? totalScore / total : 0;
-    const topPerformers = students
-      .filter(s => s.totalScore > 0)
-      .sort((a, b) => b.totalScore - a.totalScore)
+    const topPerformers = safeStudents
+      .filter(s => (s.totalScore || 0) > 0)
+      .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))
       .slice(0, 5);
-    
+
     return { total, active, avgProgress, avgScore, topPerformers };
   };
   
   const handleRemoveStudent = async (studentId: string) => {
     try {
       await enhancedClassService.removeStudentFromClass(classId, studentId);
-      setStudents(students.filter(s => s.studentId !== studentId));
+      setStudents((prevStudents) => (prevStudents || []).filter(s => s.studentId !== studentId));
       alert('Estudante removido da turma');
     } catch (error) {
       console.error('Erro ao remover estudante:', error);
@@ -389,48 +401,50 @@ export default function EnhancedClassDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStudents.map(student => {
-                    const progressPercentage = (student.completedModules / 4) * 100;
-                    
+                  {filteredStudents && filteredStudents.length > 0 ? filteredStudents.map(student => {
+                    if (!student) return null;
+
+                    const progressPercentage = ((student.completedModules || 0) / 4) * 100;
+
                     return (
-                      <tr key={student.studentId} className="border-b hover:bg-gray-50 transition-colors">
+                      <tr key={student.studentId || Math.random()} className="border-b hover:bg-gray-50 transition-colors">
                         <td className="py-4 px-4">
                           <div>
                             <div className="font-medium text-gray-900">
-                              {student.name || 'Usuário Anônimo'}
+                              {student.name || student.studentName || 'Usuário Anônimo'}
                             </div>
-                            <div className="text-sm text-gray-500">{student.email}</div>
+                            <div className="text-sm text-gray-500">{student.email || 'Email não disponível'}</div>
                           </div>
                         </td>
-                        
+
                         <td className="py-4 px-4">
                           <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
                             <div
                               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${progressPercentage}%` }}
+                              style={{ width: `${Math.min(Math.max(progressPercentage, 0), 100)}%` }}
                             ></div>
                           </div>
                           <span className="text-sm text-gray-600">
-                            {Math.round(progressPercentage)}% ({student.completedModules}/4)
+                            {Math.round(progressPercentage)}% ({student.completedModules || 0}/4)
                           </span>
                         </td>
-                        
+
                         <td className="py-4 px-4">
-                          <div className="font-semibold text-lg">{student.totalScore}</div>
+                          <div className="font-semibold text-lg">{student.totalScore || 0}</div>
                           <div className="text-sm text-gray-500">pontos</div>
                         </td>
-                        
+
                         <td className="py-4 px-4">
                           <span className="text-sm text-gray-600">
-                            {student.lastActivity ? 
+                            {student.lastActivity ?
                               new Date(student.lastActivity).toLocaleDateString('pt-BR') :
                               'Nunca'
                             }
                           </span>
                         </td>
-                        
+
                         <td className="py-4 px-4">
-                          <Badge 
+                          <Badge
                             variant={
                               student.status === 'active' ? 'default' :
                               student.status === 'inactive' ? 'secondary' : 'destructive'
@@ -441,22 +455,23 @@ export default function EnhancedClassDashboard() {
                             }
                           </Badge>
                         </td>
-                        
+
                         <td className="py-4 px-4">
                           <div className="flex space-x-2">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => router.push(`/professor/turma/${classId}/aluno/${student.studentId}`)}
+                              disabled={!student.studentId}
                             >
                               <Eye className="h-4 w-4 mr-1" />
                               Ver
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleRemoveStudent(student.studentId)}
-                              disabled={student.status === 'removed'}
+                              disabled={student.status === 'removed' || !student.studentId}
                             >
                               <UserMinus className="h-4 w-4" />
                             </Button>
@@ -464,7 +479,13 @@ export default function EnhancedClassDashboard() {
                         </td>
                       </tr>
                     );
-                  })}
+                  }).filter(Boolean) : (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-500">
+                        Nenhum estudante encontrado
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
               
