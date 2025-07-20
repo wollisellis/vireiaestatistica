@@ -55,7 +55,16 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
   const { user } = useRBAC(firebaseUser?.uid)
 
   const handleSignOut = async () => {
+    // Clear selected role from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('selected-role')
+      localStorage.removeItem('last-login')
+    }
+    
     await signOut()
+    
+    // Force redirect to login page
+    window.location.href = '/'
   }
 
   const handleLogoClick = async () => {

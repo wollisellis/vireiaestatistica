@@ -44,7 +44,11 @@
       "Bash(git clone:*)",
       "Bash(npm cache clean:*)",
       "Bash(sudo apt-get:*)",
-      "Bash(npx next lint:*)"
+      "Bash(npx next lint:*)",
+      "Bash(grep:*)",
+      "Bash(pkill:*)",
+      "Bash(npx next:*)",
+      "Bash(timeout 30s npm run dev:*)"
     ],
     "deny": []
   }

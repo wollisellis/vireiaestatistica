@@ -20,8 +20,11 @@ export default function LoginPage() {
 
   // Clear any authentication state when accessing login page to ensure clean state
   useEffect(() => {
-    // Only clear if user is not authenticated
-    if (firebaseUser || rbacUser) {
+    // Check if there's a saved session
+    const authToken = document.cookie.includes('auth-token=')
+    
+    // If user is authenticated or has a saved session, show the logged-in screen
+    if (firebaseUser || rbacUser || authToken) {
       setIsCleared(true)
       return
     }

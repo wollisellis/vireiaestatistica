@@ -110,11 +110,14 @@ export function AuthForm() {
         const { error } = await signIn(data.email, data.password)
         if (error) throw new Error(error.message)
 
-        // Redirect directly based on selected role
+        // Store selected role in localStorage to ensure proper redirect
+        localStorage.setItem('selected-role', selectedRole)
+        
+        // Force a hard redirect to ensure role is properly applied
         if (selectedRole === 'professor') {
-          window.location.href = '/professor'
+          window.location.replace('/professor')
         } else {
-          window.location.href = '/jogos'
+          window.location.replace('/jogos')
         }
       }
     } catch (err: unknown) {

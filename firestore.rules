@@ -6,16 +6,7 @@ service cloud.firestore {
     // BIOESTAT PLATFORM - FIRESTORE SECURITY RULES
     // ========================================
     // Sistema educacional para avaliação nutricional - UNICAMP
-    // Versão: 2.0 - Janeiro 2025
-    //
-    // NOVAS FUNCIONALIDADES IMPLEMENTADAS:
-    // - Sistema completo de gerenciamento de turmas para professores
-    // - Analytics avançado com métricas de progresso e engajamento
-    // - Sistema de convites com códigos únicos para turmas
-    // - Controle granular de módulos por turma (bloquear/desbloquear)
-    // - Dashboard responsivo para professores e estudantes
-    // - Sistema de matrícula automática via códigos de convite
-    // - Relatórios de desempenho e exportação de dados
+    // Versão: 2.1 - Janeiro 2025
     // ========================================
 
     // ========================================
@@ -32,19 +23,25 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // Função para verificar se é professor
+    // Função para verificar se é professor (com validação real)
     function isProfessor() {
-      return isAuthenticated();
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor';
     }
 
-    // Função para verificar se é estudante
+    // Função para verificar se é estudante (com validação real)
     function isStudent() {
-      return isAuthenticated();
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
     }
 
-    // Função para verificar email da Unicamp (expandida para @unicamp.br também)
+    // Função para verificar email da Unicamp (com validação real)
     function hasUnicampEmail() {
-      return isAuthenticated();
+      return isAuthenticated() &&
+        (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
+         request.auth.token.email.matches('.*@unicamp\\.br'));
     }
 
     // Função para verificar se o usuário pode acessar dados de outro usuário
@@ -64,14 +61,14 @@ service cloud.firestore {
       // Professores podem ler dados de todos os usuários
       allow read: if isProfessor();
 
-      // Permitir criação de conta apenas com email válido da Unicamp
+      // Permitir criação de conta com validação de email e estrutura
       allow create: if isAuthenticated() && hasUnicampEmail() &&
-        (request.resource.data.role == 'professor' ||
-         request.resource.data.role == 'student');
+        request.resource.data.keys().hasAll(['role', 'email', 'name']) &&
+        (request.resource.data.role == 'professor' || request.resource.data.role == 'student');
 
-      // Permitir atualização apenas do próprio perfil
+      // Permitir atualização apenas do próprio perfil (sem mudar role)
       allow update: if isAuthenticated() && isOwner(userId) &&
-        request.resource.data.role == resource.data.role; // Não pode mudar role
+        request.resource.data.role == resource.data.role;
     }
 
     // GAME PROGRESS COLLECTION - Progresso individual nos jogos
@@ -90,18 +87,26 @@ service cloud.firestore {
 
     // COURSES COLLECTION - Cursos e turmas
     match /courses/{courseId} {
-      // Professores podem ler/escrever cursos
-      allow read, write: if isProfessor();
+      // Todos os usuários autenticados podem ler cursos
+      allow read: if isAuthenticated();
 
-      // Estudantes podem apenas ler cursos onde estão matriculados
-      allow read: if isStudent() &&
-        request.auth.uid in resource.data.studentIds;
+      // Apenas professores podem criar/editar cursos
+      allow write: if isProfessor();
     }
 
-    // CLASSES COLLECTION - Turmas do professor (atualizada - sistema principal)
+    // CLASSES COLLECTION - Sistema principal de turmas
     match /classes/{classId} {
-      // Permitir todas as operações para usuários autenticados (temporário para desenvolvimento)
-      allow read, write: if isAuthenticated();
+      // Professores podem criar turmas
+      allow create: if isProfessor() &&
+        request.resource.data.professorId == request.auth.uid;
+
+      // Professores podem ler/escrever apenas suas próprias turmas
+      allow read, update, delete: if isProfessor() &&
+        resource.data.professorId == request.auth.uid;
+
+      // Estudantes podem ler turmas onde estão matriculados
+      allow read: if isStudent() &&
+        exists(/databases/$(database)/documents/class_students/$(classId + '_' + request.auth.uid));
     }
 
     // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas
@@ -164,8 +169,12 @@ service cloud.firestore {
 
     // ANALYTICS COLLECTION - Dados analíticos
     match /analytics/{analyticsId} {
-      // Apenas professores podem acessar analytics
+      // Professores podem acessar todos os analytics
       allow read, write: if isProfessor();
+
+      // Estudantes podem ler apenas seus próprios analytics
+      allow read: if isStudent() &&
+        resource.data.userId == request.auth.uid;
     }
 
     // LEADERBOARD COLLECTION - Rankings e pontuações
@@ -173,8 +182,8 @@ service cloud.firestore {
       // Todos os usuários autenticados podem ler o leaderboard
       allow read: if isAuthenticated();
 
-      // Apenas o sistema pode escrever (via Cloud Functions)
-      allow write: if isProfessor();
+      // Apenas sistema pode escrever (via Cloud Functions)
+      allow write: if false;
     }
 
     // MODULES COLLECTION - Módulos educacionais
@@ -230,60 +239,62 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
     }
 
-    // PROFESSOR CLASSES COLLECTION - Turmas dos professores (atualizada)
-    match /professor_classes/{classId} {
-      // Professores podem ler/escrever suas próprias turmas
-      allow read, write: if isProfessor() &&
-        resource.data.professorId == request.auth.uid;
+    // PROFESSOR CLASSES COLLECTION - REMOVIDA (duplicada com classes)
+    // Esta coleção foi consolidada na coleção 'classes' principal
 
-      // Estudantes podem ler turmas onde estão matriculados
-      allow read: if isStudent() &&
-        request.auth.uid in resource.data.studentIds;
-
-      // Permitir criação apenas pelo próprio professor
-      allow create: if isProfessor() &&
-        request.resource.data.professorId == request.auth.uid;
-    }
-
-    // CLASS STUDENTS COLLECTION - Estudantes das turmas (nova)
+    // CLASS STUDENTS COLLECTION - Matrículas de estudantes
     match /class_students/{studentClassId} {
-      // Permitir todas as operações para usuários autenticados
-      allow read, write: if isAuthenticated();
+      // Professores podem gerenciar matrículas de suas turmas
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler apenas suas próprias matrículas
+      allow read: if isStudent() &&
+        resource.data.studentId == request.auth.uid;
+
+      // Permitir criação de matrícula (para sistema de convites)
+      allow create: if isAuthenticated();
     }
 
-    // MODULE SETTINGS COLLECTION - Configurações de módulos por turma (nova)
+    // MODULE SETTINGS COLLECTION - Configurações de módulos por turma
     match /module_settings/{settingId} {
-      // Permitir todas as operações para usuários autenticados
-      allow read, write: if isAuthenticated();
+      // Apenas professores podem configurar módulos
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler configurações dos módulos
+      allow read: if isStudent();
     }
 
-    // CLASS ANALYTICS COLLECTION - Analytics por turma (nova)
+    // CLASS ANALYTICS COLLECTION - Analytics por turma
     match /class_analytics/{analyticsId} {
       // Apenas professores podem acessar analytics de suas turmas
       allow read, write: if isProfessor() &&
         resource.data.professorId == request.auth.uid;
-    }
 
-    // CLASS INVITES COLLECTION - Códigos de convite das turmas (nova)
-    match /class_invites/{inviteId} {
-      // Professores podem criar/gerenciar convites de suas turmas
-      allow read, write: if isProfessor() &&
-        resource.data.professorId == request.auth.uid;
-
-      // Estudantes podem ler convites para se matricularem
-      allow read: if isStudent();
-
-      // Permitir criação por professores
+      // Permitir criação apenas pelo professor da turma
       allow create: if isProfessor() &&
         request.resource.data.professorId == request.auth.uid;
     }
 
-    // RANKINGS COLLECTION - Rankings dos estudantes (nova)
+    // CLASS INVITES COLLECTION - Sistema de convites para turmas
+    match /class_invites/{inviteId} {
+      // Professores podem gerenciar convites de suas turmas
+      allow read, write: if isProfessor() &&
+        resource.data.professorId == request.auth.uid;
+
+      // Estudantes podem ler convites públicos para matrícula
+      allow read: if isStudent();
+
+      // Permitir criação apenas por professores
+      allow create: if isProfessor() &&
+        request.resource.data.professorId == request.auth.uid;
+    }
+
+    // RANKINGS COLLECTION - Rankings e classificações
     match /rankings/{rankingId} {
-      // Todos podem ler rankings
+      // Todos os usuários autenticados podem ler rankings
       allow read: if isAuthenticated();
 
-      // Apenas sistema pode escrever (via Cloud Functions)
+      // Apenas sistema pode escrever rankings (via Cloud Functions)
       allow write: if false;
     }
 

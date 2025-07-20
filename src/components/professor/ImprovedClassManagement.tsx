@@ -271,7 +271,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Professo
           </Card>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {classes.map((cls, index) => (
             <motion.div
               key={cls.id}
@@ -456,92 +456,94 @@ function EnhancedClassCard({
 
   return (
     <Card 
-      className={`cursor-pointer transition-all duration-300 hover:shadow-lg h-full ${
+      className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
         isSelected 
           ? 'ring-2 ring-indigo-500 border-indigo-200 shadow-lg' 
           : 'hover:shadow-md border-gray-200'
       }`}
       onClick={onSelect}
     >
-      <CardContent className="p-4 sm:p-6 h-full flex flex-col">
-        <div className="space-y-4 flex-1">
+      <CardContent className="p-3 sm:p-4 lg:p-6">
+        <div className="space-y-3 sm:space-y-4">
           {/* Header */}
           <div>
-            <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 line-clamp-2">{classInfo.name}</h3>
-            <div className="text-xs sm:text-sm text-gray-600 flex items-center space-x-2">
+            <h3 className="font-bold text-sm sm:text-base lg:text-lg text-gray-900 mb-1">{classInfo.name}</h3>
+            <div className="text-xs sm:text-sm text-gray-600 flex items-center space-x-1 sm:space-x-2">
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="truncate">{classInfo.semester} {classInfo.year}</span>
+              <span>{classInfo.semester} {classInfo.year}</span>
             </div>
           </div>
           
           {/* Status e Badges */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-            <div className="flex items-center space-x-2">
-              <StatusIcon className={`w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ${
-                status.color === 'green' ? 'text-green-600' :
-                status.color === 'blue' ? 'text-blue-600' :
-                status.color === 'yellow' ? 'text-yellow-600' : 'text-gray-600'
-              }`} />
-              <span className={`text-xs font-medium truncate ${
-                status.color === 'green' ? 'text-green-700' :
-                status.color === 'blue' ? 'text-blue-700' :
-                status.color === 'yellow' ? 'text-yellow-700' : 'text-gray-700'
-              }`}>
-                {status.label}
-              </span>
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
+                <StatusIcon className={`w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ${
+                  status.color === 'green' ? 'text-green-600' :
+                  status.color === 'blue' ? 'text-blue-600' :
+                  status.color === 'yellow' ? 'text-yellow-600' : 'text-gray-600'
+                }`} />
+                <span className={`text-xs font-medium truncate ${
+                  status.color === 'green' ? 'text-green-700' :
+                  status.color === 'blue' ? 'text-blue-700' :
+                  status.color === 'yellow' ? 'text-yellow-700' : 'text-gray-700'
+                }`}>
+                  {status.label}
+                </span>
+              </div>
+              
+              <Badge variant="outline" className="text-xs font-mono px-2 py-0.5">
+                {classInfo.code}
+              </Badge>
             </div>
-            
-            <Badge variant="outline" className="text-xs font-mono self-start sm:self-auto">
-              {classInfo.code}
-            </Badge>
           </div>
           
           {/* Estatísticas */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 py-3 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 py-2 sm:py-3 border-t border-gray-100">
             <div className="text-center">
-              <div className="text-lg sm:text-xl font-bold text-indigo-600">{classInfo.studentsCount}</div>
+              <div className="text-base sm:text-lg lg:text-xl font-bold text-indigo-600">{classInfo.studentsCount}</div>
               <div className="text-xs text-gray-600">Estudantes</div>
             </div>
             <div className="text-center">
-              <div className="text-lg sm:text-xl font-bold text-green-600">{classInfo.avgProgress}%</div>
+              <div className="text-base sm:text-lg lg:text-xl font-bold text-green-600">{classInfo.avgProgress}%</div>
               <div className="text-xs text-gray-600">Progresso</div>
             </div>
           </div>
-        </div>
           
-        {/* Ações */}
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onCopyCode}
-            className="flex-1 text-xs h-8"
-          >
-            <Copy className="w-3 h-3 mr-1" />
-            <span className="hidden sm:inline">Código</span>
-            <span className="sm:hidden">Copiar Código</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onCopyInviteLink}
-            className="flex-1 text-xs h-8 border-green-200 text-green-700 hover:bg-green-50"
-          >
-            <Share className="w-3 h-3 mr-1" />
-            <span className="hidden sm:inline">Convite</span>
-            <span className="sm:hidden">Compartilhar</span>
-          </Button>
-          {onViewDetails && (
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={onViewDetails}
-              className="flex-1 text-xs h-8 bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              <Eye className="w-3 h-3 mr-1" />
-              <span>Detalhes</span>
-            </Button>
-          )}
+          {/* Ações */}
+          <div className="flex flex-col space-y-1.5 sm:space-y-2 pt-2 sm:pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+            <div className="flex space-x-1.5 sm:space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onCopyCode}
+                className="flex-1 text-xs h-7 sm:h-8 px-2"
+              >
+                <Copy className="w-3 h-3 mr-0.5 sm:mr-1" />
+                Código
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onCopyInviteLink}
+                className="flex-1 text-xs h-7 sm:h-8 px-2 border-green-200 text-green-700 hover:bg-green-50"
+              >
+                <Share className="w-3 h-3 mr-0.5 sm:mr-1" />
+                Convite
+              </Button>
+            </div>
+            {onViewDetails && (
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={onViewDetails}
+                className="w-full text-xs h-7 sm:h-8 bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                <Eye className="w-3 h-3 mr-0.5 sm:mr-1" />
+                Ver Detalhes
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -37,8 +37,17 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
 
     // Handle authenticated users
     if (firebaseUser && rbacUser) {
+      // Don't redirect if user is on the login page (they might want to switch roles)
+      if (currentPath === '/') {
+        return
+      }
+
+      // Check if user selected a different role during login
+      const selectedRole = typeof window !== 'undefined' ? localStorage.getItem('selected-role') : null
+      const effectiveRole = selectedRole as 'student' | 'professor' || rbacUser.role
+
       // If user has required role and is already on correct page, allow access
-      if (requiredRole && rbacUser.role === requiredRole) {
+      if (requiredRole && effectiveRole === requiredRole) {
         return
       }
 
@@ -54,7 +63,7 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
       }
 
       // User doesn't have required role, redirect to appropriate page only if not already there
-      if (rbacUser.role === 'professor') {
+      if (effectiveRole === 'professor') {
         if (!currentPath.startsWith('/professor')) {
           router.push(professorRedirect)
         }

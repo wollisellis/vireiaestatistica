@@ -66,10 +66,20 @@ export function useFirebaseAuth() {
           // Set authentication cookie when user is authenticated
           const token = await firebaseUser.getIdToken()
           setCookie('auth-token', token, 7) // 7 days
+          
+          // Save last login time
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('last-login', new Date().toISOString())
+          }
         } catch (error) {
           console.error('❌ Erro ao obter token de autenticação:', error)
           // Continue mesmo com erro no token
           setCookie('auth-token', firebaseUser.uid, 7) // Fallback to UID
+          
+          // Save last login time even on error
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('last-login', new Date().toISOString())
+          }
         }
       } else {
         console.log('❌ Usuário não autenticado')
@@ -315,8 +325,21 @@ export function useFirebaseAuth() {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth)
-      // Clear authentication cookies
+      // Clear all authentication cookies and storage
       deleteCookie('auth-token')
+      deleteCookie('user-role')
+      deleteCookie('user-session')
+      deleteCookie('firebase-auth-token')
+      
+      // Clear localStorage auth-related items
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('firebase-auth-token')
+        localStorage.removeItem('user-data')
+        localStorage.removeItem('auth-state')
+        localStorage.removeItem('selected-role')
+        sessionStorage.clear()
+      }
+      
       return { error: null }
     } catch (error: unknown) {
       console.error('Sign out error:', error)
