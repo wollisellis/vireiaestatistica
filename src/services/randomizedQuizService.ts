@@ -160,24 +160,27 @@ export class RandomizedQuizService {
     canAttempt: boolean;
     reason?: string;
     lastAttempt?: QuizAttempt;
+    bestAttempt?: QuizAttempt;
   }> {
     try {
       const lastAttempt = await this.getLastAttempt(studentId, moduleId);
+      const bestAttempt = await this.getBestAttempt(studentId, moduleId);
       
       if (!lastAttempt) {
         return { canAttempt: true };
       }
 
-      if (lastAttempt.passed) {
+      if (lastAttempt.passed || (bestAttempt && bestAttempt.passed)) {
         return {
           canAttempt: true,
           reason: 'Módulo concluído - você pode tentar melhorar sua nota',
-          lastAttempt
+          lastAttempt,
+          bestAttempt
         };
       }
 
       // Pode tentar novamente se não passou
-      return { canAttempt: true, lastAttempt };
+      return { canAttempt: true, lastAttempt, bestAttempt };
 
     } catch (error) {
       console.error('Erro ao verificar tentativas:', error);
@@ -193,14 +196,13 @@ export class RandomizedQuizService {
       const { studentId, moduleId, score, timeSpent, passed } = attempt;
 
       // 1. Atualizar sistema de pontuação unificado
-      await unifiedScoringService.updateScore(studentId, {
+      await unifiedScoringService.updateExerciseScore(
+        studentId,
         moduleId,
-        exerciseId: 'randomized-quiz',
+        'randomized-quiz',
         score,
-        maxScore: 10,
-        timeSpent,
-        completed: passed
-      });
+        10
+      );
 
       // 2. Se passou, marcar módulo como completo
       if (passed) {
@@ -231,6 +233,11 @@ export class RandomizedQuizService {
     attempt: QuizAttempt
   ): Promise<void> {
     try {
+      // Buscar a melhor tentativa para registrar sempre a maior pontuação
+      const bestAttempt = await this.getBestAttempt(studentId, moduleId);
+      const scoreToUse = bestAttempt ? Math.max(bestAttempt.score, attempt.score) : attempt.score;
+      const percentageToUse = bestAttempt ? Math.max(bestAttempt.percentage, attempt.percentage) : attempt.percentage;
+      
       // Atualizar progresso do módulo
       const progressRef = doc(db, 'user_progress', studentId);
       const progressDoc = await getDoc(progressRef);
@@ -239,13 +246,21 @@ export class RandomizedQuizService {
         const currentProgress = progressDoc.data();
         const gameProgress = currentProgress.gameProgress || {};
         
-        // Marcar módulo como completo
+        // Manter a melhor pontuação existente se for maior que a atual
+        const existingModule = gameProgress[moduleId];
+        const bestScore = existingModule?.score ? Math.max(existingModule.score, scoreToUse) : scoreToUse;
+        const bestPercentage = existingModule?.percentage ? Math.max(existingModule.percentage, percentageToUse) : percentageToUse;
+        
+        // Marcar módulo como completo com a melhor pontuação
         gameProgress[moduleId] = {
           ...gameProgress[moduleId],
           completed: true,
-          score: attempt.score,
-          completedAt: Timestamp.now(),
-          attempts: attempt.attemptNumber
+          score: bestScore,
+          percentage: bestPercentage,
+          completedAt: existingModule?.completedAt || Timestamp.now(), // Manter primeira conclusão
+          lastAttemptAt: Timestamp.now(), // Sempre atualizar última tentativa
+          attempts: attempt.attemptNumber,
+          totalAttempts: (existingModule?.totalAttempts || 0) + 1
         };
 
         await updateDoc(progressRef, {
@@ -253,7 +268,7 @@ export class RandomizedQuizService {
           lastActivity: Timestamp.now()
         });
 
-        console.log(`Módulo ${moduleId} marcado como completo para estudante ${studentId}`);
+        console.log(`Módulo ${moduleId} atualizado para estudante ${studentId} - Melhor score: ${bestScore} (${bestPercentage}%)`);
       }
     } catch (error) {
       console.error('Erro ao marcar módulo como completo:', error);
@@ -481,6 +496,40 @@ export class RandomizedQuizService {
       console.log(`Limpando sessão do quiz ${quizId}`);
     } catch (error) {
       console.error('Erro ao limpar sessão:', error);
+    }
+  }
+
+  /**
+   * Obtém melhor tentativa do estudante (maior pontuação)
+   */
+  private static async getBestAttempt(
+    studentId: string, 
+    moduleId: string
+  ): Promise<QuizAttempt | null> {
+    try {
+      const attemptsQuery = query(
+        collection(db, this.COLLECTION_ATTEMPTS),
+        where('studentId', '==', studentId),
+        where('moduleId', '==', moduleId),
+        orderBy('percentage', 'desc'), // Ordenar por percentual decrescente
+        limit(1)
+      );
+
+      const attemptsSnapshot = await getDocs(attemptsQuery);
+      
+      if (attemptsSnapshot.empty) {
+        return null;
+      }
+
+      const attemptData = attemptsSnapshot.docs[0].data();
+      return {
+        ...attemptData,
+        startedAt: attemptData.startedAt.toDate(),
+        completedAt: attemptData.completedAt?.toDate()
+      } as QuizAttempt;
+    } catch (error) {
+      console.error('Erro ao obter melhor tentativa:', error);
+      return null;
     }
   }
 

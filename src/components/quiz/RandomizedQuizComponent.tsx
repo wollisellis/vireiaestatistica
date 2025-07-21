@@ -68,6 +68,7 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
   const [error, setError] = useState<string | null>(null);
   const [showExplanations, setShowExplanations] = useState(false);
   const [previousAttempt, setPreviousAttempt] = useState<QuizAttempt | null>(null);
+  const [bestAttempt, setBestAttempt] = useState<QuizAttempt | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Timer para contabilizar tempo
@@ -107,9 +108,12 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
         throw new Error(canAttempt.reason || 'Não é possível fazer nova tentativa');
       }
 
-      // Armazenar tentativa anterior se existir
+      // Armazenar tentativa anterior e melhor tentativa se existirem
       if (canAttempt.lastAttempt) {
         setPreviousAttempt(canAttempt.lastAttempt);
+      }
+      if (canAttempt.bestAttempt) {
+        setBestAttempt(canAttempt.bestAttempt);
       }
 
       // Gerar novo quiz
@@ -562,30 +566,34 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
         </div>
       )}
       {/* Progresso Anterior */}
-      {previousAttempt && (
-        <Card className={`border-l-4 ${previousAttempt.passed ? 'border-l-green-500 bg-green-50' : 'border-l-orange-500 bg-orange-50'}`}>
+      {(bestAttempt || previousAttempt) && (
+        <Card className={`border-l-4 ${(bestAttempt?.passed || previousAttempt?.passed) ? 'border-l-green-500 bg-green-50' : 'border-l-orange-500 bg-orange-50'}`}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                {previousAttempt.passed ? (
+                {(bestAttempt?.passed || previousAttempt?.passed) ? (
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 ) : (
                   <Target className="h-6 w-6 text-orange-600" />
                 )}
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {previousAttempt.passed ? '🎉 Parabéns! Módulo Concluído' : 'Tentativa Anterior'}
+                    {(bestAttempt?.passed || previousAttempt?.passed) ? '🎉 Parabéns! Módulo Concluído' : 'Tentativa Anterior'}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    {previousAttempt.passed 
+                    {(bestAttempt?.passed || previousAttempt?.passed)
                       ? `Excelente trabalho! Você dominou este módulo. Que tal tentar superar sua pontuação atual?`
-                      : `Última tentativa: ${previousAttempt.percentage}% - Continue tentando!`
+                      : previousAttempt 
+                        ? `Última tentativa: ${previousAttempt.percentage}% - Continue tentando!`
+                        : 'Continue tentando!'
                     }
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">{previousAttempt.percentage}%</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {bestAttempt ? bestAttempt.percentage : (previousAttempt?.percentage || 0)}%
+                </div>
                 <div className="text-sm text-gray-600">Melhor nota</div>
               </div>
             </div>
