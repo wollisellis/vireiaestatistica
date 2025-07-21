@@ -3,20 +3,22 @@ import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'info'
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'success' | 'warning' | 'info'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   children: React.ReactNode
 }
 
+// Variantes atualizadas usando design tokens consistentes
 const buttonVariants = {
-  default: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg',
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg',
-  secondary: 'bg-gray-600 hover:bg-gray-700 text-white shadow-lg',
-  outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white',
-  ghost: 'text-blue-600 hover:bg-blue-50',
-  destructive: 'bg-red-600 hover:bg-red-700 text-white shadow-lg',
-  info: 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg',
+  primary: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md hover:shadow-lg',
+  secondary: 'bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white shadow-md hover:shadow-lg', 
+  outline: 'border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white bg-white',
+  ghost: 'text-emerald-600 hover:bg-emerald-50 active:bg-emerald-100 bg-transparent',
+  destructive: 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white shadow-md hover:shadow-lg',
+  success: 'bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white shadow-md hover:shadow-lg',
+  warning: 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white shadow-md hover:shadow-lg',
+  info: 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white shadow-md hover:shadow-lg',
 }
 
 const sizeVariants = {
@@ -26,7 +28,7 @@ const sizeVariants = {
 }
 
 export function Button({
-  variant = 'default',
+  variant = 'primary',
   size = 'md',
   loading = false,
   className,
@@ -40,7 +42,7 @@ export function Button({
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
         buttonVariants[variant],
         sizeVariants[size],
         className
