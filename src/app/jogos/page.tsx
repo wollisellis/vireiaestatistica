@@ -32,7 +32,9 @@ import {
   ChevronDown,
   X,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Star,
+  Calendar
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -60,6 +62,53 @@ const getDifficultyLevel = (estimatedTime: number) => {
   if (estimatedTime <= 120) return 'Médio';
   if (estimatedTime <= 150) return 'Difícil';
   return 'Muito Difícil';
+};
+
+// Sistema de classificação por estrelas
+const getPerformanceRating = (score: number) => {
+  if (score >= 90) return { stars: 5, label: 'Excelente', color: 'text-yellow-500', bgColor: 'bg-yellow-50' };
+  if (score >= 80) return { stars: 4, label: 'Muito Bom', color: 'text-yellow-500', bgColor: 'bg-yellow-50' };
+  if (score >= 70) return { stars: 3, label: 'Bom', color: 'text-blue-500', bgColor: 'bg-blue-50' };
+  if (score >= 60) return { stars: 2, label: 'Regular', color: 'text-orange-500', bgColor: 'bg-orange-50' };
+  if (score >= 50) return { stars: 1, label: 'Fraco', color: 'text-red-500', bgColor: 'bg-red-50' };
+  return { stars: 0, label: 'Muito Fraco', color: 'text-gray-500', bgColor: 'bg-gray-50' };
+};
+
+// Função para calcular tempo decorrido
+const getTimeAgo = (lastActivity: Date | undefined) => {
+  if (!lastActivity) return 'Nunca tentado';
+  
+  const now = new Date();
+  const diff = now.getTime() - lastActivity.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor(diff / (1000 * 60));
+  
+  if (days > 0) return `Há ${days} dia${days === 1 ? '' : 's'}`;
+  if (hours > 0) return `Há ${hours} hora${hours === 1 ? '' : 's'}`;
+  if (minutes > 0) return `Há ${minutes} minuto${minutes === 1 ? '' : 's'}`;
+  return 'Agora há pouco';
+};
+
+// Componente de estrelas
+const StarRating = ({ rating }: { rating: { stars: number, label: string, color: string, bgColor: string } }) => {
+  return (
+    <div className="flex items-center space-x-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`w-4 h-4 ${
+            star <= rating.stars 
+              ? `${rating.color} fill-current` 
+              : 'text-gray-300'
+          }`}
+        />
+      ))}
+      <span className={`text-sm font-medium ml-2 ${rating.color}`}>
+        {rating.label}
+      </span>
+    </div>
+  );
 };
 
 // Mapear cores baseadas no order
@@ -612,237 +661,157 @@ export default function JogosPage() {
                     transition={{ duration: 0.6, delay: 0.1 * index }}
                     className="group"
                   >
-                    <Card className={`h-full transition-all duration-500 border-2 transform hover:scale-[1.02] ${
+                    {/* Card Limpo e Focado */}
+                    <Card className={`h-full transition-all duration-300 border-2 hover:shadow-lg ${
                       game.isLocked
                         ? 'opacity-75 bg-gray-50 border-gray-200 cursor-not-allowed'
                         : game.moduleStatus === 'completed'
-                        ? 'hover:shadow-2xl border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-green-100'
+                        ? 'border-green-300 bg-gradient-to-br from-green-50 to-emerald-50'
                         : game.moduleStatus === 'attempted_failed'
-                        ? 'hover:shadow-2xl border-orange-300 bg-gradient-to-br from-orange-50 to-yellow-50 shadow-orange-100'
-                        : 'hover:shadow-2xl hover:border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-blue-100'
+                        ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-yellow-50'
+                        : 'border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50'
                     }`}>
                       <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className={`p-3 rounded-lg transition-all duration-300 ${
-                            game.isLocked ? 'bg-gray-400' : game.color
-                          } text-white relative group-hover:scale-110`}>
-                            {game.isLocked && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="absolute -top-1 -right-1"
-                              >
-                                <Lock className="w-3 h-3 bg-gray-600 rounded-full p-0.5" />
-                              </motion.div>
-                            )}
-                            {game.isCompleted && !game.isLocked && (
-                              <motion.div
-                                initial={{ scale: 0, rotate: -180 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                transition={{ type: "spring", bounce: 0.5 }}
-                                className="absolute -top-1 -right-1"
-                              >
-                                <CheckCircle className="w-4 h-4 bg-green-600 text-white rounded-full" />
-                              </motion.div>
-                            )}
-                            {game.icon}
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm font-medium text-gray-500">Módulo {game.id.split('-')[1]}</span>
-                            <div className="flex items-center text-sm text-gray-500 mt-1">
-                              <Clock className="w-4 h-4 mr-1" />
-                              {game.estimatedTime}
+                        {/* Header Principal - Mais Limpo */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className={`p-3 rounded-lg ${game.isLocked ? 'bg-gray-400' : game.color} text-white relative`}>
+                              {game.isLocked && <Lock className="w-6 h-6" />}
+                              {!game.isLocked && game.icon}
                             </div>
-                            {!game.isLocked && !game.isCompleted && (
-                              <div className="flex items-center text-sm text-gray-500 mt-1">
-                                <Award className="w-4 h-4 mr-1 text-yellow-500" />
-                                <span className="font-medium">0-100 pts disponíveis</span>
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-900">Módulo {game.id.split('-')[1]}</h3>
+                              <div className="flex items-center text-sm text-gray-500 space-x-2">
+                                <Clock className="w-4 h-4" />
+                                <span>{game.estimatedTime}</span>
+                                {!game.isLocked && (
+                                  <>
+                                    <span>•</span>
+                                    <span>7 questões</span>
+                                  </>
+                                )}
                               </div>
-                            )}
-                            {game.isCompleted && (
-                              <div className="flex items-center text-xs text-green-600 mt-1 font-medium">
-                                <Trophy className="w-3 h-3 mr-1" />
-                                {game.bestScore || 0} pts
-                              </div>
-                            )}
+                            </div>
                           </div>
-                        </div>
-
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className={`text-xl font-bold ${
-                            game.isLocked ? 'text-gray-500' : 'text-gray-900'
-                          }`}>{game.title}</h3>
                           
-                          {/* Indicador de Status */}
-                          {!game.isLocked && game.moduleStatus === 'completed' && (
-                            <div className="flex items-center px-2 py-1 bg-green-100 border border-green-200 rounded-full">
-                              <Trophy className="w-3 h-3 text-green-600 mr-1" />
-                              <span className="text-xs text-green-700 font-medium">Concluído</span>
-                            </div>
-                          )}
-                          {!game.isLocked && game.moduleStatus === 'attempted_failed' && (
-                            <div className="flex items-center px-2 py-1 bg-orange-100 border border-orange-200 rounded-full">
-                              <Target className="w-3 h-3 text-orange-600 mr-1" />
-                              <span className="text-xs text-orange-700 font-medium">Em Progresso</span>
+                          {/* Status Final com Nota */}
+                          {!game.isLocked && game.hasAttempted && (
+                            <div className="text-right">
+                              <div className="text-xl font-bold text-gray-900">
+                                Status final: {game.bestScore || 0}%
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {getTimeAgo(game.progress?.lastActivity)} | 15 min gasto
+                              </div>
                             </div>
                           )}
                         </div>
-                        
-                        <p className={`text-sm leading-relaxed ${
-                          game.isLocked ? 'text-gray-500' : 'text-gray-600'
-                        }`}>{game.description}</p>
 
+                        {/* Título do Módulo */}
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">{game.title}</h4>
+                        
+                        {/* Status e Avaliação por Estrelas */}
+                        {!game.isLocked && (
+                          <div className="mb-4">
+                            {game.moduleStatus === 'completed' && (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-green-700">Módulo Concluído</span>
+                                  <StarRating rating={getPerformanceRating(game.bestScore || 0)} />
+                                </div>
+                              </div>
+                            )}
+                            {game.moduleStatus === 'attempted_failed' && (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-orange-700">Em Progresso</span>
+                                  <StarRating rating={getPerformanceRating(game.bestScore || 0)} />
+                                </div>
+                              </div>
+                            )}
+                            {game.moduleStatus === 'never_attempted' && (
+                              <div className="text-center p-3 bg-blue-50 rounded-md">
+                                <div className="flex items-center justify-center text-blue-700 text-sm">
+                                  <Trophy className="w-4 h-4 mr-2" />
+                                  <span>🏅 Conquista disponível: "Fundamentos Dominados"</span>
+                                </div>
+                                <div className="text-xs text-blue-600 mt-1">
+                                  Meta: 70% para aprovação
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Descrição */}
+                        <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                          {game.description}
+                        </p>
+
+                        {/* Bloqueado */}
                         {game.isLocked && (
-                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md mb-4">
                             <div className="flex items-center text-yellow-800 text-sm">
                               <Lock className="w-4 h-4 mr-2" />
                               {game.lockMessage}
                             </div>
                           </div>
                         )}
-
-                        {/* Badge de Conquista Disponível */}
-                        {!game.isLocked && !game.isCompleted && (
-                          <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-md">
-                            <div className="flex items-center text-purple-800 text-sm">
-                              <Trophy className="w-4 h-4 mr-2 text-purple-600" />
-                              <span className="font-medium">🏅 Conquista disponível: "Fundamentos Dominados"</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Meta de Aprovação */}
-                        {!game.isLocked && (
-                          <div className="mt-3 p-2 bg-blue-50 rounded-md text-center">
-                            <p className="text-xs text-blue-700 font-medium">
-                              <Target className="w-3 h-3 inline mr-1" />
-                              Meta: 70% para aprovação
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between mt-4">
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {game.difficulty}
-                          </span>
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Target className="w-4 h-4 mr-1 text-yellow-500" />
-                            <span>7 questões</span>
-                          </div>
-                        </div>
-
-                        {/* Barra de Progresso Visual */}
-                        {!game.isLocked && (
-                          <motion.div 
-                            initial={{ opacity: 0, scaleX: 0 }}
-                            animate={{ opacity: 1, scaleX: 1 }}
-                            transition={{ delay: 0.3, duration: 0.5 }}
-                            className="mt-4"
-                          >
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                              <span>Progresso</span>
-                              <span>
-                                {game.moduleStatus === 'completed' ? '100%' :
-                                 game.moduleStatus === 'attempted_failed' ? '50%' : '0%'}
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ 
-                                  width: game.moduleStatus === 'completed' ? '100%' :
-                                         game.moduleStatus === 'attempted_failed' ? '50%' : '0%'
-                                }}
-                                transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
-                                className={`h-2 rounded-full transition-colors duration-500 ${
-                                  game.moduleStatus === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                                  game.moduleStatus === 'attempted_failed' ? 'bg-gradient-to-r from-orange-500 to-amber-500' :
-                                  'bg-blue-500'
-                                }`}
-                              />
-                            </div>
-                          </motion.div>
-                        )}
                       </CardHeader>
 
                       <CardContent className="pt-0">
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                              <Target className="w-4 h-4 mr-2 text-blue-500" />
-                              Objetivos de Aprendizado
-                            </h4>
-                            <ul className="space-y-1">
-                              {game.learningObjectives.slice(0, 4).map((objective, idx) => (
-                                <li key={idx} className="text-sm text-gray-600 flex items-start">
-                                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                                  {objective}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div>
-                            <h4 className="font-semibold text-gray-900 mb-2">Tópicos Abordados</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {game.topics.map((topic, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md"
-                                >
-                                  {topic}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-
-
-                          {game.isLocked ? (
-                            <Button
-                              disabled
-                              className="w-full mt-4 bg-gray-300 text-gray-500 cursor-not-allowed transition-all duration-300"
-                              size="lg"
-                            >
-                              <Lock className="w-4 h-4 mr-2" />
-                              Módulo Bloqueado
-                            </Button>
-                          ) : (
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <Button
-                                onClick={() => handleStartQuiz(game)}
-                                className={`w-full mt-4 transition-all duration-300 transform ${
-                                  game.moduleStatus === 'completed'
-                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-200' 
-                                    : game.moduleStatus === 'attempted_failed'
-                                    ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg shadow-orange-200'
-                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-200'
-                                }`}
-                                size="lg"
-                              >
-                                {game.moduleStatus === 'completed' ? (
-                                  <>
-                                    <Trophy className="w-4 h-4 mr-2" />
-                                    Responder Novamente
-                                  </>
-                                ) : game.moduleStatus === 'attempted_failed' ? (
-                                  <>
-                                    <Target className="w-4 h-4 mr-2" />
-                                    Tentar Novamente
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="w-4 h-4 mr-2" />
-                                    Iniciar Quiz
-                                  </>
-                                )}
-                              </Button>
-                            </motion.div>
-                          )}
+                        {/* Objetivos - Condensados */}
+                        <div className="mb-4">
+                          <h4 className="font-medium text-gray-900 mb-2">Objetivos de Aprendizado</h4>
+                          <ul className="space-y-1 text-sm text-gray-600">
+                            {game.learningObjectives.slice(0, 4).map((objective, idx) => (
+                              <li key={idx} className="flex items-start">
+                                <span className="w-1 h-1 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                {objective}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
+
+                        {/* Tópicos - Mais Compactos */}
+                        <div className="mb-6">
+                          <h4 className="font-medium text-gray-900 mb-2">Tópicos Abordados</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {game.topics.map((topic, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                {topic}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Botão de Ação - Simplificado */}
+                        {game.isLocked ? (
+                          <Button disabled className="w-full bg-gray-300 text-gray-500 cursor-not-allowed" size="lg">
+                            <Lock className="w-4 h-4 mr-2" />
+                            Módulo Bloqueado
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => handleStartQuiz(game)}
+                            className={`w-full transition-all duration-300 ${
+                              game.moduleStatus === 'completed'
+                                ? 'bg-green-600 hover:bg-green-700'
+                                : game.moduleStatus === 'attempted_failed'
+                                ? 'bg-orange-600 hover:bg-orange-700'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
+                            size="lg"
+                          >
+                            {game.moduleStatus === 'completed' ? (
+                              <>Tentar Novamente</>
+                            ) : game.moduleStatus === 'attempted_failed' ? (
+                              <>Tentar Novamente</>
+                            ) : (
+                              <>Iniciar Quiz</>
+                            )}
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>
