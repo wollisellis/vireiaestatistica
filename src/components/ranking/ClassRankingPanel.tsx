@@ -79,6 +79,35 @@ export function ClassRankingPanel({
     }
   }, [user?.id, moduleId]);
 
+  // 🚀 CORREÇÃO: Atualização automática do ranking a cada 30 segundos
+  useEffect(() => {
+    if (user?.id && user.role === 'student') {
+      const interval = setInterval(() => {
+        loadClassRankingData();
+      }, 30000); // Atualizar a cada 30 segundos
+
+      return () => clearInterval(interval);
+    }
+  }, [user?.id]);
+
+  // 🚀 CORREÇÃO: Listener para atualização imediata quando módulo for completado
+  useEffect(() => {
+    const handleModuleCompleted = (event: any) => {
+      console.log('📊 Evento moduleCompleted recebido no ranking:', event.detail);
+      // Atualizar ranking imediatamente quando módulo for completado
+      setTimeout(() => {
+        console.log('📊 Atualizando ranking após conclusão do módulo...');
+        loadClassRankingData();
+      }, 3000); // Aguardar 3 segundos para o sistema processar a pontuação
+    };
+
+    window.addEventListener('moduleCompleted', handleModuleCompleted);
+    
+    return () => {
+      window.removeEventListener('moduleCompleted', handleModuleCompleted);
+    };
+  }, []);
+
   const loadClassRankingData = async () => {
     try {
       setLoading(true);
@@ -241,6 +270,16 @@ export function ClassRankingPanel({
               )}
             </div>
           </div>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={loadClassRankingData}
+              className="p-1 text-gray-500 hover:text-blue-600"
+              title="Atualizar ranking"
+            >
+              <TrendingUp className="w-4 h-4" />
+            </Button>
           {compact && (
             <Button
               variant="ghost"

@@ -149,6 +149,10 @@ export default function JogosPage() {
     return false;
   });
 
+  // 🚀 CORREÇÃO: Estado para modal de confirmação de módulo já concluído
+  const [showCompletedModal, setShowCompletedModal] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<any>(null);
+
   const isProfessor = user?.role === 'professor';
 
   // Função para toggle do ranking com localStorage
@@ -366,6 +370,23 @@ export default function JogosPage() {
   });
 
   const stats = calculateOverallStats();
+
+  // 🚀 CORREÇÃO: Função para lidar com o início do quiz com verificação de módulo concluído
+  const handleStartQuiz = (game: any) => {
+    if (game.moduleStatus === 'completed') {
+      setSelectedGame(game);
+      setShowCompletedModal(true);
+    } else {
+      // Redirecionar diretamente para o quiz
+      window.location.href = `/jogos/modulo-1/quiz`;
+    }
+  };
+
+  // 🚀 CORREÇÃO: Função para confirmar início do quiz mesmo com módulo concluído
+  const confirmStartQuiz = () => {
+    setShowCompletedModal(false);
+    window.location.href = `/jogos/modulo-1/quiz`;
+  };
 
   // Show loading state while checking authentication
   if (loading || moduleLoading) {
@@ -767,41 +788,40 @@ export default function JogosPage() {
                               Módulo Bloqueado
                             </Button>
                           ) : (
-                            <Link href={`/jogos/modulo-1/quiz`}>
-                              <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            <motion.div
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                              <Button
+                                onClick={() => handleStartQuiz(game)}
+                                className={`w-full mt-4 transition-all duration-300 transform ${
+                                  game.moduleStatus === 'completed'
+                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-200' 
+                                    : game.moduleStatus === 'attempted_failed'
+                                    ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg shadow-orange-200'
+                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-200'
+                                }`}
+                                size="lg"
                               >
-                                <Button
-                                  className={`w-full mt-4 transition-all duration-300 transform ${
-                                    game.moduleStatus === 'completed'
-                                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-200' 
-                                      : game.moduleStatus === 'attempted_failed'
-                                      ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg shadow-orange-200'
-                                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-200'
-                                  }`}
-                                  size="lg"
-                                >
-                                  {game.moduleStatus === 'completed' ? (
-                                    <>
-                                      <Trophy className="w-4 h-4 mr-2" />
-                                      Responder Novamente
-                                    </>
-                                  ) : game.moduleStatus === 'attempted_failed' ? (
-                                    <>
-                                      <Target className="w-4 h-4 mr-2" />
-                                      Tentar Novamente
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Play className="w-4 h-4 mr-2" />
-                                      Iniciar Quiz
-                                    </>
-                                  )}
-                                </Button>
-                              </motion.div>
-                            </Link>
+                                {game.moduleStatus === 'completed' ? (
+                                  <>
+                                    <Trophy className="w-4 h-4 mr-2" />
+                                    Responder Novamente
+                                  </>
+                                ) : game.moduleStatus === 'attempted_failed' ? (
+                                  <>
+                                    <Target className="w-4 h-4 mr-2" />
+                                    Tentar Novamente
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-4 h-4 mr-2" />
+                                    Iniciar Quiz
+                                  </>
+                                )}
+                              </Button>
+                            </motion.div>
                           )}
                         </div>
                       </CardContent>
@@ -1025,6 +1045,66 @@ export default function JogosPage() {
           {/* Footer */}
           <Footer />
         </div>
+
+        {/* 🚀 CORREÇÃO: Modal de confirmação para módulo já concluído */}
+        <AnimatePresence>
+          {showCompletedModal && selectedGame && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+              onClick={() => setShowCompletedModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trophy className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Módulo Já Concluído!
+                  </h3>
+                  <p className="text-gray-600">
+                    Você já concluiu este módulo com nota <span className="font-semibold text-green-600">{selectedGame.bestScore}%</span>.
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start">
+                    <Target className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium mb-1">Você pode tentar novamente!</p>
+                      <p>Sua maior nota será sempre mantida no sistema. Tente melhorar seu desempenho!</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCompletedModal(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={confirmStartQuiz}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Tentar Novamente
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </StudentProgressProvider>

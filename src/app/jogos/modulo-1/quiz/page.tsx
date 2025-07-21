@@ -7,7 +7,8 @@ import { RandomizedQuizComponent } from '@/components/quiz/RandomizedQuizCompone
 import { QuizAttempt } from '@/types/randomizedQuiz';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { BookOpen, Target, Clock, Trophy } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { BookOpen, Target, Clock, Trophy, X, ArrowLeft } from 'lucide-react';
 
 // Disable static generation for this page since it requires authentication
 export const dynamic = 'force-dynamic';
@@ -18,23 +19,54 @@ export default function Module1QuizPage() {
   const handleQuizComplete = (attempt: QuizAttempt) => {
     console.log('Quiz concluído:', attempt);
     
-    // Se passou, pode redirecionar para o próximo módulo ou jogos
+    // 🚀 CORREÇÃO: Forçar atualização do ranking quando módulo for completado
     if (attempt.passed) {
-      // Opcional: mostrar modal de parabéns antes de redirecionar
-      setTimeout(() => {
-        router.push('/jogos');
-      }, 3000);
+      // Disparar evento customizado para atualizar o ranking
+      window.dispatchEvent(new CustomEvent('moduleCompleted', { 
+        detail: { moduleId: 'module-1', score: attempt.score } 
+      }));
     }
+    
+    // 🚀 CORREÇÃO: Aumentar tempo de redirecionamento para dar tempo de ler o feedback
+    // Redirecionar após 10 segundos para dar tempo de ler o resultado
+    setTimeout(() => {
+      router.push('/jogos');
+    }, 10000);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* 🚀 CORREÇÃO: Botão de sair no canto superior direito */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button
+          onClick={() => router.push('/jogos')}
+          variant="outline"
+          size="sm"
+          className="bg-white shadow-lg border-gray-300 hover:bg-gray-50"
+          title="Voltar aos jogos"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Sair
+        </Button>
+      </div>
+
       <div className="max-w-6xl mx-auto px-4">
         {/* Header da Página */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Módulo 1: Introdução à Avaliação Nutricional
-          </h1>
+          <div className="flex items-center justify-center mb-4">
+            <Button
+              onClick={() => router.push('/jogos')}
+              variant="ghost"
+              size="sm"
+              className="mr-4 text-blue-600 hover:text-blue-700"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Voltar
+            </Button>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Módulo 1: Introdução à Avaliação Nutricional
+            </h1>
+          </div>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             Complete o quiz com questões aleatórias para demonstrar seu conhecimento sobre os conceitos fundamentais da avaliação nutricional.
           </p>
