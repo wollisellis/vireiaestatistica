@@ -349,295 +349,233 @@ export default function ProfessorDashboardPage() {
                         <BookOpen className="w-8 h-8 text-emerald-600" />
                         <div>
                           <h2 className="text-xl font-bold text-emerald-900">
-                            Módulos Implementados
+                            Status Real dos Módulos
                           </h2>
                           <p className="text-emerald-700">
-                            Gerencie o módulo disponível na plataforma bioestat-platform
+                            Veja exatamente o que está disponível para os estudantes em <strong>/jogos</strong>
                           </p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Lista de módulos - Apenas Módulo 1 */}
-                  {moduleLoading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
-                      <p className="text-emerald-700 mt-2">Carregando configurações do módulo...</p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-6">
-                      {/* Card principal do Módulo 1 */}
-                      {(() => {
-                        const module = modules.find(m => m.id === 'module-1')
-                        if (!module) return null
-                        
-                        const isUnlocked = unlockedModules.includes(module.id)
-                        return (
-                          <Card key={module.id} className="hover:shadow-lg transition-shadow border-2 border-emerald-200">
-                            <CardContent className="p-8">
-                              <div className="flex items-start space-x-6">
-                                <div className={`
-                                  p-4 rounded-xl flex-shrink-0 shadow-md
-                                  ${!isUnlocked ? 'bg-gray-100 text-gray-400' : 'bg-emerald-100 text-emerald-600'}
-                                `}>
-                                  {!isUnlocked ? 
-                                    <Lock className="w-8 h-8" /> : 
-                                    getModuleIcon(module.icon)
-                                  }
+                  {/* Card de Realidade vs Expectativa */}
+                  <Card className="border-l-4 border-blue-500 bg-blue-50">
+                    <CardContent className="p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                          <Target className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-blue-900 mb-2">
+                            📊 Situação Atual da Plataforma
+                          </h3>
+                          <div className="text-blue-800 text-sm space-y-2">
+                            <p><strong>✅ IMPLEMENTADO E FUNCIONAL:</strong> Apenas 1 módulo (Módulo 1)</p>
+                            <p><strong>🔒 ESTRUTURA PLANEJADA:</strong> Módulos 2, 3 e 4 existem apenas como plano/estrutura</p>
+                            <p><strong>👨‍🎓 O que os estudantes veem:</strong> Página /jogos mostra apenas o Módulo 1 ativo</p>
+                            <p><strong>👨‍🏫 O que professores veem:</strong> Estrutura completa com controles de acesso</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* MÓDULO FUNCIONAL - O que realmente existe */}
+                  <div className="grid gap-6">
+                    {/* Card do Módulo 1 - O ÚNICO FUNCIONAL */}
+                    {(() => {
+                      const module = modules.find(m => m.id === 'module-1')
+                      if (!module) return null
+                      
+                      const isUnlocked = unlockedModules.includes(module.id)
+                      return (
+                        <Card key={module.id} className="border-2 border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50">
+                          <CardContent className="p-8">
+                            <div className="flex items-start space-x-6">
+                              <div className="p-4 rounded-xl flex-shrink-0 shadow-md bg-emerald-100 text-emerald-600">
+                                {getModuleIcon(module.icon)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-3 mb-3">
+                                  <h3 className="text-2xl font-bold text-emerald-900 leading-tight">
+                                    {module.title}
+                                  </h3>
+                                  <Badge variant="default" className="bg-emerald-600 text-white">
+                                    ✅ FUNCIONAL
+                                  </Badge>
+                                  <Badge variant="outline" className="border-emerald-400 text-emerald-700">
+                                    Disponível em /jogos
+                                  </Badge>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-3 mb-3">
-                                    <h3 className="text-xl font-bold text-gray-900 leading-tight">
-                                      {module.title}
-                                    </h3>
-                                    {isUnlocked && (
-                                      <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                                    )}
+                                <p className="text-emerald-800 text-lg mb-6 leading-relaxed font-medium">
+                                  {module.description}
+                                </p>
+                                
+                                {/* Status real de funcionamento */}
+                                <div className="mb-6 p-4 bg-emerald-100 rounded-lg border border-emerald-300">
+                                  <h4 className="font-semibold text-emerald-900 mb-2">🎯 Status Real de Funcionamento:</h4>
+                                  <div className="space-y-2 text-emerald-800 text-sm">
+                                    <p>✅ <strong>Quiz implementado:</strong> 14 questões → 7 sorteadas aleatoriamente</p>
+                                    <p>✅ <strong>Sistema de pontuação:</strong> Integrado com unifiedScoringService</p>
+                                    <p>✅ <strong>Progresso do estudante:</strong> Salvo no Firebase</p>
+                                    <p>✅ <strong>Banco de questões:</strong> module1QuestionBank.ts com dados reais SISVAN</p>
+                                    <p>✅ <strong>Rota ativa:</strong> /jogos/modulo-1/quiz</p>
                                   </div>
-                                  <p className="text-gray-700 text-base mb-4 leading-relaxed">
-                                    {module.description}
-                                  </p>
-                                  
-                                  {/* Estatísticas detalhadas */}
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                                    <div className="text-center">
-                                      <div className="text-2xl font-bold text-emerald-600">
-                                        {module.estimatedTime}
-                                      </div>
-                                      <div className="text-sm text-gray-600">Minutos</div>
-                                    </div>
-                                    <div className="text-center">
-                                      <div className="text-2xl font-bold text-emerald-600">
-                                        {module.content.length}
-                                      </div>
-                                      <div className="text-sm text-gray-600">Conteúdos</div>
-                                    </div>
-                                    <div className="text-center">
-                                      <div className="text-2xl font-bold text-emerald-600">
-                                        {module.exercises.length}
-                                      </div>
-                                      <div className="text-sm text-gray-600">Exercícios</div>
-                                    </div>
-                                    <div className="text-center">
-                                      <div className="text-2xl font-bold text-emerald-600">
-                                        {module.exercises.reduce((total, ex) => total + ex.points, 0)}
-                                      </div>
-                                      <div className="text-sm text-gray-600">Pontos</div>
-                                    </div>
+                                </div>
+                                
+                                {/* Estatísticas reais */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-white rounded-lg border border-emerald-200">
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-emerald-600">14</div>
+                                    <div className="text-sm text-gray-600">Questões no Banco</div>
                                   </div>
-                                  
-                                  {/* Detalhes dos exercícios */}
-                                  <div className="mb-6">
-                                    <h4 className="font-semibold text-gray-900 mb-3">Exercícios do Módulo:</h4>
-                                    <div className="space-y-2">
-                                      {module.exercises.map((exercise, index) => (
-                                        <div key={exercise.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                                          <div className="flex items-center space-x-3">
-                                            <Badge variant="outline" className="text-xs">
-                                              {exercise.difficulty === 'easy' ? 'Fácil' : exercise.difficulty === 'medium' ? 'Médio' : 'Difícil'}
-                                            </Badge>
-                                            <span className="font-medium text-gray-900">{exercise.title}</span>
-                                          </div>
-                                          <div className="flex items-center space-x-2">
-                                            <span className="text-sm text-gray-600">{exercise.points} pts</span>
-                                            <Play className="w-4 h-4 text-emerald-600" />
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-emerald-600">7</div>
+                                    <div className="text-sm text-gray-600">Por Quiz</div>
                                   </div>
-                                  
-                                  {/* Status e controle de acesso */}
-                                  <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
-                                    <div className="flex items-center space-x-2">
-                                      <Badge 
-                                        variant={!isUnlocked ? "secondary" : "default"}
-                                        className={`px-3 py-1 ${isUnlocked ? 'bg-emerald-600 text-white' : ''}`}
-                                      >
-                                        {!isUnlocked ? 'Bloqueado' : 'Disponível para Estudantes'}
-                                      </Badge>
-                                      {isUnlocked && (
-                                        <span className="text-sm text-emerald-700">✓ Módulo ativo na plataforma</span>
-                                      )}
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant={isUnlocked ? "destructive" : "primary"}
-                                      onClick={() => toggleModuleAccess(module.id)}
-                                      className="min-w-[140px]"
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-emerald-600">{module.estimatedTime}</div>
+                                    <div className="text-sm text-gray-600">Min. Estimados</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-emerald-600">100%</div>
+                                    <div className="text-sm text-gray-600">Implementado</div>
+                                  </div>
+                                </div>
+                                
+                                {/* Controle de acesso simplificado */}
+                                <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-emerald-200">
+                                  <div className="flex items-center space-x-3">
+                                    <Badge 
+                                      variant="default"
+                                      className="bg-emerald-600 text-white px-3 py-1"
                                     >
-                                      {isUnlocked ? (
-                                        <>
-                                          <Lock className="w-4 h-4 mr-2" />
-                                          Bloquear Módulo
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCircle className="w-4 h-4 mr-2" />
-                                          Ativar Módulo
-                                        </>
-                                      )}
-                                    </Button>
+                                      {isUnlocked ? '🟢 ATIVO para Estudantes' : '🔴 BLOQUEADO'}
+                                    </Badge>
+                                    <span className="text-sm text-emerald-700">
+                                      {isUnlocked ? 'Visível na página /jogos' : 'Não aparece em /jogos'}
+                                    </span>
                                   </div>
+                                  <Button
+                                    size="sm"
+                                    variant={isUnlocked ? "destructive" : "default"}
+                                    onClick={() => toggleModuleAccess(module.id)}
+                                    className={`min-w-[140px] ${!isUnlocked ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                                  >
+                                    {isUnlocked ? (
+                                      <>
+                                        <Lock className="w-4 h-4 mr-2" />
+                                        Desativar
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Play className="w-4 h-4 mr-2" />
+                                        Ativar
+                                      </>
+                                    )}
+                                  </Button>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
-                        )
-                      })()}
-                      
-                      {/* Informações sobre desenvolvimento */}
-                      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                        <CardContent className="p-6">
-                          <div className="flex items-start space-x-4">
-                            <div className="p-3 bg-blue-100 rounded-lg flex-shrink-0">
-                              <Target className="w-6 h-6 text-blue-600" />
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-blue-900 mb-2">
-                                Módulos em Desenvolvimento
-                              </h3>
-                              <p className="text-blue-700 text-sm mb-3">
-                                Módulos 2, 3 e 4 estão sendo desenvolvidos e estarão disponíveis em breve:
+                          </CardContent>
+                        </Card>
+                      )
+                    })()}
+
+                    {/* Outros módulos - STATUS PLANEJADO */}
+                    <Card className="border-2 border-gray-300 bg-gray-50">
+                      <CardContent className="p-6">
+                        <div className="flex items-start space-x-4">
+                          <div className="p-3 bg-gray-200 rounded-lg flex-shrink-0">
+                            <Lock className="w-6 h-6 text-gray-500" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-800 mb-2">
+                              📋 Módulos 2, 3 e 4 - Estrutura Planejada
+                            </h3>
+                            <p className="text-gray-600 text-sm mb-4">
+                              Existem apenas como estrutura de dados em <code>modules.ts</code> - não há implementação funcional.
+                            </p>
+                            
+                            <div className="space-y-3">
+                              {modules.filter(m => m.id !== 'module-1').map(module => (
+                                <div key={module.id} className="p-3 bg-white rounded border border-gray-200">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <h4 className="font-medium text-gray-800">{module.title}</h4>
+                                      <p className="text-sm text-gray-600">{module.description}</p>
+                                    </div>
+                                    <Badge variant="secondary" className="bg-gray-200 text-gray-600">
+                                      🔒 APENAS ESTRUTURA
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+                              <p className="text-yellow-800 text-sm">
+                                <strong>⚠️ Nota:</strong> Estes módulos não aparecem em <strong>/jogos</strong> pois são filtrados programaticamente. 
+                                Para implementá-los, seria necessário criar os bancos de questões, rotas e componentes correspondentes.
                               </p>
-                              <ul className="text-blue-700 text-sm space-y-1 list-disc list-inside">
-                                <li><strong>Módulo 2:</strong> Métodos de Avaliação da Composição Corporal</li>
-                                <li><strong>Módulo 3:</strong> Avaliação Bioquímica e Clínica</li>
-                                <li><strong>Módulo 4:</strong> Interpretação Integrada e Diagnóstico</li>
-                              </ul>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                  </div>
 
-                  {/* Estatísticas do módulo implementado */}
+                  {/* Resumo Final Realista */}
                   <Card className="bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200">
                     <CardContent className="p-6">
                       <h3 className="text-lg font-semibold text-emerald-900 mb-4">
-                        Resumo do Módulo Implementado
+                        📊 Status Real da Plataforma bioestat-platform
                       </h3>
-                      {(() => {
-                        const module1 = modules.find(m => m.id === 'module-1')
-                        if (!module1) return null
-                        
-                        return (
-                          <>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-emerald-600">1</div>
-                                <div className="text-sm text-emerald-700">Módulo Ativo</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-emerald-600">
-                                  {module1.content.length}
-                                </div>
-                                <div className="text-sm text-emerald-700">Conteúdos</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-emerald-600">
-                                  {module1.exercises.length}
-                                </div>
-                                <div className="text-sm text-emerald-700">Exercícios</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-emerald-600">
-                                  {module1.exercises.reduce((total, ex) => total + ex.points, 0)}
-                                </div>
-                                <div className="text-sm text-emerald-700">Pontos Totais</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-emerald-600">
-                                  {module1.estimatedTime}
-                                </div>
-                                <div className="text-sm text-emerald-700">Min. de Estudo</div>
-                              </div>
-                            </div>
-                            
-                            {/* Detalhes sobre conteúdo */}
-                            <div className="bg-white p-4 rounded-lg border border-emerald-200 mb-4">
-                              <h4 className="font-semibold text-gray-900 mb-3">Conteúdo Educacional:</h4>
-                              <div className="grid md:grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="font-medium text-emerald-700">Tópicos Teóricos:</span>
-                                  <ul className="mt-1 text-gray-600 space-y-1">
-                                    <li>• Fundamentos da avaliação nutricional</li>
-                                    <li>• Componentes principais da avaliação</li>
-                                    <li>• Avaliação individual vs populacional</li>
-                                  </ul>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-emerald-700">Exercícios Práticos:</span>
-                                  <ul className="mt-1 text-gray-600 space-y-1">
-                                    <li>• Quiz com conceitos fundamentais</li>
-                                    <li>• Análise de dados brasileiros (POF/SISVAN)</li>
-                                    <li>• Classificação de componentes</li>
-                                    <li>• Caso clínico introdutório</li>
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Controle de acesso */}
-                            <div className="pt-4 border-t border-emerald-200">
-                              <h4 className="text-md font-medium text-emerald-900 mb-3">Controle de Acesso</h4>
-                              <div className="flex gap-3 flex-wrap">
-                                <Button
-                                  size="sm"
-                                  onClick={async () => {
-                                    if (!db) return
-                                    try {
-                                      await setDoc(doc(db, 'settings', 'modules'), {
-                                        unlocked: ['module-1'],
-                                        lastUpdated: new Date(),
-                                        lastUpdatedBy: user?.id || 'unknown'
-                                      }, { merge: true })
-                                      console.log('Módulo 1 ativado para estudantes')
-                                    } catch (error) {
-                                      console.error('Erro ao ativar módulo:', error)
-                                    }
-                                  }}
-                                  className="bg-emerald-600 hover:bg-emerald-700"
-                                  disabled={unlockedModules.includes('module-1')}
-                                >
-                                  <CheckCircle className="w-4 h-4 mr-2" />
-                                  {unlockedModules.includes('module-1') ? 'Módulo Ativo' : 'Ativar Módulo'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={async () => {
-                                    if (!db) return
-                                    try {
-                                      await setDoc(doc(db, 'settings', 'modules'), {
-                                        unlocked: [],
-                                        lastUpdated: new Date(),
-                                        lastUpdatedBy: user?.id || 'unknown'
-                                      }, { merge: true })
-                                      console.log('Módulo 1 bloqueado temporariamente')
-                                    } catch (error) {
-                                      console.error('Erro ao bloquear módulo:', error)
-                                    }
-                                  }}
-                                  className="border-red-200 text-red-700 hover:bg-red-50"
-                                  disabled={!unlockedModules.includes('module-1')}
-                                >
-                                  <Lock className="w-4 h-4 mr-2" />
-                                  {!unlockedModules.includes('module-1') ? 'Módulo Bloqueado' : 'Bloquear Temporariamente'}
-                                </Button>
-                              </div>
-                              <p className="text-xs text-gray-600 mt-2">
-                                {unlockedModules.includes('module-1') ? 
-                                  '✓ Estudantes podem acessar este módulo e realizar os exercícios' :
-                                  '⚠️ Módulo não disponível para estudantes'
-                                }
-                              </p>
-                            </div>
-                          </>
-                        )
-                      })()}
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-emerald-600">1</div>
+                          <div className="text-sm text-emerald-700">Módulo Funcional</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-emerald-600">14</div>
+                          <div className="text-sm text-emerald-700">Questões Reais</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-emerald-600">100%</div>
+                          <div className="text-sm text-emerald-700">Implementação</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-emerald-600">1</div>
+                          <div className="text-sm text-emerald-700">Quiz Ativo</div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                        <h4 className="font-semibold text-gray-900 mb-3">🎯 O que funciona de verdade:</h4>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium text-emerald-700">✅ Implementado e Testado:</span>
+                            <ul className="mt-1 text-gray-600 space-y-1">
+                              <li>• Quiz randomizado funcional</li>
+                              <li>• Sistema de pontuação integrado</li>
+                              <li>• Dados reais do SISVAN/POF</li>
+                              <li>• Progresso salvo no Firebase</li>
+                            </ul>
+                          </div>
+                          <div>
+                            <span className="font-medium text-emerald-700">🔒 Ainda não implementado:</span>
+                            <ul className="mt-1 text-gray-600 space-y-1">
+                              <li>• Módulos 2, 3 e 4 (apenas estrutura)</li>
+                              <li>• Conteúdo interativo avançado</li>
+                              <li>• Exercícios drag-drop</li>
+                              <li>• Casos clínicos complexos</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>

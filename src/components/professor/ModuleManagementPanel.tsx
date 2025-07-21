@@ -183,26 +183,67 @@ export function ModuleManagementPanel({ classId, className = '' }: ModuleManagem
         </CardContent>
       </Card>
 
-      {/* Lista de módulos */}
-      <div className="space-y-4">
-        {modules.map((module, index) => {
+      {/* Realidade da Plataforma */}
+      <Card className="bg-yellow-50 border-yellow-200 mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-yellow-800">
+            <AlertTriangle className="w-5 h-5" />
+            <span>Status Real da Plataforma</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-yellow-700">
+            <p className="mb-2">
+              <strong>Situação Atual:</strong> Apenas 1 módulo está totalmente implementado e funcional para os estudantes.
+            </p>
+            <p className="text-sm">
+              Os módulos 2-4 possuem apenas estrutura de dados (não funcionais). 
+              Esta é a mesma visualização que os estudantes têm em <code className="bg-yellow-100 px-1 rounded">/jogos</code>.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Módulo Funcional */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+          <CheckCircle className="w-5 h-5 mr-2" />
+          Módulo Implementado e Ativo
+        </h3>
+        
+        {(() => {
+          const module = modules.find(m => m.id === 'module-1')
+          if (!module) return null
+          
           const setting = getModuleSetting(module.id)
           const stats = getModuleStats(module.id)
           const isAvailable = setting?.isAvailable || false
           
           return (
-            <ModuleCard
-              key={module.id}
+            <FunctionalModuleCard
               module={module}
               setting={setting}
               stats={stats}
               isAvailable={isAvailable}
-              moduleNumber={index + 1}
               onToggleAccess={() => toggleModuleAccess(module.id, isAvailable)}
               onConfigure={(newSettings) => configureModule(module.id, newSettings)}
             />
           )
-        })}
+        })()}
+      </div>
+
+      {/* Módulos em Desenvolvimento */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-600 mb-4 flex items-center">
+          <Settings className="w-5 h-5 mr-2" />
+          Módulos Planejados (Apenas Estrutura)
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {modules.filter(m => m.id !== 'module-1').map((module, index) => (
+            <PlannedModuleCard key={module.id} module={module} moduleNumber={index + 2} />
+          ))}
+        </div>
       </div>
     </div>
   )
