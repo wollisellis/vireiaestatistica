@@ -1,10 +1,10 @@
-# AvaliaNutri - Plataforma Educacional de Avaliação Nutricional
+# bioestat-platform - Plataforma Educacional de Avaliação Nutricional
 
 > **Uma plataforma educacional inovadora para aprender avaliação nutricional através de jogos interativos baseados em dados reais da população brasileira.**
 
 Criado por **Ellis Wollis Malta Abhulime** - Mestrando em Nutrição, Esporte e Metabolismo na Unicamp (Universidade Estadual de Campinas)
 
-[![Next.js](https://img.shields.io/badge/Next.js-14.2.5-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.3.5-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-blue)](https://www.typescriptlang.org/)
 [![Firebase](https://img.shields.io/badge/Firebase-10.12.2-orange)](https://firebase.google.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.4-38B2AC)](https://tailwindcss.com/)
@@ -26,16 +26,18 @@ AvaliaNutri é uma plataforma educacional especializada em avaliação nutricion
 
 ## 🚀 Stack Tecnológico
 
-- **Frontend**: Next.js 14.2.5 com TypeScript e App Router
-- **Autenticação**: Sistema mock para demonstração educacional
-- **Banco de Dados**: Local Storage para persistência de progresso
-- **Estilização**: Tailwind CSS 3.4.4 com tema customizado AvaliaNutri
+- **Frontend**: Next.js 15.3.5 com TypeScript e App Router
+- **Autenticação**: Sistema híbrido Firebase + Mock para demonstração educacional
+- **Banco de Dados**: Firebase Firestore + Local Storage para persistência
+- **Estilização**: Tailwind CSS 3.4.4 com design system unificado (emerald/teal)
+- **Design Tokens**: Sistema completo de tokens para cores, espaçamentos e tipografia
 - **Animações**: Framer Motion 11.3.8 para transições suaves
-- **Gráficos**: Recharts 2.12.7 para visualização de dados nutricionais
-- **Formulários**: React Hook Form com validação Zod
-- **Ícones**: Lucide React para interface consistente
-- **Estado**: React Context API para gerenciamento de progresso
-- **Dados**: Datasets reais brasileiros de avaliação nutricional
+- **Gráficos**: Recharts 2.12.7 + Highcharts 12.3.0 para visualização avançada
+- **Formulários**: React Hook Form 7.52.1 com validação Zod 3.23.8
+- **Tabelas**: AG-Grid 34.0.1 para visualização de dados complexos
+- **Estado**: Zustand 4.5.4 + React Context API para gerenciamento de estado
+- **Pontuação**: Sistema unificado de scoring com normalização 0-100
+- **Dados**: Datasets reais brasileiros (IBGE, SISVAN, Ministério da Saúde)
 
 ## 📚 Conteúdo Educacional
 
@@ -315,16 +317,23 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 ### 🚧 Limitações Conhecidas
 - **Jogos 2 e 3 Bloqueados** - Aguardando liberação docente (configurável)
-- **Persistência Local** - Progresso salvo apenas no navegador local
-- **Modo Demonstração** - Sem autenticação real de usuários
 - **Deploy Pendente** - Configurações de produção implementadas mas não deployado
 
+### ✅ Problemas Corrigidos Recentemente
+- **Sistema de IDs Unificado** - Corrigida inconsistência entre IDs string/number em toda aplicação
+- **Desbloqueio de Módulos** - Problema no dashboard do professor totalmente resolvido
+- **Design System Padronizado** - Implementado sistema de design tokens unificado
+- **Integração de Pontuação** - Sistema unificado de scoring funcionando corretamente
+- **Tipos TypeScript** - Corrigidas inconsistências de tipos em hooks e contextos
+
 ### 📊 Métricas de Desenvolvimento
-- **Linhas de Código**: ~15.000 linhas TypeScript/React
-- **Componentes**: 50+ componentes reutilizáveis
+- **Linhas de Código**: ~18.000 linhas TypeScript/React
+- **Componentes**: 60+ componentes reutilizáveis
+- **Serviços**: Sistema unificado de pontuação, ranking e progresso
 - **Exercícios**: 18 exercícios interativos implementados
 - **Datasets**: 12 conjuntos de dados brasileiros reais
-- **Tempo de Desenvolvimento**: 6 meses de desenvolvimento intensivo
+- **Design Tokens**: Sistema completo de cores, espaçamentos e tipografia
+- **Tempo de Desenvolvimento**: 6+ meses de desenvolvimento iterativo
 
 ---
 
