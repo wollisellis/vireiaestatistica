@@ -170,8 +170,8 @@ export class RandomizedQuizService {
 
       if (lastAttempt.passed) {
         return {
-          canAttempt: false,
-          reason: 'Módulo já foi completado com sucesso',
+          canAttempt: true,
+          reason: 'Módulo concluído - você pode tentar melhorar sua nota',
           lastAttempt
         };
       }

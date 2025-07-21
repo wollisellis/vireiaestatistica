@@ -68,20 +68,60 @@ const getColorByOrder = (order: number) => {
 
 // Converter módulos para formato de jogos
 const convertModulesToGames = (modules: any[]) => {
-  return modules.map(module => ({
-    id: parseInt(module.id.split('-')[1]), // Converter module-1 para 1
-    title: module.title,
-    description: module.description,
-    difficulty: getDifficultyLevel(module.estimatedTime),
-    estimatedTime: `${module.estimatedTime} min`,
-    learningObjectives: module.content.slice(0, 4).map((content: any) => content.title),
-    icon: module.icon === '📊' ? <BarChart3 className="w-6 h-6" /> :
-          module.icon === '🔬' ? <Activity className="w-6 h-6" /> :
-          module.icon === '📏' ? <Scale className="w-6 h-6" /> :
-          module.icon === '🎯' ? <Target className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />,
-    color: getColorByOrder(module.order),
-    topics: module.exercises.slice(0, 4).map((exercise: any) => exercise.title)
-  }));
+  return modules.map(module => {
+    // Dados específicos melhorados para Módulo 1
+    if (module.id === 'module-1') {
+      return {
+        id: parseInt(module.id.split('-')[1]),
+        title: 'Introdução à Avaliação Nutricional',
+        description: 'Fundamentos da avaliação nutricional antropométrica com dados reais brasileiros e metodologia ultra-iniciante.',
+        difficulty: 'Iniciante',
+        estimatedTime: '15-20 min',
+        learningObjectives: [
+          'Compreender os fundamentos da avaliação nutricional',
+          'Diferenciar avaliação individual vs populacional',
+          'Aplicar indicadores antropométricos básicos',
+          'Interpretar dados da população brasileira'
+        ],
+        icon: <Scale className="w-6 h-6" />,
+        color: 'bg-emerald-500',
+        topics: [
+          'Conceitos Fundamentais',
+          'Indicadores Antropométricos',
+          'Dados Populacionais Brasileiros',
+          'Casos Clínicos Práticos',
+          'Metodologia de Avaliação'
+        ],
+        features: [
+          '7 questões aleatórias de um banco de 14',
+          'Alternativas embaralhadas individualmente', 
+          'Feedback detalhado com explicações',
+          'Múltiplas tentativas permitidas'
+        ],
+        difficulty_details: {
+          level: 'Iniciante',
+          description: 'Abordagem zero-conhecimento com analogias do cotidiano',
+          prerequisites: 'Nenhum conhecimento prévio necessário'
+        }
+      };
+    }
+    
+    // Fallback para outros módulos
+    return {
+      id: parseInt(module.id.split('-')[1]),
+      title: module.title,
+      description: module.description,
+      difficulty: getDifficultyLevel(module.estimatedTime),
+      estimatedTime: `${module.estimatedTime} min`,
+      learningObjectives: module.content.slice(0, 4).map((content: any) => content.title),
+      icon: module.icon === '📊' ? <BarChart3 className="w-6 h-6" /> :
+            module.icon === '🔬' ? <Activity className="w-6 h-6" /> :
+            module.icon === '📏' ? <Scale className="w-6 h-6" /> :
+            module.icon === '🎯' ? <Target className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />,
+      color: getColorByOrder(module.order),
+      topics: module.exercises.slice(0, 4).map((exercise: any) => exercise.title)
+    };
+  });
 };
 
 export default function JogosPage() {
@@ -227,14 +267,19 @@ export default function JogosPage() {
   // Converter módulos para jogos - APENAS MÓDULO 1
   const baseNutritionalGames = convertModulesToGames(modules.filter(module => module.id === 'module-1'));
 
-  // Combine base games with module settings
+  // Combine base games with module settings and progress
   const nutritionalGames = baseNutritionalGames.map(game => {
     const moduleId = `module-${game.id}`;
     const locked = !unlockedModules.includes(moduleId) && !isProfessor;
+    const progress = moduleProgress[moduleId];
+    
     return {
       ...game,
       isLocked: locked,
-      lockMessage: locked ? 'Aguardando liberação do docente' : undefined
+      lockMessage: locked ? 'Aguardando liberação do docente' : undefined,
+      progress: progress,
+      isCompleted: progress?.completed || false,
+      bestScore: progress?.score || 0
     };
   });
 
@@ -458,14 +503,23 @@ export default function JogosPage() {
                             {game.isLocked && (
                               <Lock className="w-3 h-3 absolute -top-1 -right-1 bg-gray-600 rounded-full p-0.5" />
                             )}
+                            {game.isCompleted && !game.isLocked && (
+                              <CheckCircle className="w-4 h-4 absolute -top-1 -right-1 bg-green-600 text-white rounded-full" />
+                            )}
                             {game.icon}
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-medium text-gray-500">Jogo {game.id}</span>
+                            <span className="text-sm font-medium text-gray-500">Módulo {game.id}</span>
                             <div className="flex items-center text-sm text-gray-500 mt-1">
                               <Clock className="w-4 h-4 mr-1" />
                               {game.estimatedTime}
                             </div>
+                            {game.isCompleted && (
+                              <div className="flex items-center text-xs text-green-600 mt-1 font-medium">
+                                <Trophy className="w-3 h-3 mr-1" />
+                                {game.bestScore || 0} pts
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -486,16 +540,12 @@ export default function JogosPage() {
                         )}
 
                         <div className="flex items-center justify-between mt-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            game.difficulty === 'Muito Fácil' ? 'bg-green-100 text-green-800' :
-                            game.difficulty === 'Médio' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             {game.difficulty}
                           </span>
                           <div className="flex items-center text-sm text-gray-500">
                             <Target className="w-4 h-4 mr-1 text-yellow-500" />
-                            <span>5 exercícios</span>
+                            <span>7 questões</span>
                           </div>
                         </div>
                       </CardHeader>
@@ -536,6 +586,23 @@ export default function JogosPage() {
                             </div>
                           </div>
 
+                          {game.features && (
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                                <Trophy className="w-4 h-4 mr-2 text-purple-500" />
+                                Características do Quiz
+                              </h4>
+                              <ul className="space-y-1">
+                                {game.features.slice(0, 3).map((feature, idx) => (
+                                  <li key={idx} className="text-sm text-gray-600 flex items-start">
+                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                    {feature}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
                           {game.isLocked ? (
                             <Button
                               disabled
@@ -548,11 +615,24 @@ export default function JogosPage() {
                           ) : (
                             <Link href={`/jogos/modulo-${game.id}/quiz`}>
                               <Button
-                                className="w-full mt-4 group-hover:bg-blue-600 transition-colors"
+                                className={`w-full mt-4 transition-colors ${
+                                  game.isCompleted 
+                                    ? 'bg-green-600 hover:bg-green-700' 
+                                    : 'bg-blue-600 hover:bg-blue-700 group-hover:bg-blue-600'
+                                }`}
                                 size="lg"
                               >
-                                <Play className="w-4 h-4 mr-2" />
-                                Iniciar Quiz
+                                {game.isCompleted ? (
+                                  <>
+                                    <Trophy className="w-4 h-4 mr-2" />
+                                    Tentar Melhorar
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-4 h-4 mr-2" />
+                                    Iniciar Quiz
+                                  </>
+                                )}
                               </Button>
                             </Link>
                           )}
