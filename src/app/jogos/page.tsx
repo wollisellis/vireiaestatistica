@@ -77,12 +77,18 @@ const getPerformanceRating = (score: number) => {
   return { stars: 0, label: 'Não Avaliado', color: 'text-gray-400', bgColor: 'bg-gray-50', textColor: 'text-gray-600' };
 };
 
-// Função para calcular tempo decorrido
+// Função para calcular tempo decorrido - CORRIGIDA
 const getTimeAgo = (lastActivity: Date | undefined) => {
   if (!lastActivity) return 'Nunca tentado';
   
+  // Se lastActivity é uma string, converter para Date
+  const activityDate = typeof lastActivity === 'string' ? new Date(lastActivity) : lastActivity;
+  
+  // Verificar se a data é válida
+  if (isNaN(activityDate.getTime())) return 'Nunca tentado';
+  
   const now = new Date();
-  const diff = now.getTime() - lastActivity.getTime();
+  const diff = now.getTime() - activityDate.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor(diff / (1000 * 60));
@@ -423,16 +429,28 @@ export default function JogosPage() {
     
     if (progress) {
       hasAttempted = true;
-      bestScore = progress.score || progress.totalScore || 0;
       
-      // Verificar se passou (considerando diferentes formatos de score)
-      // Assumindo que >70% = passou
-      hasPassed = bestScore >= 70 || progress.completed || false;
+      // 🚀 CORREÇÃO: Normalizar score para escala 0-100
+      let rawScore = progress.score || progress.totalScore || 0;
+      
+      // Se o score for muito baixo (< 20), assumir que está em escala 0-10 e multiplicar por 10
+      if (rawScore > 0 && rawScore <= 10) {
+        bestScore = Math.round(rawScore * 10); // 8.75 * 10 = 87.5
+      } else {
+        bestScore = Math.round(rawScore); // Já está em escala 0-100
+      }
+      
+      // 🚀 CORREÇÃO: Verificar aprovação apenas com base no score normalizado
+      // progress.completed pode estar incorreto, então usar apenas o score
+      hasPassed = bestScore >= 70;
       
       if (hasPassed) {
         moduleStatus = 'completed'; // concluído com sucesso
-      } else {
+      } else if (bestScore > 0) {
         moduleStatus = 'attempted_failed'; // tentado mas não passou
+      } else {
+        moduleStatus = 'never_attempted'; // score 0 = nunca tentou de verdade
+        hasAttempted = false;
       }
     }
     
@@ -715,19 +733,27 @@ export default function JogosPage() {
                             </div>
                           </div>
                           
-                          {/* Linha 2: Status Final (se já tentou) */}
-                          {!game.isLocked && game.hasAttempted && (
-                            <div className="bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-4">
+                          {/* Linha 2: Status Final (apenas se realmente tentou e tem score > 0) */}
+                          {!game.isLocked && game.hasAttempted && game.bestScore > 0 && (
+                            <div className={`border border-gray-200 rounded-lg p-4 ${
+                              game.bestScore >= 70 
+                                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
+                                : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200'
+                            }`}>
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="text-sm font-medium text-gray-700 mb-1">Status Final</div>
-                                  <div className="text-2xl font-bold text-gray-900">
-                                    {Math.round(game.bestScore || 0)}%
+                                  <div className={`text-sm font-medium mb-1 ${
+                                    game.bestScore >= 70 ? 'text-green-700' : 'text-orange-700'
+                                  }`}>Status Final</div>
+                                  <div className={`text-2xl font-bold ${
+                                    game.bestScore >= 70 ? 'text-green-900' : 'text-orange-900'
+                                  }`}>
+                                    {game.bestScore}%
                                   </div>
                                 </div>
                                 <div className="text-right text-sm text-gray-500">
                                   <div>{getTimeAgo(game.progress?.lastAccessed)}</div>
-                                  <div>15 min gasto</div>
+                                  <div>~15 min gasto</div>
                                 </div>
                               </div>
                             </div>
