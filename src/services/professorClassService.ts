@@ -218,12 +218,14 @@ export class ProfessorClassService {
     }
   }
 
-  // Obter turmas do professor
+  // Obter turmas do professor (excluindo as deletadas)
   static async getProfessorClasses(professorId: string): Promise<ClassInfo[]> {
     try {
       const q = query(
         collection(db, this.CLASSES_COLLECTION),
         where('professorId', '==', professorId),
+        where('status', '!=', 'deleted'),
+        orderBy('status', 'desc'),
         orderBy('createdAt', 'desc')
       )
       
@@ -231,23 +233,70 @@ export class ProfessorClassService {
       const classes: ClassInfo[] = []
       
       querySnapshot.forEach((doc) => {
-        classes.push({ id: doc.id, ...doc.data() } as ClassInfo)
+        const data = doc.data()
+        // Filtro adicional para garantir que turmas deletadas não apareçam
+        if (data.status !== 'deleted') {
+          classes.push({ id: doc.id, ...data } as ClassInfo)
+        }
       })
       
       return classes
     } catch (error) {
       console.error('Erro ao obter turmas do professor:', error)
+      // Se o erro for devido ao índice composto faltando, tentar query alternativa
+      if (error.message?.includes('index')) {
+        try {
+          const altQuery = query(
+            collection(db, this.CLASSES_COLLECTION),
+            where('professorId', '==', professorId),
+            orderBy('createdAt', 'desc')
+          )
+          
+          const querySnapshot = await getDocs(altQuery)
+          const classes: ClassInfo[] = []
+          
+          querySnapshot.forEach((doc) => {
+            const data = doc.data()
+            // Filtrar turmas deletadas manualmente
+            if (data.status !== 'deleted') {
+              classes.push({ id: doc.id, ...data } as ClassInfo)
+            }
+          })
+          
+          return classes
+        } catch (altError) {
+          console.error('Erro na query alternativa:', altError)
+          return []
+        }
+      }
       return []
     }
   }
 
-  // Adicionar estudante à turma
+  // Adicionar estudante à turma (com verificação de duplicatas)
   static async addStudentToClass(classId: string, studentId: string, studentName: string, email?: string): Promise<void> {
     try {
+      // Primeiro, verificar se o estudante já está na turma
+      const studentDocRef = doc(db, this.CLASS_STUDENTS_COLLECTION, `${classId}_${studentId}`)
+      const studentDoc = await getDoc(studentDocRef)
+      
+      if (studentDoc.exists()) {
+        console.log('Estudante já está matriculado nesta turma:', studentId)
+        // Se o estudante já existe mas está inativo, reativá-lo
+        const studentData = studentDoc.data()
+        if (studentData.isActive === false) {
+          await updateDoc(studentDocRef, {
+            isActive: true,
+            updatedAt: serverTimestamp()
+          })
+          console.log('Estudante reativado na turma:', studentId)
+        }
+        return // Não incrementar contador se estudante já existe
+      }
+      
       const batch = writeBatch(db)
       
       // Adicionar estudante à turma
-      const studentDocRef = doc(db, this.CLASS_STUDENTS_COLLECTION, `${classId}_${studentId}`)
       batch.set(studentDocRef, {
         classId,
         studentId,
@@ -257,7 +306,7 @@ export class ProfessorClassService {
         isActive: true
       })
       
-      // Atualizar contador de estudantes
+      // Atualizar contador de estudantes apenas se for novo estudante
       const classDocRef = doc(db, this.CLASSES_COLLECTION, classId)
       batch.update(classDocRef, {
         studentsCount: increment(1),
@@ -265,7 +314,7 @@ export class ProfessorClassService {
       })
       
       await batch.commit()
-      console.log('Estudante adicionado à turma:', studentId)
+      console.log('Novo estudante adicionado à turma:', studentId)
     } catch (error) {
       console.error('Erro ao adicionar estudante:', error)
       throw error
