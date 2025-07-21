@@ -30,6 +30,7 @@ import {
   StudentExerciseProgress
 } from '@/types/classes'
 import { modules } from '@/data/modules'
+import unifiedScoringService from './unifiedScoringService'
 
 export class EnhancedClassService {
   
@@ -173,7 +174,10 @@ export class EnhancedClassService {
       
       const enrollmentData = enrollmentDoc.data()
       
-      // Buscar progresso dos módulos
+      // 🚀 CORREÇÃO: Buscar dados do sistema unificado primeiro
+      const unifiedScore = await unifiedScoringService.getUnifiedScore(studentId)
+      
+      // Buscar progresso dos módulos (fallback para dados detalhados)
       const moduleProgressQuery = query(
         collection(db, 'student_module_progress'),
         where('studentId', '==', studentId)
@@ -185,6 +189,16 @@ export class EnhancedClassService {
       let totalMaxScore = 0
       let completedModules = 0
       let totalTimeSpent = 0
+      
+      // Se temos dados unificados, usar como fonte principal
+      if (unifiedScore) {
+        console.log(`[EnhancedClassService] ✅ Usando dados unificados para ${studentId}`)
+        totalScore = unifiedScore.normalizedScore // Usar score normalizado (0-100)
+        
+        // Contar módulos concluídos baseado no critério unificado (≥70%)
+        completedModules = Object.values(unifiedScore.moduleScores)
+          .filter(score => score >= 70).length
+      }
       
       for (const moduleDoc of moduleProgressSnapshot.docs) {
         const moduleData = moduleDoc.data()
@@ -227,7 +241,24 @@ export class EnhancedClassService {
       // Calcular métricas de engajamento
       const engagementMetrics = await this.calculateStudentEngagement(studentId)
       
-      const overallProgress = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0
+      // 🚀 CORREÇÃO: Usar dados unificados para cálculos quando disponíveis
+      let finalTotalScore = totalScore
+      let finalCompletedModules = completedModules
+      let overallProgress = 0
+      
+      if (unifiedScore) {
+        // Usar dados do sistema unificado (já normalizados)
+        finalTotalScore = unifiedScore.normalizedScore
+        finalCompletedModules = Object.values(unifiedScore.moduleScores)
+          .filter(score => score >= 70).length
+        overallProgress = unifiedScore.normalizedScore // Já é 0-100
+        
+        console.log(`[EnhancedClassService] 📊 Dados unificados: score=${finalTotalScore}, módulos concluídos=${finalCompletedModules}`)
+      } else {
+        // Fallback para cálculo manual se não há dados unificados
+        overallProgress = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0
+        console.log(`[EnhancedClassService] ⚠️ Usando dados legacy para ${studentId}`)
+      }
       
       return {
         studentId,
@@ -240,9 +271,9 @@ export class EnhancedClassService {
         role: 'student',
         
         overallProgress: Math.round(overallProgress),
-        totalNormalizedScore: totalScore,
+        totalNormalizedScore: finalTotalScore, // 🎯 Agora usa dados unificados (0-100)
         classRank: 0, // Será calculado depois
-        completedModules,
+        completedModules: finalCompletedModules, // 🎯 Baseado no critério unificado (≥70%)
         totalTimeSpent,
         
         activeDays: engagementMetrics.activeDays,

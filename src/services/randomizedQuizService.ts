@@ -189,13 +189,18 @@ export class RandomizedQuizService {
   }
 
   /**
-   * Processa conclusão do quiz (integração com sistema existente)
+   * 🚀 CORREÇÃO: Processa conclusão do quiz com sincronização completa
    */
   private static async processQuizCompletion(attempt: QuizAttempt): Promise<void> {
     try {
-      const { studentId, moduleId, score, timeSpent, passed } = attempt;
+      const { studentId, moduleId, score, timeSpent, passed, percentage } = attempt;
 
-      // 1. Atualizar sistema de pontuação unificado
+      console.log(`🔄 Iniciando sincronização completa para ${studentId} - Módulo: ${moduleId}`);
+
+      // 🎯 OPERAÇÃO ATÔMICA: Usar batch para sincronizar todas as fontes
+      const batch = writeBatch(db);
+
+      // 1. Sistema de pontuação unificado (fonte principal)
       await unifiedScoringService.updateExerciseScore(
         studentId,
         moduleId,
@@ -203,24 +208,93 @@ export class RandomizedQuizService {
         score,
         10
       );
+      console.log(`✅ Sistema unificado atualizado: ${score} pts`);
 
-      // 2. Se passou, marcar módulo como completo
-      if (passed) {
-        await this.completeModule(studentId, moduleId, attempt);
+      // 2. Atualizar userProgress (compatibilidade com página /jogos)
+      const progressRef = doc(db, 'userProgress', studentId);
+      const progressDoc = await getDoc(progressRef);
+      
+      if (progressDoc.exists()) {
+        const currentProgress = progressDoc.data();
+        const modules = currentProgress.modules || {};
+        
+        // Manter a melhor pontuação
+        const existingModule = modules[moduleId];
+        const bestScore = existingModule?.totalScore ? Math.max(existingModule.totalScore, score) : score;
+        const bestPercentage = existingModule?.percentage ? Math.max(existingModule.percentage, percentage) : percentage;
+        
+        modules[moduleId] = {
+          ...modules[moduleId],
+          totalScore: bestScore,
+          score: bestScore, // Ambos os formatos para compatibilidade
+          percentage: bestPercentage,
+          completed: bestPercentage >= 70, // Critério padronizado
+          lastAccessed: Timestamp.now()
+        };
+
+        batch.update(progressRef, {
+          modules,
+          lastActivity: Timestamp.now()
+        });
+        console.log(`✅ userProgress atualizado: ${bestScore} pts (${bestPercentage}%)`);
+      } else {
+        // Criar documento se não existe
+        batch.set(progressRef, {
+          modules: {
+            [moduleId]: {
+              totalScore: score,
+              score: score,
+              percentage: percentage,
+              completed: percentage >= 70,
+              lastAccessed: Timestamp.now()
+            }
+          },
+          lastActivity: Timestamp.now()
+        });
+        console.log(`✅ userProgress criado: ${score} pts (${percentage}%)`);
       }
 
-      // 3. Atualizar ranking em tempo real
-      await this.updateStudentRanking(studentId, score, moduleId);
+      // 3. Atualizar moduleProgress (compatibilidade com ranking)
+      const moduleProgressRef = doc(db, 'student_module_progress', `${studentId}_${moduleId}`);
+      batch.set(moduleProgressRef, {
+        studentId,
+        moduleId,
+        score: score,
+        maxScore: 10,
+        progress: percentage,
+        timeSpent: timeSpent || 0,
+        attempts: 1, // Simplificado
+        bestScore: score,
+        isCompleted: percentage >= 70,
+        lastAttempt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      }, { merge: true });
+      console.log(`✅ moduleProgress atualizado para ranking`);
 
-      // 4. Verificar e atribuir conquistas
-      await this.checkAndAwardAchievements(studentId, attempt);
+      // 4. Executar batch atomicamente
+      await batch.commit();
+      console.log(`🎉 Sincronização completa finalizada para ${studentId}`);
 
-      // 5. Limpar sessão ativa
-      await this.cleanupSession(attempt.quizId);
+      // 5. Operações não-críticas (podem falhar sem afetar dados principais)
+      try {
+        // Atualizar ranking em tempo real
+        await this.updateStudentRanking(studentId, score, moduleId);
+        
+        // Verificar e atribuir conquistas
+        await this.checkAndAwardAchievements(studentId, attempt);
+        
+        // Limpar sessão ativa
+        await this.cleanupSession(attempt.quizId);
+        
+        console.log(`✅ Operações secundárias completadas`);
+      } catch (secondaryError) {
+        console.warn('Erro em operações secundárias (não crítico):', secondaryError);
+      }
 
     } catch (error) {
-      console.error('Erro ao processar conclusão do quiz:', error);
+      console.error('❌ ERRO CRÍTICO na sincronização:', error);
       // Não relançar erro para não afetar a submissão principal
+      // TODO: Implementar retry automático ou notificação de erro
     }
   }
 

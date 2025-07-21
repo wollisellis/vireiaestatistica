@@ -43,6 +43,7 @@ import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
 import { ClassRankingPanel } from '@/components/ranking/ClassRankingPanel';
+import unifiedScoringService from '@/services/unifiedScoringService';
 
 interface ModuleProgress {
   [moduleId: string]: {
@@ -159,14 +160,37 @@ export default function JogosPage() {
     }
   };
 
-  // Calcular módulos concluídos (notas >70%)
+  // 🚀 CORREÇÃO: Estado para módulos concluídos usando sistema unificado
+  const [completedModulesUnified, setCompletedModulesUnified] = useState<string[]>([]);
+
+  // Buscar módulos concluídos do sistema unificado
+  useEffect(() => {
+    const fetchCompletedModules = async () => {
+      if (user?.id && user.id !== 'guest-user' && user.id !== 'professor-guest-user') {
+        try {
+          const completed = await unifiedScoringService.getCompletedModules(user.id);
+          setCompletedModulesUnified(completed);
+          console.log('📊 Módulos concluídos (sistema unificado):', completed);
+        } catch (error) {
+          console.error('Erro ao buscar módulos concluídos:', error);
+          // Fallback para o sistema legacy
+          const legacyCompleted = modules.filter(module => {
+            const progress = moduleProgress[module.id];
+            if (!progress) return false;
+            const score = progress.score || progress.totalScore || 0;
+            return score >= 70;
+          });
+          setCompletedModulesUnified(legacyCompleted.map(m => m.id));
+        }
+      }
+    };
+
+    fetchCompletedModules();
+  }, [user?.id, moduleProgress]);
+
+  // Calcular módulos concluídos (LEGACY - mantido para compatibilidade)
   const getCompletedModules = () => {
-    return modules.filter(module => {
-      const progress = moduleProgress[module.id];
-      if (!progress) return false;
-      const score = progress.score || progress.totalScore || 0;
-      return score >= 70;
-    });
+    return modules.filter(module => completedModulesUnified.includes(module.id));
   };
 
   const completedModules = getCompletedModules();

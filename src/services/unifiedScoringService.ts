@@ -9,7 +9,11 @@ import {
   updateDoc, 
   serverTimestamp,
   increment,
-  writeBatch
+  writeBatch,
+  collection,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore'
 import { AdvancedScoringSystem } from '@/lib/scoringSystem'
 import { ModuleProgressSystem } from '@/lib/moduleProgressSystem'
@@ -333,8 +337,8 @@ class UnifiedScoringService {
       newAchievements.push('level_5')
     }
 
-    // Conquistas por módulos completos
-    const completedModules = Object.values(score.moduleScores).filter(s => s >= 80).length
+    // Conquistas por módulos completos (🚀 CORREÇÃO: Critério padronizado para 70%)
+    const completedModules = Object.values(score.moduleScores).filter(s => s >= 70).length
     if (completedModules >= 3 && !score.achievements.includes('module_master_3')) {
       newAchievements.push('module_master_3')
     }
@@ -373,6 +377,203 @@ class UnifiedScoringService {
   private getMaxPossibleScore(): number {
     // Calcular baseado em todos os módulos e jogos disponíveis
     return 100000 // Placeholder - calcular dinamicamente
+  }
+
+  // 🚀 NOVO: Obter módulos concluídos de forma consistente
+  async getCompletedModules(studentId: string): Promise<string[]> {
+    const score = await this.getUnifiedScore(studentId)
+    if (!score) return []
+    
+    return Object.entries(score.moduleScores)
+      .filter(([_, moduleScore]) => moduleScore >= 70)
+      .map(([moduleId, _]) => moduleId)
+  }
+
+  // 🚀 NOVO: Verificar se módulo específico está concluído
+  async isModuleCompleted(studentId: string, moduleId: string): Promise<boolean> {
+    const score = await this.getUnifiedScore(studentId)
+    if (!score) return false
+    
+    return (score.moduleScores[moduleId] || 0) >= 70
+  }
+
+  // 🚀 NOVO: Obter estatísticas de conclusão
+  async getCompletionStats(studentId: string): Promise<{
+    completedModules: number
+    totalModules: number
+    completionRate: number
+    completedModuleIds: string[]
+  }> {
+    const score = await this.getUnifiedScore(studentId)
+    if (!score) {
+      return {
+        completedModules: 0,
+        totalModules: 4, // Número total de módulos do sistema
+        completionRate: 0,
+        completedModuleIds: []
+      }
+    }
+    
+    const completedModuleIds = Object.entries(score.moduleScores)
+      .filter(([_, moduleScore]) => moduleScore >= 70)
+      .map(([moduleId, _]) => moduleId)
+    
+    const completedModules = completedModuleIds.length
+    const totalModules = 4 // Atualizar conforme necessário
+    const completionRate = Math.round((completedModules / totalModules) * 100)
+    
+    return {
+      completedModules,
+      totalModules,
+      completionRate,
+      completedModuleIds
+    }
+  }
+
+  // 🚀 TESTE: Validar alinhamento entre sistemas
+  async validateSystemAlignment(studentId: string): Promise<{
+    isAligned: boolean
+    discrepancies: string[]
+    unifiedData: any
+    legacyData: any
+    rankingData: any
+  }> {
+    try {
+      const discrepancies: string[] = []
+      
+      // 1. Buscar dados do sistema unificado
+      const unifiedScore = await this.getUnifiedScore(studentId)
+      
+      // 2. Buscar dados legacy (userProgress)
+      const userProgressDoc = await getDoc(doc(db, 'userProgress', studentId))
+      const legacyData = userProgressDoc.exists() ? userProgressDoc.data() : null
+      
+      // 3. Buscar dados do ranking (moduleProgress)
+      const moduleProgressQuery = query(
+        collection(db, 'student_module_progress'),
+        where('studentId', '==', studentId)
+      )
+      const moduleProgressSnapshot = await getDocs(moduleProgressQuery)
+      const rankingData = moduleProgressSnapshot.docs.map(doc => doc.data())
+      
+      if (!unifiedScore) {
+        discrepancies.push('❌ Dados unificados não encontrados')
+        return {
+          isAligned: false,
+          discrepancies,
+          unifiedData: null,
+          legacyData,
+          rankingData
+        }
+      }
+      
+      // 4. Validar critérios de conclusão
+      const unifiedCompleted = Object.entries(unifiedScore.moduleScores)
+        .filter(([_, score]) => score >= 70)
+        .map(([moduleId, _]) => moduleId)
+      
+      // Verificar legacy data
+      if (legacyData?.modules) {
+        Object.entries(legacyData.modules).forEach(([moduleId, moduleData]: [string, any]) => {
+          const legacyCompleted = moduleData.completed || (moduleData.totalScore || 0) >= 70
+          const unifiedCompleted = (unifiedScore.moduleScores[moduleId] || 0) >= 70
+          
+          if (legacyCompleted !== unifiedCompleted) {
+            discrepancies.push(
+              `⚠️ Módulo ${moduleId}: Legacy=${legacyCompleted}, Unificado=${unifiedCompleted}`
+            )
+          }
+        })
+      }
+      
+      // Verificar ranking data
+      rankingData.forEach((moduleData: any) => {
+        const rankingCompleted = moduleData.isCompleted || (moduleData.score || 0) >= 70
+        const unifiedCompleted = (unifiedScore.moduleScores[moduleData.moduleId] || 0) >= 70
+        
+        if (rankingCompleted !== unifiedCompleted) {
+          discrepancies.push(
+            `⚠️ Ranking ${moduleData.moduleId}: Ranking=${rankingCompleted}, Unificado=${unifiedCompleted}`
+          )
+        }
+      })
+      
+      return {
+        isAligned: discrepancies.length === 0,
+        discrepancies,
+        unifiedData: {
+          totalScore: unifiedScore.totalScore,
+          normalizedScore: unifiedScore.normalizedScore,
+          moduleScores: unifiedScore.moduleScores,
+          completedModules: unifiedCompleted
+        },
+        legacyData,
+        rankingData
+      }
+      
+    } catch (error) {
+      console.error('Erro ao validar alinhamento:', error)
+      return {
+        isAligned: false,
+        discrepancies: [`❌ Erro na validação: ${error.message}`],
+        unifiedData: null,
+        legacyData: null,
+        rankingData: null
+      }
+    }
+  }
+
+  // 🚀 UTILITÁRIO: Sincronizar dados manualmente (para migração)
+  async syncAllSystems(studentId: string): Promise<boolean> {
+    try {
+      console.log(`🔄 Sincronizando sistemas para ${studentId}`)
+      
+      const unifiedScore = await this.getUnifiedScore(studentId)
+      if (!unifiedScore) {
+        console.log('❌ Dados unificados não encontrados')
+        return false
+      }
+      
+      const batch = writeBatch(db)
+      
+      // Sincronizar userProgress
+      const userProgressRef = doc(db, 'userProgress', studentId)
+      const modules: any = {}
+      
+      Object.entries(unifiedScore.moduleScores).forEach(([moduleId, score]) => {
+        modules[moduleId] = {
+          totalScore: score,
+          score: score,
+          percentage: score, // Score já está normalizado 0-100
+          completed: score >= 70,
+          lastAccessed: new Date()
+        }
+      })
+      
+      batch.set(userProgressRef, { modules }, { merge: true })
+      
+      // Sincronizar moduleProgress
+      Object.entries(unifiedScore.moduleScores).forEach(([moduleId, score]) => {
+        const moduleProgressRef = doc(db, 'student_module_progress', `${studentId}_${moduleId}`)
+        batch.set(moduleProgressRef, {
+          studentId,
+          moduleId,
+          score: score,
+          maxScore: 100,
+          progress: score,
+          isCompleted: score >= 70,
+          updatedAt: new Date()
+        }, { merge: true })
+      })
+      
+      await batch.commit()
+      console.log(`✅ Sincronização completa para ${studentId}`)
+      return true
+      
+    } catch (error) {
+      console.error('Erro na sincronização:', error)
+      return false
+    }
   }
 
   // Limpar cache
