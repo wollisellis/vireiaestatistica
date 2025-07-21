@@ -34,6 +34,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
+import { FirestoreDebugger } from '@/components/debug/FirestoreDebugger'
 
 export default function ProfessorDashboardPage() {
   const { user, loading, hasAccess } = useFlexibleAccess()
@@ -293,6 +294,9 @@ export default function ProfessorDashboardPage() {
               {/* Main Content */}
               <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <TabsContent value="dashboard" className="space-y-6">
+                  {/* 🔧 DEBUG TEMPORÁRIO - Remover após diagnosticar problema */}
+                  <FirestoreDebugger />
+                  
                   {/* Welcome Banner */}
                   <Card className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-0">
                     <CardContent className="p-6">
