@@ -203,5 +203,77 @@ export class AdvancedScoringSystem {
   }
 }
 
-// Backward compatibility alias
-export const EnhancedScoringSystem = AdvancedScoringSystem
+// Extensão do sistema para incluir rating por estrelas (compatibilidade com UI)
+export class EnhancedScoringSystem extends AdvancedScoringSystem {
+  
+  // Sistema de classificação por estrelas - PADRÃO INTERNACIONAL QS STARS EDUCACIONAL
+  public static getPerformanceRating(score: number) {
+    // Nova escala unificada baseada no padrão internacional QS Stars para educação
+    // 75% agora dá 4 estrelas (antes eram 3) - muito mais justo!
+    if (score >= 90) return { 
+      stars: 5, 
+      label: 'Excepcional', 
+      rating: 'Excepcional',
+      color: 'text-yellow-500', 
+      bgColor: 'bg-yellow-50', 
+      textColor: 'text-yellow-700',
+      emoji: '🌟',
+      message: 'Desempenho excepcional! Você domina completamente o assunto.'
+    };
+    
+    if (score >= 75) return { 
+      stars: 4, 
+      label: 'Muito Bom',
+      rating: 'Muito Bom', 
+      color: 'text-green-500', 
+      bgColor: 'bg-green-50', 
+      textColor: 'text-green-700',
+      emoji: '📚',
+      message: 'Muito bem! Você tem um ótimo domínio dos conceitos.'
+    };
+    
+    if (score >= 60) return { 
+      stars: 3, 
+      label: 'Bom',
+      rating: 'Bom', 
+      color: 'text-blue-500', 
+      bgColor: 'bg-blue-50', 
+      textColor: 'text-blue-700',
+      emoji: '📖',
+      message: 'Bom trabalho! Continue praticando para aprimorar ainda mais.'
+    };
+    
+    if (score >= 40) return { 
+      stars: 2, 
+      label: 'Regular',
+      rating: 'Regular', 
+      color: 'text-orange-500', 
+      bgColor: 'bg-orange-50', 
+      textColor: 'text-orange-700',
+      emoji: '🌱',
+      message: 'Está no caminho certo! Revise alguns conceitos para melhorar.'
+    };
+    
+    if (score >= 20) return { 
+      stars: 1, 
+      label: 'Insuficiente',
+      rating: 'Insuficiente', 
+      color: 'text-red-500', 
+      bgColor: 'bg-red-50', 
+      textColor: 'text-red-700',
+      emoji: '📝',
+      message: 'Precisa de mais estudo. Revise o material e tente novamente.'
+    };
+    
+    return { 
+      stars: 0, 
+      label: 'Não Avaliado',
+      rating: 'Não Avaliado', 
+      color: 'text-gray-400', 
+      bgColor: 'bg-gray-50', 
+      textColor: 'text-gray-600',
+      emoji: '❓',
+      message: 'Ainda não foi possível avaliar seu desempenho.'
+    };
+  }
+}

@@ -96,6 +96,40 @@ export class SystemHealthService {
   private static readonly LOGS_COLLECTION = 'system_logs';
   
   /**
+   * Converte timestamp do Firebase para Date de forma segura
+   */
+  private static safeToDate(timestamp: any): Date {
+    try {
+      if (!timestamp) return new Date();
+      
+      if (timestamp instanceof Date) return timestamp;
+      
+      if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+        return timestamp.toDate();
+      }
+      
+      if (timestamp.seconds && typeof timestamp.seconds === 'number') {
+        return new Date(timestamp.seconds * 1000);
+      }
+      
+      if (typeof timestamp === 'string') {
+        const parsed = new Date(timestamp);
+        return isNaN(parsed.getTime()) ? new Date() : parsed;
+      }
+      
+      if (typeof timestamp === 'number') {
+        return new Date(timestamp);
+      }
+      
+      console.warn('[SystemHealthService] Timestamp inválido, usando data atual:', timestamp);
+      return new Date();
+    } catch (error) {
+      console.error('[SystemHealthService] Erro ao converter timestamp:', error);
+      return new Date();
+    }
+  }
+  
+  /**
    * Executa verificação completa de saúde do sistema
    */
   static async performHealthCheck(): Promise<SystemHealthMetrics> {
@@ -589,8 +623,8 @@ export class SystemHealthService {
         const data = doc.data();
         return {
           ...data,
-          createdAt: data.createdAt.toDate(),
-          readAt: data.readAt ? data.readAt.toDate() : undefined
+          createdAt: this.safeToDate(data.createdAt),
+          readAt: data.readAt ? this.safeToDate(data.readAt) : undefined
         } as HealthAlert;
       });
       
@@ -630,20 +664,24 @@ export class SystemHealthService {
       
       return snapshot.docs.map(doc => {
         const data = doc.data();
-        return {
+        
+        // Conversão segura usando safeToDate
+        const convertedData = {
           ...data,
-          timestamp: data.timestamp.toDate(),
-          detectedIssues: data.detectedIssues.map((issue: any) => ({
+          timestamp: this.safeToDate(data.timestamp),
+          detectedIssues: (data.detectedIssues || []).map((issue: any) => ({
             ...issue,
-            detectedAt: issue.detectedAt.toDate(),
-            resolvedAt: issue.resolvedAt ? issue.resolvedAt.toDate() : undefined
+            detectedAt: this.safeToDate(issue.detectedAt),
+            resolvedAt: issue.resolvedAt ? this.safeToDate(issue.resolvedAt) : undefined
           })),
-          recoveryActions: data.recoveryActions.map((action: any) => ({
+          recoveryActions: (data.recoveryActions || []).map((action: any) => ({
             ...action,
-            executedAt: action.executedAt.toDate(),
-            completedAt: action.completedAt ? action.completedAt.toDate() : undefined
+            executedAt: this.safeToDate(action.executedAt),
+            completedAt: action.completedAt ? this.safeToDate(action.completedAt) : undefined
           }))
         } as SystemHealthMetrics;
+        
+        return convertedData;
       });
       
     } catch (error) {

@@ -365,4 +365,19 @@ export const hasPermission = (
   return permissions[resource]?.includes(action) || false
 }
 
+// Inicializar monitoramento de conexão se Firebase está configurado
+if (typeof window !== 'undefined' && isFirebaseConfigured()) {
+  console.log('🔌 [Firebase] Inicializando monitoramento de conexão...');
+  
+  // Importar e inicializar o monitoramento de forma assíncrona
+  // para evitar problemas de dependência circular
+  import('@/services/connectionMonitorService')
+    .then(({ connectionMonitor }) => {
+      console.log('✅ [Firebase] Monitoramento de conexão inicializado');
+    })
+    .catch((error) => {
+      console.warn('⚠️ [Firebase] Falha ao inicializar monitoramento:', error);
+    });
+}
+
 export default app

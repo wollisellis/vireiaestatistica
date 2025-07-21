@@ -64,16 +64,18 @@ const getDifficultyLevel = (estimatedTime: number) => {
   return 'Muito Difícil';
 };
 
-// Sistema de classificação por estrelas - MELHORADO
+// Sistema de classificação por estrelas - PADRÃO INTERNACIONAL QS STARS EDUCACIONAL
 const getPerformanceRating = (score: number) => {
   // Normalizar score para escala 0-100
   const normalizedScore = Math.round(score);
   
-  if (normalizedScore >= 90) return { stars: 5, label: 'Excelente', color: 'text-yellow-500', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700' };
-  if (normalizedScore >= 80) return { stars: 4, label: 'Muito Bom', color: 'text-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700' };
-  if (normalizedScore >= 70) return { stars: 3, label: 'Bom', color: 'text-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700' };
-  if (normalizedScore >= 60) return { stars: 2, label: 'Regular', color: 'text-orange-500', bgColor: 'bg-orange-50', textColor: 'text-orange-700' };
-  if (normalizedScore >= 50) return { stars: 1, label: 'Fraco', color: 'text-red-500', bgColor: 'bg-red-50', textColor: 'text-red-700' };
+  // Nova escala unificada baseada no padrão internacional QS Stars para educação
+  // 75% agora dá 4 estrelas (antes eram 3) - muito mais justo!
+  if (normalizedScore >= 90) return { stars: 5, label: 'Excepcional', color: 'text-yellow-500', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700' };
+  if (normalizedScore >= 75) return { stars: 4, label: 'Muito Bom', color: 'text-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700' };
+  if (normalizedScore >= 60) return { stars: 3, label: 'Bom', color: 'text-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700' };
+  if (normalizedScore >= 40) return { stars: 2, label: 'Regular', color: 'text-orange-500', bgColor: 'bg-orange-50', textColor: 'text-orange-700' };
+  if (normalizedScore >= 20) return { stars: 1, label: 'Insuficiente', color: 'text-red-500', bgColor: 'bg-red-50', textColor: 'text-red-700' };
   return { stars: 0, label: 'Não Avaliado', color: 'text-gray-400', bgColor: 'bg-gray-50', textColor: 'text-gray-600' };
 };
 
@@ -222,8 +224,8 @@ export default function JogosPage() {
   // Use flexible access - allows both students and professors to access
   const { user, loading, hasAccess } = useFlexibleAccess();
   
-  // Firebase auth for logout functionality
-  const { user: firebaseUser, signOut } = useFirebaseAuth();
+  // Use direct Firebase auth hook for logout functionality only
+  const { signOut } = useFirebaseAuth();
   
   const [moduleProgress, setModuleProgress] = useState<ModuleProgress>({});
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
@@ -349,7 +351,7 @@ export default function JogosPage() {
   };
 
   useEffect(() => {
-    if (!firebaseUser || !db) {
+    if (!user?.uid || !db) {
       setModuleLoading(false);
       return;
     }
@@ -357,7 +359,7 @@ export default function JogosPage() {
     // Buscar progresso do usuário
     const fetchProgress = async () => {
       try {
-        const progressDoc = await getDoc(doc(db!, 'userProgress', firebaseUser.uid));
+        const progressDoc = await getDoc(doc(db!, 'userProgress', user.uid));
         if (progressDoc.exists()) {
           setModuleProgress(progressDoc.data().modules || {});
         }
@@ -379,7 +381,7 @@ export default function JogosPage() {
 
     fetchProgress();
     return () => unsubscribe();
-  }, [firebaseUser]);
+  }, [user?.uid]);
 
   const handleUnlockModule = async (moduleId: string) => {
     if (!isProfessor || !db) return;

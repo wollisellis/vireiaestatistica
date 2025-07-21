@@ -1,0 +1,649 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ========================================
+    // BIOESTAT PLATFORM - FIRESTORE SECURITY RULES
+    // ========================================
+    // Sistema educacional para avaliação nutricional - UNICAMP
+    // Versão: 2.1 - Janeiro 2025
+    // ========================================
+
+    // ========================================
+    // FUNÇÕES AUXILIARES
+    // ========================================
+
+    // Função para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Função para verificar se é o próprio usuário
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Função para verificar se é professor (usando custom claims)
+    function isProfessor() {
+      return isAuthenticated() && 
+        (request.auth.token.role == 'professor' ||
+         request.auth.token.get('role', '') == 'professor');
+    }
+
+    // Função para verificar se é estudante (usando custom claims)
+    function isStudent() {
+      return isAuthenticated() && 
+        (request.auth.token.role == 'student' ||
+         request.auth.token.get('role', '') == 'student');
+    }
+
+    // Função para verificar se é professor com fallback para documento
+    function isProfessorWithFallback() {
+      return isProfessor() ||
+        (isAuthenticated() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor');
+    }
+
+    // Função para verificar se é estudante com fallback para documento  
+    function isStudentWithFallback() {
+      return isStudent() ||
+        (isAuthenticated() &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student');
+    }
+
+    // Função para verificar email da Unicamp (com validação real)
+    function hasUnicampEmail() {
+      return isAuthenticated() &&
+        (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
+         request.auth.token.email.matches('.*@unicamp\\.br') ||
+         request.auth.token.email.matches('.*@gmail\\.com')); // Temporário para desenvolvimento
+    }
+
+    // Função para verificar se o usuário pode acessar dados de outro usuário
+    function canAccessUserData(userId) {
+      return isOwner(userId) || isProfessor();
+    }
+
+    // ========================================
+    // COLEÇÕES PRINCIPAIS
+    // ========================================
+
+    // USERS COLLECTION - Perfis de usuários
+    match /users/{userId} {
+      // Usuários podem ler e escrever apenas seus próprios dados
+      allow read, write: if isAuthenticated() && isOwner(userId);
+
+      // Professores podem ler dados de todos os usuários (sem dependência circular)
+      allow read: if isProfessor();
+
+      // Permitir criação de conta com validação de email e estrutura
+      allow create: if isAuthenticated() && hasUnicampEmail() &&
+        request.resource.data.keys().hasAll(['role', 'email', 'name']) &&
+        (request.resource.data.role == 'professor' || request.resource.data.role == 'student');
+
+      // Permitir atualização apenas do próprio perfil (sem mudar role)
+      allow update: if isAuthenticated() && isOwner(userId) &&
+        request.resource.data.role == resource.data.role;
+    }
+
+    // GAME PROGRESS COLLECTION - Progresso individual nos jogos
+    match /gameProgress/{progressId} {
+      // Estudantes podem ler/escrever apenas seu próprio progresso
+      allow read, write: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Professores podem ler todo o progresso  
+      allow read: if isProfessor() || isProfessorWithFallback();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    // COURSES COLLECTION - Cursos e turmas
+    match /courses/{courseId} {
+      // Todos os usuários autenticados podem ler cursos
+      allow read: if isAuthenticated();
+
+      // Apenas professores podem criar/editar cursos
+      allow write: if isProfessor();
+    }
+
+    // CLASSES COLLECTION - Sistema principal de turmas (ACESSO COMPARTILHADO)
+    match /classes/{classId} {
+      // Professores podem criar turmas
+      allow create: if isProfessor() &&
+        request.resource.data.professorId == request.auth.uid;
+
+      // ✅ TODOS os professores podem ler/escrever/excluir TODAS as turmas (acesso compartilhado)
+      allow read, update, delete: if isProfessor();
+
+      // Estudantes podem ler turmas onde estão matriculados
+      allow read: if isStudent() &&
+        exists(/databases/$(database)/documents/class_students/$(classId + '_' + request.auth.uid));
+    }
+
+    // DELETED CLASSES COLLECTION - Sistema de lixeira para turmas excluídas (ACESSO COMPARTILHADO)
+    match /deleted_classes/{classId} {
+      // ✅ TODOS os professores podem ler/escrever/restaurar turmas excluídas (acesso compartilhado)
+      allow read, write, delete: if isProfessor();
+
+      // Qualquer professor pode criar entrada na lixeira
+      allow create: if isProfessor();
+    }
+
+    // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas
+    match /collaborativeSessions/{sessionId} {
+      // Participantes podem ler/escrever na sessão
+      allow read, write: if isAuthenticated() &&
+        request.auth.uid in resource.data.participants;
+
+      // Professores podem ler/escrever todas as sessões
+      allow read, write: if isProfessor();
+
+      // Permitir criação de sessões por usuários autenticados
+      allow create: if isAuthenticated();
+    }
+
+    // QUESTIONS COLLECTION - Banco de questões
+    match /questions/{questionId} {
+      // Todos os usuários autenticados podem ler questões
+      allow read: if isAuthenticated();
+
+      // Apenas professores podem criar/editar questões
+      allow write: if isProfessor();
+    }
+
+    // QUESTION RESPONSES COLLECTION - Respostas dos estudantes
+    match /questionResponses/{responseId} {
+      // Estudantes podem ler/escrever apenas suas próprias respostas
+      allow read, write: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Professores podem ler todas as respostas
+      allow read: if isProfessor();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    // ACHIEVEMENTS COLLECTION - Sistema de conquistas
+    match /achievements/{achievementId} {
+      // Todos podem ler conquistas
+      allow read: if isAuthenticated();
+
+      // Apenas professores podem criar/editar conquistas
+      allow write: if isProfessor();
+    }
+
+    // USER ACHIEVEMENTS COLLECTION - Conquistas dos usuários
+    match /userAchievements/{userAchievementId} {
+      // Usuários podem ler apenas suas próprias conquistas
+      allow read: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Professores podem ler todas as conquistas
+      allow read: if isProfessor();
+
+      // Sistema pode criar conquistas (via Cloud Functions ou backend)
+      allow create: if isAuthenticated();
+    }
+
+    // ANALYTICS COLLECTION - Dados analíticos
+    match /analytics/{analyticsId} {
+      // Professores podem acessar todos os analytics
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler apenas seus próprios analytics
+      allow read: if isStudent() &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // LEADERBOARD COLLECTION - Rankings e pontuações
+    match /leaderboard/{leaderboardId} {
+      // Todos os usuários autenticados podem ler o leaderboard
+      allow read: if isAuthenticated();
+
+      // Apenas sistema pode escrever (via Cloud Functions)
+      allow write: if false;
+    }
+
+    // MODULES COLLECTION - Módulos educacionais
+    match /modules/{moduleId} {
+      // Todos os usuários autenticados podem ler módulos
+      allow read: if isAuthenticated();
+
+      // Apenas professores podem criar/editar módulos
+      allow write: if isProfessor();
+    }
+
+    // MODULE PROGRESS COLLECTION - Progresso nos módulos (atualizado)
+    match /module_progress/{progressId} {
+      // Estudantes podem ler/escrever apenas seu próprio progresso
+      allow read, write: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
+
+      // Professores podem ler todo o progresso  
+      allow read: if isProfessor() || isProfessorWithFallback();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        request.resource.data.studentId == request.auth.uid;
+    }
+
+    // STUDENT MODULE PROGRESS COLLECTION - Progresso detalhado dos estudantes nos módulos
+    match /student_module_progress/{progressId} {
+      // Estudantes podem ler/escrever apenas seu próprio progresso
+      allow read, write: if isAuthenticated() &&
+        (resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+
+      // Professores podem ler todo o progresso  
+      allow read: if isProfessor() || isProfessorWithFallback();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        (request.resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+    }
+
+    // STUDENT EXERCISE PROGRESS COLLECTION - Progresso dos estudantes nos exercícios
+    match /student_exercise_progress/{progressId} {
+      // Estudantes podem ler/escrever apenas seu próprio progresso
+      allow read, write: if isAuthenticated() &&
+        (resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+
+      // Professores podem ler todo o progresso  
+      allow read: if isProfessor() || isProfessorWithFallback();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        (request.resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+    }
+
+    // CLASS ENROLLMENTS COLLECTION - Matrículas de estudantes (alternativa)
+    match /class_enrollments/{enrollmentId} {
+      // Professores podem gerenciar matrículas
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler apenas suas próprias matrículas
+      allow read: if isStudent() &&
+        (resource.data.studentId == request.auth.uid ||
+         enrollmentId.split('_')[1] == request.auth.uid);
+
+      // Permitir criação de matrícula (para sistema de convites)
+      allow create: if isAuthenticated();
+    }
+
+    // EXERCISE ATTEMPTS COLLECTION - Tentativas de exercícios (nova)
+    match /exercise_attempts/{attemptId} {
+      // Estudantes podem ler/escrever apenas suas próprias tentativas
+      allow read, write: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
+
+      // Professores podem ler todas as tentativas
+      allow read: if isProfessor();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        request.resource.data.studentId == request.auth.uid;
+    }
+
+    // NOTIFICATIONS COLLECTION - Sistema de notificações (atualizado)
+    match /notifications/{notificationId} {
+      // Usuários podem ler apenas suas próprias notificações
+      allow read: if isAuthenticated() &&
+        resource.data.recipientId == request.auth.uid;
+
+      // Professores podem criar notificações e ler todas
+      allow create: if isProfessor();
+      allow read: if isProfessor();
+
+      // Usuários podem marcar suas notificações como lidas
+      allow update: if isAuthenticated() &&
+        resource.data.recipientId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+    }
+
+    // PROFESSOR CLASSES COLLECTION - REMOVIDA (duplicada com classes)
+    // Esta coleção foi consolidada na coleção 'classes' principal
+
+    // CLASS STUDENTS COLLECTION - Matrículas de estudantes
+    match /class_students/{studentClassId} {
+      // Professores podem gerenciar matrículas de suas turmas
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler apenas suas próprias matrículas
+      allow read: if isStudent() &&
+        resource.data.studentId == request.auth.uid;
+
+      // Permitir criação de matrícula (para sistema de convites)
+      allow create: if isAuthenticated();
+    }
+
+    // CLASSSTUDENTS COLLECTION - Compatibilidade (usado pelo ClassInviteService)
+    match /classStudents/{studentClassId} {
+      // Professores podem gerenciar matrículas de suas turmas
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler apenas suas próprias matrículas
+      allow read: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
+
+      // Permitir criação de matrícula (para sistema de convites)
+      allow create: if isAuthenticated();
+
+      // Permitir atualização para o próprio estudante
+      allow update: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
+    }
+
+    // MODULE SETTINGS COLLECTION - Configurações de módulos por turma
+    match /module_settings/{settingId} {
+      // Apenas professores podem configurar módulos
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler configurações dos módulos
+      allow read: if isStudent();
+    }
+
+    // CLASS ANALYTICS COLLECTION - Analytics por turma (ACESSO COMPARTILHADO)
+    match /class_analytics/{analyticsId} {
+      // ✅ TODOS os professores podem acessar analytics de TODAS as turmas (acesso compartilhado)
+      allow read, write, create: if isProfessor();
+    }
+
+    // CLASS INVITES COLLECTION - Sistema de convites para turmas (ACESSO COMPARTILHADO)
+    match /class_invites/{inviteId} {
+      // ✅ TODOS os professores podem gerenciar convites de TODAS as turmas (acesso compartilhado)
+      allow read, write, create: if isProfessor();
+
+      // Estudantes podem ler convites públicos para matrícula
+      allow read: if isStudent();
+    }
+
+    // CLASSIVITES COLLECTION - Convites de turma (compatibilidade) (ACESSO COMPARTILHADO)
+    match /classInvites/{inviteCode} {
+      // ✅ TODOS os professores podem gerenciar convites de TODAS as turmas (acesso compartilhado)
+      allow read, write, create: if isProfessor();
+
+      // Estudantes podem ler convites públicos para matrícula
+      allow read: if isStudent();
+    }
+
+    // RANKINGS COLLECTION - Rankings e classificações
+    match /rankings/{rankingId} {
+      // Todos os usuários autenticados podem ler rankings
+      allow read: if isAuthenticated();
+
+      // Apenas sistema pode escrever rankings (via Cloud Functions)
+      allow write: if false;
+    }
+
+    // UNIFIED SCORES COLLECTION - Sistema de pontuação unificado
+    match /unified_scores/{studentId} {
+      // Estudantes podem ler/escrever apenas sua própria pontuação
+      allow read, write: if isAuthenticated() && isOwner(studentId);
+
+      // Professores podem ler todas as pontuações
+      allow read: if isProfessor();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
+    }
+
+    // USER PROGRESS COLLECTION - Progresso unificado dos usuários
+    match /userProgress/{userId} {
+      // Usuários podem ler/escrever apenas seu próprio progresso
+      allow read, write, create: if isAuthenticated() && isOwner(userId);
+
+      // Professores podem ler todo o progresso  
+      allow read: if isProfessor() || isProfessorWithFallback();
+    }
+
+    // RANDOMIZED QUIZZES COLLECTION - Sistema de quiz aleatório estilo Khan Academy
+    match /randomized_quizzes/{quizId} {
+      // Estudantes podem ler/escrever apenas seus próprios quizzes
+      allow read, write: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
+
+      // Professores podem ler todos os quizzes
+      allow read: if isProfessor();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        request.resource.data.studentId == request.auth.uid;
+    }
+
+    // QUIZ ATTEMPTS COLLECTION - Tentativas de quiz dos estudantes
+    match /quiz_attempts/{attemptId} {
+      // Estudantes podem ler/escrever apenas suas próprias tentativas
+      allow read, write: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
+
+      // Professores podem ler todas as tentativas
+      allow read: if isProfessor();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        request.resource.data.studentId == request.auth.uid;
+    }
+
+    // QUIZ SESSIONS COLLECTION - Sessões ativas de quiz
+    match /quiz_sessions/{sessionId} {
+      // Estudantes podem ler/escrever suas próprias sessões (ID formato: studentId_quizId)
+      allow read, write, create: if isAuthenticated() && 
+        (sessionId.split('_')[0] == request.auth.uid ||
+         (resource != null && resource.data.studentId == request.auth.uid) ||
+         request.resource.data.studentId == request.auth.uid);
+
+      // Professores podem ler todas as sessões
+      allow read: if isProfessor();
+    }
+
+    // ENHANCED RANKINGS COLLECTION - Sistema de ranking melhorado
+    match /enhanced_rankings/{rankingId} {
+      // Todos os usuários autenticados podem ler rankings
+      allow read: if isAuthenticated();
+
+      // Sistema pode escrever rankings (via backend/Cloud Functions)
+      allow write: if false;
+    }
+
+    // RANKING STATS COLLECTION - Estatísticas de ranking
+    match /ranking_stats/{statId} {
+      // Todos os usuários autenticados podem ler estatísticas
+      allow read: if isAuthenticated();
+
+      // Sistema pode escrever estatísticas (via backend/Cloud Functions)
+      allow write: if false;
+    }
+
+    // RANKING HISTORY COLLECTION - Histórico de ranking
+    match /ranking_history/{historyId} {
+      // Todos os usuários autenticados podem ler histórico
+      allow read: if isAuthenticated();
+
+      // Sistema pode escrever histórico (via backend/Cloud Functions)
+      allow write: if false;
+    }
+
+    // FEEDBACK COLLECTION - Feedback dos estudantes
+    match /feedback/{feedbackId} {
+      // Usuários podem ler apenas seu próprio feedback
+      allow read: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Professores podem ler todo o feedback
+      allow read: if isProfessor();
+
+      // Usuários autenticados podem criar feedback
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    // SYSTEM HEALTH COLLECTION - Métricas de saúde do sistema (ACESSO COMPARTILHADO)
+    match /system_health/{healthId} {
+      // ✅ TODOS os professores podem ler métricas de saúde (acesso compartilhado)
+      // 🔧 CORREÇÃO: Permitir acesso com fallback para corrigir problemas de permissão
+      allow read: if isProfessor() || isProfessorWithFallback() || isAuthenticated();
+
+      // Sistema pode escrever métricas (via serviços automatizados)
+      allow create: if isProfessor() || isProfessorWithFallback() || isAuthenticated();
+      allow update: if isProfessor() || isProfessorWithFallback() || isAuthenticated();
+    }
+
+    // HEALTH ISSUES COLLECTION - Issues detectadas pelo sistema (ACESSO COMPARTILHADO)
+    match /health_issues/{issueId} {
+      // ✅ TODOS os professores podem ler issues do sistema (acesso compartilhado)
+      allow read: if isProfessor();
+
+      // Sistema pode criar issues (via SystemHealthService)
+      allow create: if isProfessor();
+
+      // Professores podem marcar issues como resolvidas
+      allow update: if isProfessor();
+    }
+
+    // HEALTH ALERTS COLLECTION - Alertas do sistema para professores (ACESSO COMPARTILHADO)
+    match /health_alerts/{alertId} {
+      // ✅ TODOS os professores podem ler alertas do sistema (acesso compartilhado)
+      allow read: if isProfessor();
+
+      // Sistema pode criar alertas para professores
+      allow create: if isProfessor();
+
+      // Professores podem marcar alertas como lidos
+      allow update: if isProfessor() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+    }
+
+    // SYSTEM LOGS COLLECTION - Logs do sistema para debug e auditoria (ACESSO COMPARTILHADO)
+    match /system_logs/{logId} {
+      // ✅ TODOS os professores podem ler logs do sistema (acesso compartilhado)
+      allow read: if isProfessor();
+
+      // Sistema pode criar logs
+      allow create: if isProfessor();
+    }
+
+    // STUDY CASES COLLECTION - Casos de estudo colaborativos
+    match /studyCases/{caseId} {
+      // Todos os usuários autenticados podem ler casos de estudo
+      allow read: if isAuthenticated();
+
+      // Apenas professores podem criar/editar casos
+      allow write: if isProfessor();
+    }
+
+    // STUDY CASE RESPONSES COLLECTION - Respostas aos casos de estudo
+    match /studyCaseResponses/{responseId} {
+      // Participantes podem ler/escrever respostas do seu grupo
+      allow read, write: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         request.auth.uid in resource.data.collaborators);
+
+      // Professores podem ler todas as respostas
+      allow read: if isProfessor();
+
+      // Permitir criação por usuários autenticados
+      allow create: if isAuthenticated();
+    }
+
+    // SYSTEM SETTINGS COLLECTION - Configurações do sistema
+    match /systemSettings/{settingId} {
+      // Apenas professores podem acessar configurações do sistema
+      allow read, write: if isProfessor();
+    }
+
+    // SETTINGS COLLECTION - Configurações gerais (incluindo módulos)
+    match /settings/{settingId} {
+      // Todos os usuários autenticados podem ler configurações
+      allow read: if isAuthenticated();
+
+      // Apenas professores podem escrever configurações
+      allow write: if isProfessor();
+    }
+
+    // AUDIT LOGS COLLECTION - Logs de auditoria
+    match /auditLogs/{logId} {
+      // Apenas professores podem ler logs de auditoria
+      allow read: if isProfessor();
+
+      // Sistema pode criar logs (via Cloud Functions)
+      allow create: if isAuthenticated();
+    }
+
+    // ========================================
+    // SUBCOLEÇÕES
+    // ========================================
+
+    // Subcoleção de sessões de usuário
+    match /users/{userId}/sessions/{sessionId} {
+      allow read, write: if canAccessUserData(userId);
+    }
+
+    // Subcoleção de estatísticas de usuário
+    match /users/{userId}/statistics/{statId} {
+      allow read, write: if canAccessUserData(userId);
+    }
+
+    // Subcoleção de preferências de usuário
+    match /users/{userId}/preferences/{prefId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ========================================
+    // REGRA FINAL - BLOQUEAR TUDO MAIS
+    // ========================================
+
+    // Bloquear acesso a qualquer outra coleção não especificada
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// ========================================
+// NOTAS DE SEGURANÇA E IMPLEMENTAÇÃO
+// ========================================
+//
+// VALIDAÇÕES IMPLEMENTADAS:
+// 1. Autenticação obrigatória para todas as operações
+// 2. Validação de email institucional @dac.unicamp.br ou @unicamp.br
+// 3. Controle de acesso baseado em roles (professor/student)
+// 4. Isolamento de dados por usuário e turma
+// 5. Validação de estrutura de dados obrigatórios
+// 6. Prevenção de escalação de privilégios
+//
+// COLEÇÕES PRINCIPAIS ADICIONADAS:
+// - classes: Sistema de turmas com analytics integrado
+// - class_students: Matrículas e relacionamentos estudante-turma
+// - module_settings: Controle granular de módulos por turma
+// - class_analytics: Métricas de desempenho e engajamento
+// - class_invites: Sistema de convites com códigos únicos
+//
+// FUNCIONALIDADES DE SEGURANÇA:
+// - Professores só podem acessar suas próprias turmas
+// - Estudantes só podem ver turmas onde estão matriculados
+// - Validação de tipos de dados em criações
+// - Auditoria automática via Cloud Functions
+// - Prevenção de acesso a dados sensíveis
+//
+// PERFORMANCE E ESCALABILIDADE:
+// - Índices compostos recomendados para consultas frequentes
+// - Paginação implementada para listagens grandes
+// - Cache de permissões para melhor performance
+// - Estrutura otimizada para consultas em tempo real
+//
+// PRÓXIMAS MELHORIAS RECOMENDADAS:
+// 1. Implementar rate limiting para operações críticas
+// 2. Adicionar logs de auditoria mais detalhados
+// 3. Implementar backup automático de dados críticos
+// 4. Adicionar validação de IP para acesso administrativo
+// 5. Implementar criptografia adicional para dados sensíveis

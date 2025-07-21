@@ -27,14 +27,16 @@ const getTimeAgo = (lastActivity: any) => {
   return safeGetTimeAgo(lastActivity);
 };
 
-// Função para calcular rating por estrelas
+// Função para calcular rating por estrelas - PADRÃO INTERNACIONAL QS STARS EDUCACIONAL
 const getStarRating = (score: number) => {
-  if (score >= 95) return { stars: 5, label: 'Perfeito', color: 'text-yellow-500', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700' };
-  if (score >= 85) return { stars: 4, label: 'Excelente', color: 'text-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700' };
-  if (score >= 70) return { stars: 3, label: 'Bom', color: 'text-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700' };
-  if (score >= 60) return { stars: 2, label: 'Regular', color: 'text-orange-500', bgColor: 'bg-orange-50', textColor: 'text-orange-700' };
-  if (score >= 50) return { stars: 1, label: 'Fraco', color: 'text-red-500', bgColor: 'bg-red-50', textColor: 'text-red-700' };
-  return { stars: 0, label: 'Não Tentado', color: 'text-gray-400', bgColor: 'bg-gray-50', textColor: 'text-gray-600' };
+  // Nova escala baseada no padrão internacional QS Stars para educação
+  // 75% agora dá 4 estrelas (antes eram 3) - muito mais justo!
+  if (score >= 90) return { stars: 5, label: 'Excepcional', color: 'text-yellow-500', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700' };
+  if (score >= 75) return { stars: 4, label: 'Muito Bom', color: 'text-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700' };
+  if (score >= 60) return { stars: 3, label: 'Bom', color: 'text-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700' };
+  if (score >= 40) return { stars: 2, label: 'Regular', color: 'text-orange-500', bgColor: 'bg-orange-50', textColor: 'text-orange-700' };
+  if (score >= 20) return { stars: 1, label: 'Insuficiente', color: 'text-red-500', bgColor: 'bg-red-50', textColor: 'text-red-700' };
+  return { stars: 0, label: 'Não Avaliado', color: 'text-gray-400', bgColor: 'bg-gray-50', textColor: 'text-gray-600' };
 };
 
 // Componente de estrelas
@@ -76,40 +78,43 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       <Card className={`
-        cursor-pointer transition-all duration-300 border-2 h-full min-h-[420px]
+        cursor-pointer transition-all duration-300 border-2 h-full min-h-[480px] shadow-lg
         ${game.isLocked 
           ? 'bg-gray-50 border-gray-200 opacity-60' 
           : game.moduleStatus === 'completed'
-            ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:border-green-300' 
+            ? 'bg-gradient-to-br from-green-50 via-green-25 to-emerald-100 border-green-300 hover:border-green-400 hover:shadow-green-200/50' 
             : game.moduleStatus === 'attempted_failed'
-              ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:border-orange-300'
-              : 'bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200 hover:border-blue-300'
+              ? 'bg-gradient-to-br from-orange-50 via-orange-25 to-amber-100 border-orange-300 hover:border-orange-400 hover:shadow-orange-200/50'
+              : 'bg-gradient-to-br from-blue-50 via-blue-25 to-indigo-100 border-blue-300 hover:border-blue-400 hover:shadow-blue-200/50'
         }
-        hover:shadow-xl group
+        hover:shadow-2xl hover:shadow-blue-200/25 hover:-translate-y-1 group
       `}>
-        <div className="p-7 h-full flex flex-col">
+        <div className="p-8 h-full flex flex-col">
           {/* Header com Status */}
           <div className="flex items-start justify-between mb-5">
             <div className="flex items-start space-x-4">
               <div className={`
-                w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0
+                w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 shadow-lg transform group-hover:scale-110 transition-all duration-300
                 ${game.isLocked 
                   ? 'bg-gray-200 text-gray-400' 
                   : game.moduleStatus === 'completed'
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-green-200'
                     : game.moduleStatus === 'attempted_failed'
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-blue-500 text-white'
+                      ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-200'
+                      : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200'
                 }
               `}>
                 {game.isLocked ? '🔒' : game.icon}
               </div>
               
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-xl text-gray-900 group-hover:text-blue-600 transition-colors leading-tight mb-1">
+                <h3 className="font-bold text-2xl text-gray-900 group-hover:text-blue-600 transition-colors leading-tight mb-2">
                   {game.title}
                 </h3>
-                <p className="text-sm text-gray-600 font-medium">{game.estimatedTime}</p>
+                <p className="text-base text-gray-700 font-semibold flex items-center">
+                  <Clock className="w-4 h-4 mr-1.5" />
+                  {game.estimatedTime}
+                </p>
               </div>
             </div>
 
