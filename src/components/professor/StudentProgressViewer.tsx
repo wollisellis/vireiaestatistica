@@ -12,6 +12,8 @@ import {
   StudentOverview,
   ClassStatistics 
 } from '@/services/professorClassService'
+import { enhancedClassService } from '@/services/enhancedClassService'
+import { EnhancedStudentOverview } from '@/types/classes'
 import { modules } from '@/data/modules'
 import { 
   Users, 
@@ -56,15 +58,54 @@ export function StudentProgressViewer({ classId, className = '' }: StudentProgre
   const loadStudentData = async () => {
     try {
       setIsLoading(true)
-      const [studentsData, statsData] = await Promise.all([
-        ProfessorClassService.getClassStudents(classId),
-        ProfessorClassService.getClassStatistics(classId)
-      ])
+      console.log('[StudentProgressViewer] 🔄 Carregando dados com sistema unificado')
+      
+      // 🚀 CORREÇÃO: Usar enhancedClassService (sistema unificado)
+      const enhancedStudents = await enhancedClassService.getClassStudents(classId)
+      
+      // Converter EnhancedStudentOverview para StudentOverview para compatibilidade
+      const studentsData: StudentOverview[] = enhancedStudents.map((student, index) => ({
+        studentId: student.studentId,
+        studentName: student.studentName,
+        email: student.email,
+        enrolledAt: student.enrolledAt,
+        overallProgress: student.overallProgress,
+        totalNormalizedScore: student.totalNormalizedScore,
+        completedModules: student.completedModules,
+        moduleStatus: student.moduleProgress?.reduce((acc, mp) => ({
+          ...acc,
+          [mp.moduleId]: {
+            isUnlocked: true,
+            isCompleted: mp.isCompleted,
+            normalizedScore: mp.score,
+            timeSpent: mp.timeSpent,
+            exercisesCompleted: mp.completedExercises,
+            totalExercises: mp.totalExercises
+          }
+        }), {}) || {},
+        isActive: student.status === 'active',
+        lastActivity: student.lastActivity,
+        currentStreak: student.currentStreak || 0,
+        averageScore: student.completedModules > 0 
+          ? student.totalNormalizedScore / student.completedModules 
+          : 0,
+        averageAttempts: 1,
+        perfectExercises: student.moduleProgress?.reduce((sum, m) => 
+          sum + m.exercises.filter(ex => ex.score === ex.maxScore).length, 0) || 0,
+        classRank: student.classRank || (index + 1),
+        percentile: Math.round(((enhancedStudents.length - (index + 1)) / enhancedStudents.length) * 100)
+      }))
+      
+      // Por enquanto, manter getClassStatistics do ProfessorClassService
+      // TODO: Migrar estatísticas para sistema unificado
+      const statsData = await ProfessorClassService.getClassStatistics(classId)
       
       setStudents(studentsData)
       setClassStats(statsData)
+      
+      console.log(`[StudentProgressViewer] ✅ ${studentsData.length} estudantes carregados`)
     } catch (error) {
-      console.error('Erro ao carregar dados dos estudantes:', error)
+      console.error('[StudentProgressViewer] ❌ Erro ao carregar dados:', error)
     } finally {
       setIsLoading(false)
     }
@@ -98,11 +139,32 @@ export function StudentProgressViewer({ classId, className = '' }: StudentProgre
   // Exportar dados
   const handleExportData = async () => {
     try {
-      const exportData = await ProfessorClassService.exportClassData(classId)
+      // 🚀 CORREÇÃO: Usar dados unificados para exportação
+      const enhancedStudents = await enhancedClassService.getClassStudents(classId)
+      
+      // Converter para formato de exportação
+      const exportData = enhancedStudents.map((student, index) => ({
+        nome: student.studentName,
+        email: student.email || '',
+        progresso_geral: `${student.overallProgress}%`,
+        pontuacao_total: student.totalNormalizedScore,
+        modulos_completos: student.completedModules,
+        media_pontuacao: (student.completedModules > 0 
+          ? student.totalNormalizedScore / student.completedModules 
+          : 0).toFixed(1),
+        exercicios_perfeitos: student.moduleProgress?.reduce((sum, m) => 
+          sum + m.exercises.filter(ex => ex.score === ex.maxScore).length, 0) || 0,
+        ultimo_acesso: student.lastActivity?.toDate?.()?.toLocaleDateString('pt-BR') || '',
+        ranking_turma: student.classRank || (index + 1),
+        percentil: `${Math.round(((enhancedStudents.length - (index + 1)) / enhancedStudents.length) * 100)}%`
+      }))
+      
       const csv = convertToCSV(exportData)
       downloadCSV(csv, `turma_${classId}_dados.csv`)
+      
+      console.log('[StudentProgressViewer] ✅ Dados exportados com sistema unificado')
     } catch (error) {
-      console.error('Erro ao exportar dados:', error)
+      console.error('[StudentProgressViewer] ❌ Erro ao exportar dados:', error)
     }
   }
 

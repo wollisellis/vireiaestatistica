@@ -22,6 +22,8 @@ import { StudentModuleProgress } from '@/lib/moduleProgressSystem'
 import ModuleProgressService from './moduleProgressService'
 import { modules } from '@/data/modules'
 import { ClassInviteService } from './classInviteService'
+import { enhancedClassService } from './enhancedClassService'
+import { EnhancedStudentOverview } from '@/types/classes'
 
 export interface ClassInfo {
   id: string
@@ -294,24 +296,99 @@ export class ProfessorClassService {
     }
   }
 
-  // Obter estudantes da turma
+  // 🚀 CORREÇÃO: Obter estudantes da turma usando sistema unificado
   static async getClassStudents(classId: string): Promise<StudentOverview[]> {
     try {
-      // Buscar estudantes da turma na coleção 'classStudents' (usada pelo ClassInviteService)
+      console.log(`[ProfessorClassService] 🔄 Buscando estudantes da turma ${classId} (sistema unificado)`)
+      
+      // Usar enhancedClassService que já está integrado com unifiedScoringService
+      const enhancedStudents = await enhancedClassService.getClassStudents(classId)
+      
+      if (!enhancedStudents || enhancedStudents.length === 0) {
+        console.log(`[ProfessorClassService] ⚠️ Nenhum estudante encontrado na turma ${classId}`)
+        return []
+      }
+      
+      // Converter EnhancedStudentOverview para StudentOverview (compatibilidade)
+      const students: StudentOverview[] = enhancedStudents.map((enhancedStudent, index) => {
+        
+        // Mapear dados do sistema unificado para interface legacy
+        const moduleStatus: { [moduleId: string]: any } = {}
+        enhancedStudent.moduleProgress?.forEach(moduleProgress => {
+          moduleStatus[moduleProgress.moduleId] = {
+            isUnlocked: true, // Assume desbloqueado se está no progresso
+            isCompleted: moduleProgress.isCompleted,
+            normalizedScore: moduleProgress.score,
+            timeSpent: moduleProgress.timeSpent,
+            exercisesCompleted: moduleProgress.completedExercises,
+            totalExercises: moduleProgress.totalExercises
+          }
+        }) || {}
+        
+        const studentOverview: StudentOverview = {
+          studentId: enhancedStudent.studentId,
+          studentName: enhancedStudent.studentName,
+          email: enhancedStudent.email,
+          enrolledAt: enhancedStudent.enrolledAt,
+          
+          // Usar dados normalizados do sistema unificado
+          overallProgress: enhancedStudent.overallProgress,
+          totalNormalizedScore: enhancedStudent.totalNormalizedScore, // Já normalizado 0-100
+          completedModules: enhancedStudent.completedModules,
+          
+          moduleStatus,
+          isActive: enhancedStudent.status === 'active',
+          lastActivity: enhancedStudent.lastActivity,
+          currentStreak: enhancedStudent.currentStreak || 0,
+          
+          // Calcular métricas derivadas
+          averageScore: enhancedStudent.completedModules > 0 
+            ? enhancedStudent.totalNormalizedScore / enhancedStudent.completedModules 
+            : 0,
+          averageAttempts: enhancedStudent.moduleProgress?.reduce((sum, m) => sum + (m.attempts || 1), 0) / (enhancedStudent.moduleProgress?.length || 1) || 1,
+          perfectExercises: enhancedStudent.moduleProgress?.reduce((sum, m) => {
+            return sum + m.exercises.filter(ex => ex.score === ex.maxScore).length
+          }, 0) || 0,
+          
+          // Ranking será calculado depois
+          classRank: enhancedStudent.classRank || (index + 1),
+          percentile: Math.round(((enhancedStudents.length - (index + 1)) / enhancedStudents.length) * 100)
+        }
+        
+        return studentOverview
+      })
+      
+      console.log(`[ProfessorClassService] ✅ ${students.length} estudantes carregados com dados unificados`)
+      
+      // Dados já vêm ordenados do enhancedClassService
+      return students
+      
+    } catch (error) {
+      console.error('[ProfessorClassService] ❌ Erro ao obter estudantes (sistema unificado):', error)
+      
+      // Fallback para sistema legacy se enhancedClassService falhar
+      console.log('[ProfessorClassService] 🔄 Tentando fallback para sistema legacy...')
+      return this.getClassStudentsLegacy(classId)
+    }
+  }
+
+  // 🗂️ FALLBACK: Método legacy mantido para compatibilidade
+  private static async getClassStudentsLegacy(classId: string): Promise<StudentOverview[]> {
+    try {
+      console.log(`[ProfessorClassService] ⚠️ Usando sistema legacy para turma ${classId}`)
+      
       const q = query(
         collection(db, 'classStudents'),
-        where('studentId', '!=', null) // Buscar todos os estudantes
+        where('studentId', '!=', null)
       )
       
       const querySnapshot = await getDocs(q)
       const students: StudentOverview[] = []
       
-      // Filtrar estudantes da turma específica e incluir apenas ativos
       for (const doc of querySnapshot.docs) {
         const studentData = doc.data()
         const docId = doc.id
         
-        // Verificar se o documento pertence à turma específica
         if (docId.startsWith(`${classId}_`) && studentData.status === 'active') {
           const studentProgress = await ModuleProgressService.loadStudentProgress(studentData.studentId)
           
@@ -322,10 +399,8 @@ export class ProfessorClassService {
         }
       }
       
-      // Ordenar por ranking (melhor pontuação primeiro)
       students.sort((a, b) => b.totalNormalizedScore - a.totalNormalizedScore)
       
-      // Atribuir ranks
       students.forEach((student, index) => {
         student.classRank = index + 1
         student.percentile = Math.round(((students.length - (index + 1)) / students.length) * 100)
@@ -333,7 +408,7 @@ export class ProfessorClassService {
       
       return students
     } catch (error) {
-      console.error('Erro ao obter estudantes da turma:', error)
+      console.error('[ProfessorClassService] ❌ Erro no fallback legacy:', error)
       return []
     }
   }
