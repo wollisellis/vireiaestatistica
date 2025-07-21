@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import rankingService, { RankingEntry, RankingStats } from '@/services/rankingService';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
-import { MockRankingService } from '@/lib/mockRankingData';
 
 interface RankingPanelProps {
   className?: string;
@@ -82,17 +81,16 @@ export function RankingPanel({
         ? await rankingService.getModuleRanking(moduleId, user?.id, displayLimit)
         : await rankingService.getGeneralRanking(user?.id, displayLimit);
       
-      // Se não há dados reais, usar dados mock
+      // Se não há dados reais, mostrar estado vazio
       if (rankingData.length === 0) {
-        console.log('Nenhum dado real encontrado, usando dados mock...');
-        const mockData = MockRankingService.getMockRankingLocal();
-        setRankings(mockData.slice(0, displayLimit));
+        console.log('Nenhum dado real encontrado - exibindo estado vazio');
+        setRankings([]);
         
         if (showStats) {
           setStats({
-            totalStudents: mockData.length,
-            averageScore: Math.round(mockData.reduce((sum, entry) => sum + entry.totalScore, 0) / mockData.length),
-            highestScore: mockData[0]?.totalScore || 0,
+            totalStudents: 0,
+            averageScore: 0,
+            highestScore: 0,
             userPosition: 0
           });
         }
@@ -107,23 +105,17 @@ export function RankingPanel({
       }
     } catch (err) {
       console.error('Erro ao carregar ranking:', err);
-      // Em caso de erro, tentar usar dados mock como fallback
-      try {
-        console.log('Usando dados mock como fallback...');
-        const mockData = MockRankingService.getMockRankingLocal();
-        setRankings(mockData.slice(0, displayLimit));
-        
-        if (showStats) {
-          setStats({
-            totalStudents: mockData.length,
-            averageScore: Math.round(mockData.reduce((sum, entry) => sum + entry.totalScore, 0) / mockData.length),
-            highestScore: mockData[0]?.totalScore || 0,
-            userPosition: 0
-          });
-        }
-        setError(null); // Limpar erro se o fallback funcionar
-      } catch (fallbackErr) {
-        setError('Erro ao carregar ranking');
+      // Em caso de erro, exibir estado de erro apropriado
+      setError('Não foi possível carregar o ranking. Tente novamente.');
+      setRankings([]);
+      
+      if (showStats) {
+        setStats({
+          totalStudents: 0,
+          averageScore: 0,
+          highestScore: 0,
+          userPosition: 0
+        });
       }
     } finally {
       setLoading(false);

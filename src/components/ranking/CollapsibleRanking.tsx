@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import rankingService, { RankingEntry, RankingStats } from '@/services/rankingService';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
-import { MockRankingService } from '@/lib/mockRankingData';
 
 interface CollapsibleRankingProps {
   moduleId?: string;
@@ -71,13 +70,13 @@ export function CollapsibleRanking({ moduleId }: CollapsibleRankingProps) {
         : await rankingService.getGeneralRanking(user?.id, displayLimit);
       
       if (rankingData.length === 0) {
-        const mockData = MockRankingService.getMockRankingLocal();
-        setRankings(mockData.slice(0, displayLimit));
+        console.log('Nenhum dado real encontrado - exibindo estado vazio');
+        setRankings([]);
         
         setStats({
-          totalStudents: mockData.length,
-          averageScore: Math.round(mockData.reduce((sum, entry) => sum + entry.totalScore, 0) / mockData.length),
-          highestScore: mockData[0]?.totalScore || 0,
+          totalStudents: 0,
+          averageScore: 0,
+          highestScore: 0,
           userPosition: 0
         });
       } else {
@@ -87,20 +86,16 @@ export function CollapsibleRanking({ moduleId }: CollapsibleRankingProps) {
       }
     } catch (err) {
       console.error('Erro ao carregar ranking:', err);
-      try {
-        const mockData = MockRankingService.getMockRankingLocal();
-        setRankings(mockData.slice(0, displayLimit));
-        
-        setStats({
-          totalStudents: mockData.length,
-          averageScore: Math.round(mockData.reduce((sum, entry) => sum + entry.totalScore, 0) / mockData.length),
-          highestScore: mockData[0]?.totalScore || 0,
-          userPosition: 0
-        });
-        setError(null);
-      } catch (fallbackErr) {
-        setError('Erro ao carregar ranking');
-      }
+      // Em caso de erro, exibir estado de erro apropriado
+      setError('Não foi possível carregar o ranking. Tente novamente.');
+      setRankings([]);
+      
+      setStats({
+        totalStudents: 0,
+        averageScore: 0,
+        highestScore: 0,
+        userPosition: 0
+      });
     } finally {
       setLoading(false);
     }
