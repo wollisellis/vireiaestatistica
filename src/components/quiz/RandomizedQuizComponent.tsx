@@ -450,7 +450,7 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {results.feedback.map((feedback, index) => (
+              {results.feedback && results.feedback.length > 0 ? results.feedback.map((feedback, index) => (
                 <div 
                   key={index}
                   className={`p-4 rounded-lg border-l-4 ${
@@ -495,7 +495,11 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
                     </div>
                   )}
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Nenhum feedback disponível</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

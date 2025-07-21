@@ -87,11 +87,11 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   const loadClasses = async () => {
     try {
       setIsLoading(true)
-      console.log('Carregando turmas para professor:', professorId)
+      console.log('Carregando TODAS as turmas (acesso compartilhado)')
       
-      // Tentar carregar do Firebase
+      // Carregar todas as turmas - acesso compartilhado entre professores
       const classesData = await ProfessorClassService.getProfessorClasses(professorId)
-      console.log('Turmas carregadas:', classesData)
+      console.log('Turmas carregadas (todas):', classesData)
       
       setClasses(classesData)
     } catch (error) {
@@ -131,10 +131,17 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       )
       
       setIsCreatingClass(false)
+      
+      // Aguardar para garantir que o Firebase processou todas as escritas
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Recarregar turmas com retry em caso de falha
+      console.log('🔄 Recarregando turmas após criação...')
       await loadClasses()
       
-      // Aguardar um pouco para garantir que o Firebase processou todas as escritas
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Segundo refresh para garantia
+      await new Promise(resolve => setTimeout(resolve, 500))
+      await loadClasses()
       
       // Buscar as informações da turma criada para mostrar o modal de convites
       console.log('Buscando informações da turma criada:', classId)
