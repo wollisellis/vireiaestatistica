@@ -68,6 +68,7 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
   const [error, setError] = useState<string | null>(null);
   const [showExplanations, setShowExplanations] = useState(false);
   const [previousAttempt, setPreviousAttempt] = useState<QuizAttempt | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Timer para contabilizar tempo
   useEffect(() => {
@@ -224,12 +225,22 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
    * Sair do quiz e voltar para página de jogos
    */
   const handleExitQuiz = () => {
-    const confirmExit = window.confirm(
-      'Tem certeza que deseja sair do quiz? Seu progresso atual será perdido.'
-    );
-    if (confirmExit) {
-      router.push('/jogos');
-    }
+    setShowExitConfirm(true);
+  };
+
+  /**
+   * Confirmar saída do quiz
+   */
+  const confirmExitQuiz = () => {
+    setShowExitConfirm(false);
+    router.push('/jogos');
+  };
+
+  /**
+   * Cancelar saída do quiz
+   */
+  const cancelExitQuiz = () => {
+    setShowExitConfirm(false);
   };
 
   /**
@@ -507,6 +518,49 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Modal de Confirmação de Saída */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-8 w-8 text-orange-500" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Sair do Quiz
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Tem certeza que deseja sair?
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-6">
+              <p className="text-sm text-orange-800">
+                ⚠️ Seu progresso atual será perdido, mas você pode retomar o quiz a qualquer momento.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={cancelExitQuiz}
+                className="px-4 py-2"
+              >
+                Continuar Quiz
+              </Button>
+              <Button
+                onClick={confirmExitQuiz}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair Mesmo Assim
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Progresso Anterior */}
       {previousAttempt && (
         <Card className={`border-l-4 ${previousAttempt.passed ? 'border-l-green-500 bg-green-50' : 'border-l-orange-500 bg-orange-50'}`}>
@@ -541,45 +595,53 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
 
       {/* Header do Quiz */}
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-2xl">
-                Quiz: Introdução à Avaliação Nutricional
-              </CardTitle>
-              <p className="text-gray-600 mt-2">
-                Responda 7 questões sorteadas aleatoriamente. Você precisa de 70% de acertos para concluir o módulo.
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className="flex items-center text-gray-600 mb-1">
-                  <Clock className="h-4 w-4 mr-1" />
-                  <span className="font-mono">{formatTime(timeSpent)}</span>
+        <CardHeader className="relative">
+          {/* Botão Sair - Posição Superior Direita */}
+          <div className="absolute top-4 right-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExitQuiz}
+              className="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+              title="Sair do quiz"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Conteúdo Principal do Header */}
+          <div className="pr-12">
+            <CardTitle className="text-2xl mb-2">
+              Quiz: Introdução à Avaliação Nutricional
+            </CardTitle>
+            <p className="text-gray-600 mb-4">
+              Responda 7 questões sorteadas aleatoriamente. Você precisa de 70% de acertos para concluir o módulo.
+            </p>
+
+            {/* Métricas do Quiz */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center text-gray-600">
+                  <Clock className="h-4 w-4 mr-2" />
+                  <span className="font-mono text-lg font-semibold">{formatTime(timeSpent)}</span>
                 </div>
-                <div className="text-sm text-gray-500">
-                  {answeredQuestions}/{totalQuestions} respondidas
+                <div className="flex items-center text-gray-600">
+                  <Target className="h-4 w-4 mr-2" />
+                  <span className="text-sm">
+                    <span className="font-semibold">{answeredQuestions}</span>/{totalQuestions} respondidas
+                  </span>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                onClick={handleExitQuiz}
-                className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
-                title="Sair do quiz"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </Button>
             </div>
-          </div>
-          
-          {/* Barra de Progresso */}
-          <div className="mt-4">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Questão {currentQuestion + 1} de {totalQuestions}</span>
-              <span>{Math.round(progressPercentage)}% concluído</span>
+
+            {/* Barra de Progresso */}
+            <div>
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Questão {currentQuestion + 1} de {totalQuestions}</span>
+                <span className="font-medium">{Math.round(progressPercentage)}% concluído</span>
+              </div>
+              <Progress value={progressPercentage} className="h-2" />
             </div>
-            <Progress value={progressPercentage} className="h-3" />
           </div>
         </CardHeader>
       </Card>
