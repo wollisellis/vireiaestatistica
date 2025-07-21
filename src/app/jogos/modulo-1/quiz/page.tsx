@@ -61,7 +61,7 @@ export default function Module1QuizPage() {
           <Card>
             <CardContent className="p-4 text-center">
               <Clock className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">30</div>
+              <div className="text-2xl font-bold text-gray-900">15</div>
               <div className="text-sm text-gray-600">Minutos</div>
             </CardContent>
           </Card>
@@ -85,7 +85,7 @@ export default function Module1QuizPage() {
               <ul className="space-y-2 text-gray-700">
                 <li className="flex items-center">
                   <Target className="w-4 h-4 text-blue-600 mr-2 flex-shrink-0" />
-                  <span><strong>Mínimo de 70% de acertos</strong> para aprovação (5 questões certas)</span>
+                  <span><strong>Mínimo de 70% de acertos</strong> para conclusão do módulo</span>
                 </li>
                 <li className="flex items-center">
                   <Trophy className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />

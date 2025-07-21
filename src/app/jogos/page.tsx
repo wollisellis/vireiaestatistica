@@ -36,7 +36,7 @@ import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearni
 import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
-import { CollapsibleRanking } from '@/components/ranking/CollapsibleRanking';
+import { RankingPanel } from '@/components/ranking/RankingPanel';
 
 interface ModuleProgress {
   [moduleId: string]: {
@@ -76,7 +76,7 @@ const convertModulesToGames = (modules: any[]) => {
         title: 'Introdução à Avaliação Nutricional',
         description: 'Fundamentos da avaliação nutricional antropométrica com dados reais brasileiros e metodologia ultra-iniciante.',
         difficulty: 'Iniciante',
-        estimatedTime: '15-20 min',
+        estimatedTime: '10-20 min',
         learningObjectives: [
           'Compreender os fundamentos da avaliação nutricional',
           'Diferenciar avaliação individual vs populacional',
@@ -369,8 +369,11 @@ export default function JogosPage() {
           </header>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Conteúdo Principal */}
-            <div className="space-y-8">
+            {/* Layout Principal com Ranking Fixo */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              
+              {/* Conteúdo Principal - 3 colunas */}
+              <div className="lg:col-span-3 space-y-8">
             {/* User Welcome */}
             {user && (
               <motion.div
@@ -812,10 +815,27 @@ export default function JogosPage() {
             >
             </motion.div>
             </div>
-          </div>
 
-          {/* Ranking Flutuante Recolhível */}
-          <CollapsibleRanking moduleId="module-1" />
+              {/* Sidebar de Ranking Fixo - 1 coluna */}
+              <div className="lg:col-span-1">
+                <div className="sticky top-8 space-y-4">
+                  {/* Ranking Principal */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                  >
+                    <RankingPanel 
+                      className="w-full"
+                      compact={false}
+                      showStats={true}
+                      moduleId="module-1"
+                    />
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Footer */}
           <Footer />

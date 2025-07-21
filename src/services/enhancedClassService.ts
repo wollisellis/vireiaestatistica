@@ -101,13 +101,21 @@ export class EnhancedClassService {
       const studentsSnapshot = await getDocs(studentsQuery)
       const students: EnhancedStudentOverview[] = []
 
+      console.log(`[EnhancedClassService] Buscando estudantes para turma: ${classId}`)
+      console.log(`[EnhancedClassService] Total de documentos encontrados: ${studentsSnapshot.docs.length}`)
+
       // Filtrar estudantes desta turma específica
       for (const doc of studentsSnapshot.docs) {
         const studentData = doc.data()
         const docId = doc.id
 
+        console.log(`[EnhancedClassService] Verificando documento: ${docId}`)
+        console.log(`[EnhancedClassService] Dados do estudante:`, studentData)
+
         // Verificar se o documento pertence à turma específica
         if (docId.startsWith(`${classId}_`)) {
+          console.log(`[EnhancedClassService] ✅ Documento pertence à turma ${classId}`)
+          
           // Buscar dados detalhados do estudante
           const studentProgress = await this.getStudentDetailedProgress(
             studentData.studentId,
@@ -115,10 +123,17 @@ export class EnhancedClassService {
           )
 
           if (studentProgress) {
+            console.log(`[EnhancedClassService] ✅ Progresso do estudante encontrado:`, studentProgress)
             students.push(studentProgress)
+          } else {
+            console.log(`[EnhancedClassService] ❌ Não foi possível obter progresso do estudante ${studentData.studentId}`)
           }
+        } else {
+          console.log(`[EnhancedClassService] ❌ Documento ${docId} não pertence à turma ${classId}`)
         }
       }
+
+      console.log(`[EnhancedClassService] Total de estudantes encontrados para a turma: ${students.length}`)
 
       // Aplicar filtros
       let filteredStudents = students || []
@@ -531,13 +546,20 @@ export class EnhancedClassService {
       const studentsSnapshot = await getDocs(studentsQuery)
       const students: any[] = []
 
+      console.log(`[getClassStudentsBasic] Buscando estudantes básicos para turma: ${classId}`)
+      console.log(`[getClassStudentsBasic] Total de documentos encontrados: ${studentsSnapshot.docs.length}`)
+
       // Filtrar estudantes desta turma específica
       for (const doc of studentsSnapshot.docs) {
         const studentData = doc.data()
         const docId = doc.id
 
+        console.log(`[getClassStudentsBasic] Verificando documento: ${docId}`)
+
         // Verificar se o documento pertence à turma específica e se studentData é válido
         if (docId.startsWith(`${classId}_`) && studentData) {
+          console.log(`[getClassStudentsBasic] ✅ Documento pertence à turma ${classId}`)
+          
           const lastActivityTimestamp = this.getLastActivityTimestamp(
             studentData.lastActivity || studentData.enrolledAt
           )
@@ -552,9 +574,12 @@ export class EnhancedClassService {
             totalNormalizedScore: 0, // Será calculado
             completedModules: 0 // Será calculado
           })
+        } else {
+          console.log(`[getClassStudentsBasic] ❌ Documento ${docId} não pertence à turma ${classId} ou dados inválidos`)
         }
       }
 
+      console.log(`[getClassStudentsBasic] Total de estudantes básicos encontrados: ${students.length}`)
       return students || []
     } catch (error) {
       console.error('Erro ao buscar estudantes básicos da turma:', error)
