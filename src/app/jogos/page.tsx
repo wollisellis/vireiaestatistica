@@ -173,18 +173,27 @@ export default function JogosPage() {
       if (user?.id && user.id !== 'guest-user' && user.id !== 'professor-guest-user') {
         try {
           const completed = await unifiedScoringService.getCompletedModules(user.id);
-          setCompletedModulesUnified(completed);
-          console.log('📊 Módulos concluídos (sistema unificado):', completed);
+          if (Array.isArray(completed)) {
+            setCompletedModulesUnified(completed);
+            console.log('📊 Módulos concluídos (sistema unificado):', completed);
+          } else {
+            console.warn('⚠️ Módulos concluídos não é um array:', completed);
+            setCompletedModulesUnified([]);
+          }
         } catch (error) {
           console.error('Erro ao buscar módulos concluídos:', error);
-          // Fallback para o sistema legacy
-          const legacyCompleted = modules.filter(module => {
-            const progress = moduleProgress[module.id];
-            if (!progress) return false;
-            const score = progress.score || progress.totalScore || 0;
-            return score >= 70;
-          });
-          setCompletedModulesUnified(legacyCompleted.map(m => m.id));
+          // Fallback para o sistema legacy com verificação de segurança
+          if (Array.isArray(modules) && moduleProgress) {
+            const legacyCompleted = modules.filter(module => {
+              const progress = moduleProgress[module.id];
+              if (!progress) return false;
+              const score = progress.score || progress.totalScore || 0;
+              return score >= 70;
+            });
+            setCompletedModulesUnified(legacyCompleted?.map(m => m.id) || []);
+          } else {
+            setCompletedModulesUnified([]);
+          }
         }
       }
     };
@@ -194,6 +203,9 @@ export default function JogosPage() {
 
   // Calcular módulos concluídos (LEGACY - mantido para compatibilidade)
   const getCompletedModules = () => {
+    if (!Array.isArray(modules) || !Array.isArray(completedModulesUnified)) {
+      return [];
+    }
     return modules.filter(module => completedModulesUnified.includes(module.id));
   };
 
@@ -306,15 +318,20 @@ export default function JogosPage() {
       const progress = moduleProgress[module.id];
       if (progress) {
         totalScore += progress.totalScore;
-        totalExercises += module.exercises.length;
-        completedExercises += progress.completedExercises.length;
+        totalExercises += module.exercises?.length || 0;
+        completedExercises += progress.completedExercises?.length || 0;
         
-        if (progress.completedContent.length === module.content.length &&
-            progress.completedExercises.length === module.exercises.length) {
+        const completedContentLength = progress.completedContent?.length || 0;
+        const moduleContentLength = module.content?.length || 0;
+        const completedExercisesLength = progress.completedExercises?.length || 0;
+        const moduleExercisesLength = module.exercises?.length || 0;
+        
+        if (completedContentLength === moduleContentLength &&
+            completedExercisesLength === moduleExercisesLength) {
           completedModules++;
         }
       } else {
-        totalExercises += module.exercises.length;
+        totalExercises += module.exercises?.length || 0;
       }
     });
 
@@ -326,11 +343,13 @@ export default function JogosPage() {
     };
   };
 
-  // Converter módulos para jogos - APENAS MÓDULO 1
-  const baseNutritionalGames = convertModulesToGames(modules.filter(module => module.id === 'module-1'));
+  // Converter módulos para jogos - APENAS MÓDULO 1 com verificação de segurança
+  const baseNutritionalGames = convertModulesToGames(
+    Array.isArray(modules) ? modules.filter(module => module.id === 'module-1') : []
+  );
 
-  // Combine base games with module settings and progress
-  const nutritionalGames = baseNutritionalGames.map(game => {
+  // Combine base games with module settings and progress com verificação de segurança
+  const nutritionalGames = (Array.isArray(baseNutritionalGames) ? baseNutritionalGames : []).map(game => {
     const moduleId = game.id;
     const locked = !unlockedModules.includes(moduleId) && !isProfessor;
     const progress = moduleProgress[moduleId];

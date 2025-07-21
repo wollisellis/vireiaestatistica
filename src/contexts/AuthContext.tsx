@@ -23,7 +23,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const firebaseAuth = useFirebaseAuth();
   const { profile, loading: profileLoading, updateProfile } = useFirebaseProfile(firebaseAuth.user?.uid || '');
   
-  const contextValue: AuthContextType = {
+  // Memoizar contextValue para evitar re-renders desnecessários
+  const contextValue: AuthContextType = React.useMemo(() => ({
     user: firebaseAuth.user,
     profile,
     loading: firebaseAuth.loading || profileLoading,
@@ -33,7 +34,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut: firebaseAuth.signOut,
     getUserByEmail: firebaseAuth.getUserByEmail,
     updateProfile,
-  };
+  }), [
+    firebaseAuth.user,
+    profile,
+    firebaseAuth.loading,
+    profileLoading,
+    firebaseAuth.signIn,
+    firebaseAuth.signInWithGoogle,
+    firebaseAuth.signUp,
+    firebaseAuth.signOut,
+    firebaseAuth.getUserByEmail,
+    updateProfile,
+  ]);
 
   return (
     <AuthContext.Provider value={contextValue}>
