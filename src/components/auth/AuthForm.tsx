@@ -230,13 +230,13 @@ export function AuthForm() {
                 className="w-full h-16 text-left bg-blue-600 hover:bg-blue-700 text-white"
                 size="lg"
               >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
                     <User className="w-5 h-5 text-white" />
                   </div>
-                  <div>
-                    <div className="font-semibold">Entrar como Professor</div>
-                    <div className="text-sm text-blue-100">
+                  <div className="flex flex-col justify-center">
+                    <div className="font-semibold text-base leading-tight">Entrar como Professor</div>
+                    <div className="text-sm text-blue-100 leading-tight mt-0.5">
                       Acesso ao dashboard administrativo
                     </div>
                   </div>
@@ -249,13 +249,13 @@ export function AuthForm() {
                 className="w-full h-16 text-left bg-emerald-600 hover:bg-emerald-700 text-white"
                 size="lg"
               >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Gamepad2 className="w-5 h-5 text-white" />
                   </div>
-                  <div>
-                    <div className="font-semibold">Entrar como Estudante</div>
-                    <div className="text-sm text-emerald-100">
+                  <div className="flex flex-col justify-center">
+                    <div className="font-semibold text-base leading-tight">Entrar como Estudante</div>
+                    <div className="text-sm text-emerald-100 leading-tight mt-0.5">
                       Acesso aos jogos educacionais
                     </div>
                   </div>
