@@ -297,6 +297,7 @@ export function ClassRankingPanel({
             </Button>
           )}
         </div>
+        </div>
         
         {showStats && classInfo && expanded && (
           <motion.div 
