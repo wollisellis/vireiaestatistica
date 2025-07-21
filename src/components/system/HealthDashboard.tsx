@@ -26,7 +26,7 @@ import {
   Gauge
 } from 'lucide-react'
 import { SystemHealthService, SystemHealthMetrics, HealthAlert } from '@/services/systemHealthService'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useHybridAuth'
 import { motion } from 'framer-motion'
 
 interface HealthDashboardProps {

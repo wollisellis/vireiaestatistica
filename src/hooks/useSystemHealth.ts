@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { SystemHealthService, SystemHealthMetrics, HealthAlert } from '@/services/systemHealthService'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useHybridAuth'
 
 interface UseSystemHealthOptions {
   autoRefresh?: boolean          // Auto-atualizar periodicamente

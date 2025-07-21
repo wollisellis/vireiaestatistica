@@ -26,7 +26,7 @@ import {
 import { RandomizedQuiz, QuizAttempt, ProgressReport } from '@/types/randomizedQuiz';
 import { RandomizedQuizService } from '@/services/randomizedQuizService';
 import { QuizScoringService } from '@/services/quizScoringService';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useHybridAuth';
 
 // Componente Progress inline para evitar problemas de import
 const Progress: React.FC<{ value: number; className?: string }> = ({ value, className = '' }) => (
