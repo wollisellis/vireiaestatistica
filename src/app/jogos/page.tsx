@@ -351,10 +351,15 @@ export default function JogosPage() {
   };
 
   useEffect(() => {
+    console.log('🔥 [USEEFFECT] useEffect EXECUTADO!', { userUid: user?.uid, db: !!db });
+    
     if (!user?.uid || !db) {
+      console.log('🚫 [USEEFFECT] Condições não atendidas:', { userUid: user?.uid, db: !!db });
       setModuleLoading(false);
       return;
     }
+
+    console.log('✅ [USEEFFECT] Condições atendidas, iniciando busca de progresso...');
 
     // 🎯 IMPLEMENTAÇÃO ROBUSTA: Buscar progresso com logs detalhados e múltiplas tentativas
     const fetchProgress = async () => {
@@ -511,8 +516,82 @@ export default function JogosPage() {
     });
 
     fetchProgress();
-    return () => unsubscribe();
+    
+    // 🎯 LISTENER PARA EVENTO DE MÓDULO COMPLETADO
+    const handleModuleCompleted = (event: CustomEvent) => {
+      console.log('🎉 [EVENT] Evento moduleCompleted recebido:', event.detail);
+      // Forçar busca de progresso quando módulo for completado
+      setTimeout(() => {
+        console.log('🔄 [EVENT] Executando busca de progresso após módulo completado...');
+        fetchProgress();
+      }, 1000); // Aguardar 1 segundo para dados serem salvos
+    };
+    
+    window.addEventListener('moduleCompleted', handleModuleCompleted as EventListener);
+    
+    // 🎯 RETRY AUTOMÁTICO SE NÃO ENCONTRAR DADOS
+    const retryTimer = setTimeout(() => {
+      console.log('🔄 [RETRY] Tentativa automática de busca após 3 segundos...');
+      fetchProgress();
+    }, 3000);
+    
+    return () => {
+      unsubscribe();
+      window.removeEventListener('moduleCompleted', handleModuleCompleted as EventListener);
+      clearTimeout(retryTimer);
+    };
   }, [user?.uid]);
+  
+  // 🎯 USEEFFECT ADICIONAL PARA FORÇAR BUSCA QUANDO VOLTA DO QUIZ
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user?.uid && db) {
+        console.log('👁️ [VISIBILITY] Página ficou visível, buscando progresso...');
+        setTimeout(() => {
+          // Executar busca novamente
+          const fetchProgressDebug = async () => {
+            try {
+              const attemptsQuery = query(
+                collection(db!, 'quiz_attempts'),
+                where('studentId', '==', user.uid),
+                where('moduleId', '==', 'module-1'),
+                orderBy('startedAt', 'desc'),
+                limit(1)
+              );
+              const attemptsSnapshot = await getDocs(attemptsQuery);
+              console.log('👁️ [VISIBILITY] Documentos encontrados:', attemptsSnapshot.size);
+              
+              if (!attemptsSnapshot.empty) {
+                const attemptDoc = attemptsSnapshot.docs[0];
+                const attemptData = attemptDoc.data();
+                console.log('👁️ [VISIBILITY] Dados encontrados:', attemptData);
+                
+                setModuleProgress({
+                  'module-1': {
+                    percentage: attemptData.percentage || 0,
+                    score: attemptData.percentage || 0,
+                    passed: attemptData.passed || false,
+                    completed: attemptData.passed || false,
+                    _source: 'visibility_check',
+                    _debug: attemptData
+                  }
+                });
+              }
+            } catch (error) {
+              console.error('👁️ [VISIBILITY] Erro:', error);
+            }
+          };
+          fetchProgressDebug();
+        }, 500);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.uid, db]);
 
   const handleUnlockModule = async (moduleId: string) => {
     if (!isProfessor || !db) return;
@@ -764,13 +843,13 @@ export default function JogosPage() {
                       <div className="flex space-x-2">
                         <Button
                           onClick={() => {
-                            console.log('🔄 [DEBUG] Forçando recarga de progresso...');
+                            console.log('🔄 [DEBUG] Forçando recarga IMEDIATA de progresso...');
                             setModuleProgress({});
                             if (user?.uid && db) {
-                              // Executar busca novamente
+                              // Executar busca IMEDIATA
                               const fetchProgressDebug = async () => {
                                 try {
-                                  console.log('🔍 [DEBUG] Iniciando busca de progresso para usuário:', user.uid);
+                                  console.log('🔍 [DEBUG IMEDIATO] Iniciando busca para usuário:', user.uid);
                                   const attemptsQuery = query(
                                     collection(db!, 'quiz_attempts'),
                                     where('studentId', '==', user.uid),
@@ -779,25 +858,58 @@ export default function JogosPage() {
                                     limit(1)
                                   );
                                   const attemptsSnapshot = await getDocs(attemptsQuery);
-                                  console.log('🔍 [DEBUG] Documentos encontrados:', attemptsSnapshot.size);
+                                  console.log('🔍 [DEBUG IMEDIATO] Documentos:', attemptsSnapshot.size);
                                   
                                   if (!attemptsSnapshot.empty) {
                                     const attemptDoc = attemptsSnapshot.docs[0];
                                     const attemptData = attemptDoc.data();
-                                    console.log('✅ [DEBUG] Dados encontrados:', attemptData);
+                                    console.log('✅ [DEBUG IMEDIATO] DADOS ENCONTRADOS:', attemptData);
                                     
-                                    setModuleProgress({
+                                    const progressData = {
                                       'module-1': {
                                         percentage: attemptData.percentage || 0,
                                         score: attemptData.percentage || 0,
+                                        totalScore: attemptData.percentage || 0,
                                         passed: attemptData.passed || false,
-                                        _source: 'quiz_attempts',
-                                        _debug: attemptData
+                                        completed: attemptData.passed || false,
+                                        bestScore: attemptData.percentage || 0,
+                                        _source: 'debug_forced',
+                                        _attemptId: attemptDoc.id,
+                                        _timestamp: new Date().toISOString()
                                       }
-                                    });
+                                    };
+                                    
+                                    console.log('📊 [DEBUG IMEDIATO] Definindo progresso:', progressData);
+                                    setModuleProgress(progressData);
+                                    
+                                    setTimeout(() => {
+                                      console.log('🔍 [DEBUG IMEDIATO] Estado após setModuleProgress:', progressData);
+                                    }, 100);
+                                  } else {
+                                    console.log('❌ [DEBUG IMEDIATO] NENHUM DOCUMENTO ENCONTRADO!');
+                                    
+                                    // Tentar outras coleções
+                                    try {
+                                      console.log('🔄 [DEBUG IMEDIATO] Tentando student_module_progress...');
+                                      const moduleProgressDoc = await getDoc(doc(db!, 'student_module_progress', `${user.uid}_module-1`));
+                                      if (moduleProgressDoc.exists()) {
+                                        const data = moduleProgressDoc.data();
+                                        console.log('✅ [DEBUG IMEDIATO] Dados em student_module_progress:', data);
+                                        setModuleProgress({
+                                          'module-1': {
+                                            ...data,
+                                            _source: 'student_module_progress'
+                                          }
+                                        });
+                                      } else {
+                                        console.log('❌ [DEBUG IMEDIATO] Nada em student_module_progress');
+                                      }
+                                    } catch (fallbackError) {
+                                      console.error('❌ [DEBUG IMEDIATO] Erro no fallback:', fallbackError);
+                                    }
                                   }
                                 } catch (error) {
-                                  console.error('❌ [DEBUG] Erro:', error);
+                                  console.error('❌ [DEBUG IMEDIATO] Erro crítico:', error);
                                 }
                               };
                               fetchProgressDebug();
@@ -807,7 +919,7 @@ export default function JogosPage() {
                           variant="outline"
                           className="border-yellow-400 text-yellow-700 hover:bg-yellow-100"
                         >
-                          🔄 Recarregar
+                          🔄 Busca Forçada
                         </Button>
                         <Button
                           onClick={() => console.log('📊 [DEBUG] Estado atual:', { moduleProgress, user: user?.uid, db: !!db })}
@@ -816,6 +928,26 @@ export default function JogosPage() {
                           className="border-yellow-400 text-yellow-700 hover:bg-yellow-100"
                         >
                           📊 Log Estado
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            console.log('🎉 [DEBUG] Simulando evento moduleCompleted...');
+                            const event = new CustomEvent('moduleCompleted', {
+                              detail: {
+                                userId: user?.uid,
+                                moduleId: 'module-1',
+                                score: 88,
+                                percentage: 88,
+                                passed: true
+                              }
+                            });
+                            window.dispatchEvent(event);
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="border-green-400 text-green-700 hover:bg-green-100"
+                        >
+                          🎉 Simular Evento
                         </Button>
                       </div>
                     </div>
