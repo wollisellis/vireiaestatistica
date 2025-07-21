@@ -95,34 +95,27 @@ service cloud.firestore {
       allow write: if isProfessor();
     }
 
-    // CLASSES COLLECTION - Sistema principal de turmas
+    // CLASSES COLLECTION - Sistema principal de turmas (ACESSO COMPARTILHADO)
     match /classes/{classId} {
       // Professores podem criar turmas
       allow create: if isProfessor() &&
         request.resource.data.professorId == request.auth.uid;
 
-      // Professores podem ler/escrever apenas suas próprias turmas
-      allow read, update, delete: if isProfessor() &&
-        resource.data.professorId == request.auth.uid;
+      // ✅ TODOS os professores podem ler/escrever/excluir TODAS as turmas (acesso compartilhado)
+      allow read, update, delete: if isProfessor();
 
       // Estudantes podem ler turmas onde estão matriculados
       allow read: if isStudent() &&
         exists(/databases/$(database)/documents/class_students/$(classId + '_' + request.auth.uid));
     }
 
-    // DELETED CLASSES COLLECTION - Sistema de lixeira para turmas excluídas
+    // DELETED CLASSES COLLECTION - Sistema de lixeira para turmas excluídas (ACESSO COMPARTILHADO)
     match /deleted_classes/{classId} {
-      // Professores podem ler/escrever apenas suas próprias turmas excluídas
-      allow read, write: if isProfessor() &&
-        resource.data.deletedBy == request.auth.uid;
+      // ✅ TODOS os professores podem ler/escrever/restaurar turmas excluídas (acesso compartilhado)
+      allow read, write, delete: if isProfessor();
 
-      // Permitir criação apenas pelo professor que excluiu
-      allow create: if isProfessor() &&
-        request.resource.data.deletedBy == request.auth.uid;
-
-      // Permitir exclusão (para limpeza automática ou restauração)
-      allow delete: if isProfessor() &&
-        resource.data.deletedBy == request.auth.uid;
+      // Qualquer professor pode criar entrada na lixeira
+      allow create: if isProfessor();
     }
 
     // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas
@@ -343,43 +336,28 @@ service cloud.firestore {
       allow read: if isStudent();
     }
 
-    // CLASS ANALYTICS COLLECTION - Analytics por turma
+    // CLASS ANALYTICS COLLECTION - Analytics por turma (ACESSO COMPARTILHADO)
     match /class_analytics/{analyticsId} {
-      // Apenas professores podem acessar analytics de suas turmas
-      allow read, write: if isProfessor() &&
-        resource.data.professorId == request.auth.uid;
-
-      // Permitir criação apenas pelo professor da turma
-      allow create: if isProfessor() &&
-        request.resource.data.professorId == request.auth.uid;
+      // ✅ TODOS os professores podem acessar analytics de TODAS as turmas (acesso compartilhado)
+      allow read, write, create: if isProfessor();
     }
 
-    // CLASS INVITES COLLECTION - Sistema de convites para turmas
+    // CLASS INVITES COLLECTION - Sistema de convites para turmas (ACESSO COMPARTILHADO)
     match /class_invites/{inviteId} {
-      // Professores podem gerenciar convites de suas turmas
-      allow read, write: if isProfessor() &&
-        resource.data.createdBy == request.auth.uid;
+      // ✅ TODOS os professores podem gerenciar convites de TODAS as turmas (acesso compartilhado)
+      allow read, write, create: if isProfessor();
 
       // Estudantes podem ler convites públicos para matrícula
       allow read: if isStudent();
-
-      // Permitir criação apenas por professores
-      allow create: if isProfessor() &&
-        request.resource.data.createdBy == request.auth.uid;
     }
 
-    // CLASSIVITES COLLECTION - Convites de turma (compatibilidade)
+    // CLASSIVITES COLLECTION - Convites de turma (compatibilidade) (ACESSO COMPARTILHADO)
     match /classInvites/{inviteCode} {
-      // Professores podem gerenciar convites de suas turmas
-      allow read, write: if isProfessor() &&
-        resource.data.createdBy == request.auth.uid;
+      // ✅ TODOS os professores podem gerenciar convites de TODAS as turmas (acesso compartilhado)
+      allow read, write, create: if isProfessor();
 
       // Estudantes podem ler convites públicos para matrícula
       allow read: if isStudent();
-
-      // Permitir criação apenas por professores
-      allow create: if isProfessor() &&
-        request.resource.data.createdBy == request.auth.uid;
     }
 
     // RANKINGS COLLECTION - Rankings e classificações
