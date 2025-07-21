@@ -7,8 +7,10 @@ import FirebaseConfigWarning from '@/components/FirebaseConfigWarning'
 import { isFirebaseConfigured } from '@/lib/firebase'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useRBAC } from '@/hooks/useRBAC'
+import { safeLocalStorage, safeSessionStorage, clearMultipleCookies, removeMultipleFromStorage } from '@/utils/safeStorage'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter()
   const [isReady, setIsReady] = useState(false)
   const [showFirebaseWarning, setShowFirebaseWarning] = useState(false)
@@ -22,17 +24,13 @@ export default function LoginPage() {
     // Verificação simplificada de autenticação
     const hasExistingSession = firebaseUser || rbacUser || document.cookie.includes('auth-token=')
     
-    if (!hasExistingSession && typeof window !== 'undefined') {
+    if (!hasExistingSession) {
       // Limpeza rápida apenas quando necessário
       const cookiesToClear = ['auth-token', 'firebase-auth-token', 'user-role', 'user-session']
-      cookiesToClear.forEach(cookieName => {
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
-      })
+      clearMultipleCookies(cookiesToClear)
       
-      // Limpeza básica do localStorage
-      ['firebase-auth-token', 'user-data', 'auth-state'].forEach(key => {
-        localStorage.removeItem(key)
-      })
+      // Limpeza básica do localStorage de forma segura
+      removeMultipleFromStorage(['firebase-auth-token', 'user-data', 'auth-state'])
     }
 
     // Verificação do Firebase configurado apenas se necessário
@@ -91,14 +89,10 @@ export default function LoginPage() {
               <button
                 onClick={async () => {
                   // Clear authentication and reload
-                  if (typeof window !== 'undefined') {
-                    const cookiesToClear = ['guest-mode', 'professor-guest-mode', 'auth-token', 'firebase-auth-token', 'user-role', 'user-session'];
-                    cookiesToClear.forEach(cookieName => {
-                      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-                    });
-                    localStorage.clear();
-                    sessionStorage.clear();
-                  }
+                  const cookiesToClear = ['guest-mode', 'professor-guest-mode', 'auth-token', 'firebase-auth-token', 'user-role', 'user-session'];
+                  clearMultipleCookies(cookiesToClear);
+                  safeLocalStorage.clear();
+                  safeSessionStorage.clear();
                   window.location.reload();
                 }}
                 className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
@@ -122,5 +116,13 @@ export default function LoginPage() {
         />
       )}
     </>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <ErrorBoundary>
+      <LoginPageContent />
+    </ErrorBoundary>
   )
 }
