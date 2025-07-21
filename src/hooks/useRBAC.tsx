@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useFirebaseProfile } from './useFirebaseAuth'
 import { hasPermission, User } from '@/lib/firebase'
+import { modules } from '@/data/modules'
 
 export interface RBACHookReturn {
   user: User | null
@@ -63,29 +64,15 @@ export function useRBAC(userId?: string): RBACHookReturn {
     }
   }, [user, isStudentGuest, isProfessorGuest])
 
-  const loadModuleAccess = async (userId: string) => {
-    // Try to get module settings from professor context
-    try {
-      // This will work if the component is wrapped in ProfessorDemoProvider
-      const { useProfessorDemo } = await import('@/contexts/ProfessorDemoContext')
-      const { moduleSettings } = useProfessorDemo()
+  const loadModuleAccess = (userId: string) => {
+    // Use real module data from modules.ts (now imported at top)
+    const access: Record<number, boolean> = {}
+    modules.forEach(module => {
+      access[module.order] = !module.isLocked
+    })
 
-      const access: Record<number, boolean> = {}
-      moduleSettings.forEach(setting => {
-        access[setting.moduleId] = !setting.isLocked
-      })
-
-      setModuleAccess(access)
-    } catch {
-      // Fallback to default settings if not in professor context
-      const defaultAccess = {
-        1: true,  // Anthropometric Assessment - always unlocked
-        2: false, // Clinical Assessment - locked by default
-        3: false, // Socioeconomic Assessment - locked by default
-        4: true,  // Growth Curves - unlocked by default
-      }
-      setModuleAccess(defaultAccess)
-    }
+    console.log('🔒 Module access loaded from real data:', access)
+    setModuleAccess(access)
   }
 
   const checkPermission = (resource: string, action: string): boolean => {
