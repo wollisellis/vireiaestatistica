@@ -356,20 +356,22 @@ export default function JogosPage() {
       return;
     }
 
-    // Buscar progresso do usuário da fonte correta (quiz_attempts)
+    // 🎯 IMPLEMENTAÇÃO ROBUSTA: Buscar progresso com logs detalhados e múltiplas tentativas
     const fetchProgress = async () => {
       try {
-        console.log('🔍 Buscando progresso do usuário:', user.uid);
+        console.log('🔍 [DEBUG] Iniciando busca de progresso para usuário:', user.uid);
+        console.log('🔍 [DEBUG] Database disponível:', !!db);
         
         // 🎯 CORREÇÃO: Buscar da mesma fonte que o RandomizedQuizComponent usa
         let progressData: any = {};
         const modules = ['module-1']; // Lista de módulos disponíveis
         
         for (const moduleId of modules) {
+          console.log(`\n📚 [${moduleId}] Iniciando busca de tentativas...`);
+          
           try {
-            console.log(`📚 Buscando tentativas para ${moduleId}...`);
-            
             // Buscar última tentativa da coleção quiz_attempts (mesma lógica do RandomizedQuizService)
+            console.log(`🔍 [${moduleId}] Construindo query para quiz_attempts...`);
             const attemptsQuery = query(
               collection(db!, 'quiz_attempts'),
               where('studentId', '==', user.uid),
@@ -378,61 +380,122 @@ export default function JogosPage() {
               limit(1)
             );
 
+            console.log(`🔍 [${moduleId}] Executando query...`);
             const attemptsSnapshot = await getDocs(attemptsQuery);
+            console.log(`🔍 [${moduleId}] Query executada. Documentos encontrados: ${attemptsSnapshot.size}`);
             
             if (!attemptsSnapshot.empty) {
-              const attemptData = attemptsSnapshot.docs[0].data();
-              console.log(`✅ Tentativa encontrada para ${moduleId}:`, attemptData);
+              const attemptDoc = attemptsSnapshot.docs[0];
+              const attemptData = attemptDoc.data();
+              console.log(`✅ [${moduleId}] Tentativa encontrada! ID: ${attemptDoc.id}`);
+              console.log(`✅ [${moduleId}] Dados brutos:`, attemptData);
               
-              // Converter para formato esperado pelo ModuleCard
+              // 🎯 CONVERSÃO ROBUSTA com validação
+              const percentage = attemptData.percentage || attemptData.score || 0;
+              const passed = attemptData.passed || false;
+              
               progressData[moduleId] = {
-                totalScore: attemptData.percentage || attemptData.score || 0,
-                score: attemptData.percentage || attemptData.score || 0,
-                percentage: attemptData.percentage || 0,
-                completed: attemptData.passed || false,
+                totalScore: percentage,
+                score: percentage,
+                percentage: percentage,
+                completed: passed,
                 lastAccessed: attemptData.completedAt || attemptData.startedAt,
                 maxScore: 100,
                 attempts: 1,
-                bestScore: attemptData.percentage || attemptData.score || 0,
-                passed: attemptData.passed || false
+                bestScore: percentage,
+                passed: passed,
+                // 🎯 CAMPOS EXTRAS PARA DEBUG
+                _source: 'quiz_attempts',
+                _attemptId: attemptDoc.id,
+                _rawData: attemptData
               };
               
-              console.log(`📊 Progresso do ${moduleId} convertido:`, progressData[moduleId]);
-            } else {
-              console.log(`⚠️ Nenhuma tentativa encontrada para ${moduleId}`);
-            }
-          } catch (moduleError) {
-            console.warn(`Erro ao buscar tentativas do ${moduleId}:`, moduleError);
-            
-            // Fallback para as fontes anteriores se a busca em quiz_attempts falhar
-            try {
-              const moduleProgressDoc = await getDoc(doc(db!, 'student_module_progress', `${user.uid}_${moduleId}`));
-              if (moduleProgressDoc.exists()) {
-                const data = moduleProgressDoc.data();
-                progressData[moduleId] = {
-                  totalScore: data.progress || data.score || 0,
-                  score: data.progress || data.score || 0,
-                  percentage: data.progress || data.score || 0,
-                  completed: data.isCompleted || false,
-                  lastAccessed: data.updatedAt || data.lastAttempt,
-                  maxScore: data.maxScore || 100,
-                  attempts: data.attempts || 1,
-                  bestScore: data.bestScore || data.score || 0
-                };
-                console.log(`🔄 Fallback: Progresso do ${moduleId} encontrado em student_module_progress`);
+              console.log(`📊 [${moduleId}] Progresso convertido:`, progressData[moduleId]);
+              
+              // 🎯 VALIDAÇÃO DO STATUS
+              let status = 'never_attempted';
+              if (passed) {
+                status = 'completed';
+              } else if (percentage > 0) {
+                status = 'attempted_failed';
               }
-            } catch (fallbackError) {
-              console.warn(`Erro no fallback para ${moduleId}:`, fallbackError);
+              console.log(`🎯 [${moduleId}] Status calculado: ${status} (${percentage}%, passou: ${passed})`);
+              
+            } else {
+              console.log(`⚠️ [${moduleId}] Nenhuma tentativa encontrada em quiz_attempts`);
+              
+              // 🔄 FALLBACK 1: student_module_progress
+              console.log(`🔄 [${moduleId}] Tentando fallback para student_module_progress...`);
+              try {
+                const moduleProgressDoc = await getDoc(doc(db!, 'student_module_progress', `${user.uid}_${moduleId}`));
+                if (moduleProgressDoc.exists()) {
+                  const data = moduleProgressDoc.data();
+                  console.log(`🔄 [${moduleId}] Dados encontrados em student_module_progress:`, data);
+                  
+                  progressData[moduleId] = {
+                    totalScore: data.progress || data.score || 0,
+                    score: data.progress || data.score || 0,
+                    percentage: data.progress || data.score || 0,
+                    completed: data.isCompleted || false,
+                    lastAccessed: data.updatedAt || data.lastAttempt,
+                    maxScore: data.maxScore || 100,
+                    attempts: data.attempts || 1,
+                    bestScore: data.bestScore || data.score || 0,
+                    passed: data.isCompleted || false,
+                    _source: 'student_module_progress'
+                  };
+                  console.log(`✅ [${moduleId}] Fallback bem-sucedido:`, progressData[moduleId]);
+                } else {
+                  console.log(`❌ [${moduleId}] Nenhum dado encontrado em student_module_progress`);
+                }
+              } catch (fallbackError) {
+                console.error(`❌ [${moduleId}] Erro no fallback student_module_progress:`, fallbackError);
+              }
+
+              // 🔄 FALLBACK 2: userProgress  
+              if (!progressData[moduleId]) {
+                console.log(`🔄 [${moduleId}] Tentando fallback final para userProgress...`);
+                try {
+                  const userProgressDoc = await getDoc(doc(db!, 'userProgress', user.uid));
+                  if (userProgressDoc.exists()) {
+                    const userData = userProgressDoc.data();
+                    const moduleData = userData.modules?.[moduleId];
+                    if (moduleData) {
+                      console.log(`🔄 [${moduleId}] Dados encontrados em userProgress:`, moduleData);
+                      progressData[moduleId] = {
+                        ...moduleData,
+                        _source: 'userProgress'
+                      };
+                      console.log(`✅ [${moduleId}] Fallback final bem-sucedido:`, progressData[moduleId]);
+                    }
+                  }
+                } catch (userProgressError) {
+                  console.error(`❌ [${moduleId}] Erro no fallback userProgress:`, userProgressError);
+                }
+              }
             }
+            
+          } catch (moduleError) {
+            console.error(`❌ [${moduleId}] Erro geral na busca:`, moduleError);
           }
         }
 
-        // 3. Definir o progresso encontrado
+        // 🎯 DEFINIR PROGRESSO COM LOGS DETALHADOS
+        console.log('\n📊 [FINAL] Definindo progresso final...');
+        console.log('📊 [FINAL] Dados coletados:', progressData);
+        
         setModuleProgress(progressData);
-        console.log('📊 Progresso final carregado:', progressData);
+        
+        // 🎯 FORÇAR RE-RENDER
+        console.log('🔄 [FINAL] Progresso definido, forçando re-render...');
+        
+        // Log final do estado
+        setTimeout(() => {
+          console.log('📊 [FINAL] Estado atual após atualização:', progressData);
+        }, 100);
         
       } catch (error) {
-        console.error('❌ Erro ao buscar progresso:', error);
+        console.error('❌ [FINAL] Erro crítico ao buscar progresso:', error);
       }
     };
 
@@ -505,11 +568,17 @@ export default function JogosPage() {
     Array.isArray(modules) ? modules.filter(module => module.id === 'module-1') : []
   );
 
-  // Combine base games with module settings and progress com verificação de segurança
+  // 🎯 COMBINE GAMES WITH PROGRESS - COM LOGS DETALHADOS
   const nutritionalGames = (Array.isArray(baseNutritionalGames) ? baseNutritionalGames : []).map(game => {
     const moduleId = game.id;
     const locked = !unlockedModules.includes(moduleId) && !isProfessor;
     const progress = moduleProgress[moduleId];
+    
+    // 🎯 DEBUG: Log do processamento de cada módulo
+    console.log(`\n🎯 [PROCESSING] Processando módulo: ${moduleId}`);
+    console.log(`🎯 [PROCESSING] Módulo bloqueado: ${locked}`);
+    console.log(`🎯 [PROCESSING] Dados de progresso encontrados:`, progress);
+    console.log(`🎯 [PROCESSING] moduleProgress completo:`, moduleProgress);
     
     // Determinar o estado do módulo baseado no progresso
     let moduleStatus = 'never_attempted'; // nunca tentado
@@ -518,33 +587,58 @@ export default function JogosPage() {
     let bestScore = 0;
     
     if (progress) {
+      console.log(`✅ [${moduleId}] Progresso encontrado, processando...`);
       hasAttempted = true;
       
-      // 🚀 CORREÇÃO: Normalizar score para escala 0-100
-      let rawScore = progress.score || progress.totalScore || 0;
+      // 🎯 MÚLTIPLAS FONTES DE SCORE para garantir que não perdemos nada
+      let rawScore = progress.percentage || progress.score || progress.totalScore || progress.bestScore || 0;
+      
+      console.log(`📊 [${moduleId}] Score bruto extraído: ${rawScore}`);
+      console.log(`📊 [${moduleId}] Fontes disponíveis:`, {
+        percentage: progress.percentage,
+        score: progress.score,
+        totalScore: progress.totalScore,
+        bestScore: progress.bestScore,
+        completed: progress.completed,
+        passed: progress.passed
+      });
       
       // Se o score for muito baixo (< 20), assumir que está em escala 0-10 e multiplicar por 10
       if (rawScore > 0 && rawScore <= 10) {
         bestScore = Math.round(rawScore * 10); // 8.75 * 10 = 87.5
+        console.log(`🔢 [${moduleId}] Score convertido de escala 0-10 para 0-100: ${rawScore} → ${bestScore}`);
       } else {
         bestScore = Math.round(rawScore); // Já está em escala 0-100
+        console.log(`🔢 [${moduleId}] Score já em escala 0-100: ${bestScore}`);
       }
       
-      // 🚀 CORREÇÃO: Verificar aprovação apenas com base no score normalizado
-      // progress.completed pode estar incorreto, então usar apenas o score
-      hasPassed = bestScore >= 70;
+      // 🎯 MÚLTIPLAS FORMAS DE VERIFICAR APROVAÇÃO
+      const passedByScore = bestScore >= 70;
+      const passedByFlag = progress.passed || progress.completed || false;
+      hasPassed = passedByScore || passedByFlag;
+      
+      console.log(`✅ [${moduleId}] Verificação de aprovação:`);
+      console.log(`   - Por score (≥70): ${passedByScore} (score: ${bestScore})`);
+      console.log(`   - Por flag: ${passedByFlag} (passed: ${progress.passed}, completed: ${progress.completed})`);
+      console.log(`   - RESULTADO FINAL: ${hasPassed}`);
       
       if (hasPassed) {
         moduleStatus = 'completed'; // concluído com sucesso
+        console.log(`🎉 [${moduleId}] Status: COMPLETED (passou com ${bestScore}%)`);
       } else if (bestScore > 0) {
         moduleStatus = 'attempted_failed'; // tentado mas não passou
+        console.log(`⚠️ [${moduleId}] Status: ATTEMPTED_FAILED (${bestScore}% < 70%)`);
       } else {
         moduleStatus = 'never_attempted'; // score 0 = nunca tentou de verdade
         hasAttempted = false;
+        console.log(`❌ [${moduleId}] Status: NEVER_ATTEMPTED (score = 0)`);
       }
+    } else {
+      console.log(`❌ [${moduleId}] Nenhum progresso encontrado`);
     }
     
-    return {
+    // 🎯 RESULTADO FINAL COM LOGS
+    const gameResult = {
       ...game,
       isLocked: locked,
       lockMessage: locked ? 'Aguardando liberação do docente' : undefined,
@@ -553,8 +647,20 @@ export default function JogosPage() {
       bestScore: bestScore,
       moduleStatus: moduleStatus,
       hasAttempted: hasAttempted,
-      hasPassed: hasPassed
+      hasPassed: hasPassed,
+      // 🎯 DEBUG INFO
+      _debugInfo: {
+        progressFound: !!progress,
+        rawProgress: progress,
+        calculatedScore: bestScore,
+        calculatedStatus: moduleStatus,
+        timestamp: new Date().toISOString()
+      }
     };
+    
+    console.log(`🎯 [${moduleId}] Resultado final do jogo:`, gameResult);
+    
+    return gameResult;
   });
 
   const stats = calculateOverallStats();
@@ -639,6 +745,84 @@ export default function JogosPage() {
             {/* Layout Principal */}
             <div className="relative">
               
+              {/* 🎯 DEBUG: Painel de debug temporário */}
+              {process.env.NODE_ENV === 'development' && (
+                <Card className="bg-yellow-50 border-yellow-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-yellow-800">🔍 Debug: Carregamento de Progresso</h3>
+                        <p className="text-sm text-yellow-700">
+                          Estado: {Object.keys(moduleProgress).length > 0 ? 'Progresso carregado' : 'Nenhum progresso encontrado'}
+                        </p>
+                        {Object.keys(moduleProgress).length > 0 && (
+                          <pre className="text-xs mt-2 p-2 bg-white rounded border">
+                            {JSON.stringify(moduleProgress, null, 2)}
+                          </pre>
+                        )}
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={() => {
+                            console.log('🔄 [DEBUG] Forçando recarga de progresso...');
+                            setModuleProgress({});
+                            if (user?.uid && db) {
+                              // Executar busca novamente
+                              const fetchProgressDebug = async () => {
+                                try {
+                                  console.log('🔍 [DEBUG] Iniciando busca de progresso para usuário:', user.uid);
+                                  const attemptsQuery = query(
+                                    collection(db!, 'quiz_attempts'),
+                                    where('studentId', '==', user.uid),
+                                    where('moduleId', '==', 'module-1'),
+                                    orderBy('startedAt', 'desc'),
+                                    limit(1)
+                                  );
+                                  const attemptsSnapshot = await getDocs(attemptsQuery);
+                                  console.log('🔍 [DEBUG] Documentos encontrados:', attemptsSnapshot.size);
+                                  
+                                  if (!attemptsSnapshot.empty) {
+                                    const attemptDoc = attemptsSnapshot.docs[0];
+                                    const attemptData = attemptDoc.data();
+                                    console.log('✅ [DEBUG] Dados encontrados:', attemptData);
+                                    
+                                    setModuleProgress({
+                                      'module-1': {
+                                        percentage: attemptData.percentage || 0,
+                                        score: attemptData.percentage || 0,
+                                        passed: attemptData.passed || false,
+                                        _source: 'quiz_attempts',
+                                        _debug: attemptData
+                                      }
+                                    });
+                                  }
+                                } catch (error) {
+                                  console.error('❌ [DEBUG] Erro:', error);
+                                }
+                              };
+                              fetchProgressDebug();
+                            }
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="border-yellow-400 text-yellow-700 hover:bg-yellow-100"
+                        >
+                          🔄 Recarregar
+                        </Button>
+                        <Button
+                          onClick={() => console.log('📊 [DEBUG] Estado atual:', { moduleProgress, user: user?.uid, db: !!db })}
+                          size="sm"
+                          variant="outline"
+                          className="border-yellow-400 text-yellow-700 hover:bg-yellow-100"
+                        >
+                          📊 Log Estado
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Conteúdo Principal */}
               <div className="space-y-8">
             {/* User Welcome */}
