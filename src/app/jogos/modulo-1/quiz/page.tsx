@@ -18,11 +18,11 @@ export default function Module1QuizPage() {
   const handleQuizComplete = (attempt: QuizAttempt) => {
     console.log('Quiz concluído:', attempt);
     
-    // Se passou, pode redirecionar para o próximo módulo ou dashboard
+    // Se passou, pode redirecionar para o próximo módulo ou jogos
     if (attempt.passed) {
       // Opcional: mostrar modal de parabéns antes de redirecionar
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/jogos');
       }, 3000);
     }
   };

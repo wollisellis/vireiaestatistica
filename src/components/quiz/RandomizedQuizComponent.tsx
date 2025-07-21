@@ -19,7 +19,9 @@ import {
   Target,
   BookOpen,
   AlertCircle,
-  Lightbulb
+  Lightbulb,
+  Home,
+  LogOut
 } from 'lucide-react';
 import { RandomizedQuiz, QuizAttempt, ProgressReport } from '@/types/randomizedQuiz';
 import { RandomizedQuizService } from '@/services/randomizedQuizService';
@@ -221,6 +223,18 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
   };
 
   /**
+   * Sair do quiz e voltar para página de jogos
+   */
+  const handleExitQuiz = () => {
+    const confirmExit = window.confirm(
+      'Tem certeza que deseja sair do quiz? Seu progresso atual será perdido.'
+    );
+    if (confirmExit) {
+      router.push('/jogos');
+    }
+  };
+
+  /**
    * Formata tempo em MM:SS
    */
   const formatTime = (seconds: number): string => {
@@ -258,8 +272,8 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
               <RotateCcw className="h-4 w-4 mr-2" />
               Tentar Novamente
             </Button>
-            <Button variant="outline" onClick={() => router.push('/dashboard')}>
-              Voltar ao Dashboard
+            <Button variant="outline" onClick={() => router.push('/jogos')}>
+              Voltar aos Jogos
             </Button>
           </div>
         </CardContent>
@@ -466,10 +480,10 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
           )}
           <Button 
             variant="outline" 
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/jogos')}
             className="px-8"
           >
-            Voltar ao Dashboard
+            Voltar aos Jogos
           </Button>
         </div>
       </div>
@@ -507,14 +521,25 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
                 Responda 7 questões sorteadas aleatoriamente. Você precisa de 70% de acertos para concluir o módulo.
               </p>
             </div>
-            <div className="text-right">
-              <div className="flex items-center text-gray-600 mb-1">
-                <Clock className="h-4 w-4 mr-1" />
-                <span className="font-mono">{formatTime(timeSpent)}</span>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <div className="flex items-center text-gray-600 mb-1">
+                  <Clock className="h-4 w-4 mr-1" />
+                  <span className="font-mono">{formatTime(timeSpent)}</span>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {answeredQuestions}/{totalQuestions} respondidas
+                </div>
               </div>
-              <div className="text-sm text-gray-500">
-                {answeredQuestions}/{totalQuestions} respondidas
-              </div>
+              <Button
+                variant="outline"
+                onClick={handleExitQuiz}
+                className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
+                title="Sair do quiz"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
             </div>
           </div>
           
