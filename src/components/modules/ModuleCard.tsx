@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Module } from '@/types/modules';
-import { Lock, Clock, Trophy, ChevronRight } from 'lucide-react';
+import { Lock, Clock, Trophy, ChevronRight, AlertCircle, RotateCcw, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 interface ModuleCardProps {
   module: Module;
@@ -24,6 +25,7 @@ interface ModuleCardProps {
 
 export function ModuleCard({ module, progress, onUnlock, isProfessor = false }: ModuleCardProps) {
   const router = useRouter();
+  const [showCompletedModal, setShowCompletedModal] = useState(false);
   
   const progressPercentage = progress 
     ? Math.round(((progress.completedContent + progress.completedExercises) / 
@@ -53,8 +55,18 @@ export function ModuleCard({ module, progress, onUnlock, isProfessor = false }: 
 
   const handleClick = () => {
     if (!module.isLocked || isProfessor) {
-      router.push(`/jogos/${module.id}`);
+      // Se o módulo já foi concluído, mostrar modal de confirmação
+      if (isCompleted && !isProfessor) {
+        setShowCompletedModal(true);
+      } else {
+        router.push(`/jogos/${module.id}`);
+      }
     }
+  };
+
+  const handleConfirmRestart = () => {
+    setShowCompletedModal(false);
+    router.push(`/jogos/${module.id}`);
   };
 
   const handleUnlock = (e: React.MouseEvent) => {
@@ -219,6 +231,58 @@ export function ModuleCard({ module, progress, onUnlock, isProfessor = false }: 
       {module.isLocked && !isProfessor && (
         <div className="absolute inset-0 bg-gray-900 bg-opacity-10 pointer-events-none" />
       )}
+      
+      {/* Modal de Confirmação de Módulo Já Concluído */}
+      <Dialog open={showCompletedModal} onOpenChange={setShowCompletedModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-amber-600">
+              <Trophy className="h-5 w-5 mr-2" />
+              Módulo Já Concluído
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center p-4 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle className="h-8 w-8 text-green-600 mr-3" />
+              <div>
+                <p className="font-semibold text-green-800">Parabéns!</p>
+                <p className="text-sm text-green-600">
+                  Você já concluiu este módulo com {scorePercentage}% de aproveitamento
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-amber-800">Deseja tentar novamente?</p>
+                  <p className="text-amber-700 mt-1">
+                    Sua maior nota sempre será mantida. Você tem {progress?.score}/{maxScore} pontos atualmente.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowCompletedModal(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirmRestart}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Tentar Novamente
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

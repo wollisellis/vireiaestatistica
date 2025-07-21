@@ -2,8 +2,10 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpen, Trophy, Clock, Users, CheckCircle, Star } from 'lucide-react';
+import { ArrowLeft, BookOpen, Trophy, Clock, Users, CheckCircle, Star, X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/Button';
 import { Module } from '@/types/modules';
 import { getModuleById } from '@/data/modules';
 import { ExerciseRenderer } from '@/components/exercises/ExerciseRenderer';
@@ -14,6 +16,7 @@ import { ModuleProgressProvider, useModuleProgress, useExerciseProgress } from '
 
 function JogoPageContent() {
   const params = useParams();
+  const router = useRouter();
   const moduleId = params.id as string;
   const [module, setModule] = useState<Module | null>(null);
   const [currentTab, setCurrentTab] = useState<'content' | 'exercises'>('content');
@@ -109,6 +112,20 @@ function JogoPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 🚀 CORREÇÃO: Botão de sair no canto superior direito */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button
+          onClick={() => router.push('/jogos')}
+          variant="outline"
+          size="sm"
+          className="bg-white shadow-lg border-gray-300 hover:bg-gray-50"
+          title="Voltar aos jogos"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Sair
+        </Button>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">

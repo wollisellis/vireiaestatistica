@@ -19,19 +19,11 @@ export default function Module1QuizPage() {
   const handleQuizComplete = (attempt: QuizAttempt) => {
     console.log('Quiz concluído:', attempt);
     
-    // 🚀 CORREÇÃO: Forçar atualização do ranking quando módulo for completado
-    if (attempt.passed) {
-      // Disparar evento customizado para atualizar o ranking
-      window.dispatchEvent(new CustomEvent('moduleCompleted', { 
-        detail: { moduleId: 'module-1', score: attempt.score } 
-      }));
-    }
-    
-    // 🚀 CORREÇÃO: Aumentar tempo de redirecionamento para dar tempo de ler o feedback
-    // Redirecionar após 10 segundos para dar tempo de ler o resultado
+    // 🚀 CORREÇÃO: Aumentar tempo de redirecionamento para 50 segundos para dar tempo suficiente de ler o feedback
+    // Nota: O evento moduleCompleted é disparado automaticamente pelo RandomizedQuizComponent
     setTimeout(() => {
       router.push('/jogos');
-    }, 10000);
+    }, 50000);
   };
 
   return (
