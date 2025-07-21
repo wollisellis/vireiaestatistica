@@ -64,14 +64,17 @@ const getDifficultyLevel = (estimatedTime: number) => {
   return 'Muito Difícil';
 };
 
-// Sistema de classificação por estrelas
+// Sistema de classificação por estrelas - MELHORADO
 const getPerformanceRating = (score: number) => {
-  if (score >= 90) return { stars: 5, label: 'Excelente', color: 'text-yellow-500', bgColor: 'bg-yellow-50' };
-  if (score >= 80) return { stars: 4, label: 'Muito Bom', color: 'text-yellow-500', bgColor: 'bg-yellow-50' };
-  if (score >= 70) return { stars: 3, label: 'Bom', color: 'text-blue-500', bgColor: 'bg-blue-50' };
-  if (score >= 60) return { stars: 2, label: 'Regular', color: 'text-orange-500', bgColor: 'bg-orange-50' };
-  if (score >= 50) return { stars: 1, label: 'Fraco', color: 'text-red-500', bgColor: 'bg-red-50' };
-  return { stars: 0, label: 'Muito Fraco', color: 'text-gray-500', bgColor: 'bg-gray-50' };
+  // Normalizar score para escala 0-100
+  const normalizedScore = Math.round(score);
+  
+  if (normalizedScore >= 90) return { stars: 5, label: 'Excelente', color: 'text-yellow-500', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700' };
+  if (normalizedScore >= 80) return { stars: 4, label: 'Muito Bom', color: 'text-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700' };
+  if (normalizedScore >= 70) return { stars: 3, label: 'Bom', color: 'text-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700' };
+  if (normalizedScore >= 60) return { stars: 2, label: 'Regular', color: 'text-orange-500', bgColor: 'bg-orange-50', textColor: 'text-orange-700' };
+  if (normalizedScore >= 50) return { stars: 1, label: 'Fraco', color: 'text-red-500', bgColor: 'bg-red-50', textColor: 'text-red-700' };
+  return { stars: 0, label: 'Não Avaliado', color: 'text-gray-400', bgColor: 'bg-gray-50', textColor: 'text-gray-600' };
 };
 
 // Função para calcular tempo decorrido
@@ -90,23 +93,32 @@ const getTimeAgo = (lastActivity: Date | undefined) => {
   return 'Agora há pouco';
 };
 
-// Componente de estrelas
-const StarRating = ({ rating }: { rating: { stars: number, label: string, color: string, bgColor: string } }) => {
+// Componente de estrelas - MELHORADO
+const StarRating = ({ rating, score }: { rating: { stars: number, label: string, color: string, bgColor: string, textColor: string }, score?: number }) => {
   return (
-    <div className="flex items-center space-x-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={`w-4 h-4 ${
-            star <= rating.stars 
-              ? `${rating.color} fill-current` 
-              : 'text-gray-300'
-          }`}
-        />
-      ))}
-      <span className={`text-sm font-medium ml-2 ${rating.color}`}>
-        {rating.label}
-      </span>
+    <div className="flex items-center justify-between space-x-2">
+      <div className="flex items-center space-x-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`w-4 h-4 transition-all duration-300 ${
+              star <= rating.stars 
+                ? `${rating.color} fill-current drop-shadow-sm` 
+                : 'text-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+      <div className="text-right">
+        <div className={`text-sm font-semibold ${rating.textColor}`}>
+          {rating.label}
+        </div>
+        {score !== undefined && (
+          <div className="text-xs text-gray-500">
+            {Math.round(score)}%
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -627,42 +639,40 @@ export default function JogosPage() {
             </motion.div>
 
 
-            {/* Student Progress Dashboard */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="mb-12"
-            >
-              <PersonalLearningDashboard compact={true} />
-            </motion.div>
+            {/* Student Progress Dashboard - Temporariamente Removido */}
+            {/* <PersonalLearningDashboard compact={true} /> */}
 
-            {/* Games Section */}
+            {/* Games Section - HEADER MELHORADO */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">Módulo Educacional Disponível</h2>
-                <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Módulo fundamental focado nos indicadores antropométricos e medidas corporais,
-                  base essencial para a avaliação nutricional.
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center space-x-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl flex items-center justify-center">
+                    <Scale className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Módulo Educacional</h2>
+                </div>
+                <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                  🎯 <strong>Fundamentos da Avaliação Nutricional</strong> - Base essencial com indicadores antropométricos, 
+                  medidas corporais e dados reais da população brasileira para formação sólida na área.
                 </p>
               </div>
 
               <div className="flex justify-center">
-                <div className="max-w-md w-full">
+                <div className="max-w-2xl w-full">
                 {nutritionalGames.map((game, index) => (
                   <motion.div
                     key={game.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1 * index }}
-                    className="group"
+                    className="group mb-6"
                   >
-                    {/* Card Limpo e Focado */}
-                    <Card className={`h-full transition-all duration-300 border-2 hover:shadow-lg ${
+                    {/* Card Limpo e Focado - LAYOUT MELHORADO */}
+                    <Card className={`transition-all duration-300 border-2 hover:shadow-xl hover:scale-[1.02] ${
                       game.isLocked
                         ? 'opacity-75 bg-gray-50 border-gray-200 cursor-not-allowed'
                         : game.moduleStatus === 'completed'
@@ -672,79 +682,122 @@ export default function JogosPage() {
                         : 'border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50'
                     }`}>
                       <CardHeader className="pb-4">
-                        {/* Header Principal - Mais Limpo */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className={`p-3 rounded-lg ${game.isLocked ? 'bg-gray-400' : game.color} text-white relative`}>
-                              {game.isLocked && <Lock className="w-6 h-6" />}
-                              {!game.isLocked && game.icon}
+                        {/* Header Principal - LAYOUT OTIMIZADO */}
+                        <div className="space-y-4">
+                          {/* Linha 1: Ícone e Informações Básicas */}
+                          <div className="flex items-center space-x-4">
+                            <div className={`p-4 rounded-xl ${game.isLocked ? 'bg-gray-400' : game.color} text-white shadow-lg`}>
+                              {game.isLocked && <Lock className="w-7 h-7" />}
+                              {!game.isLocked && <div className="scale-110">{game.icon}</div>}
                             </div>
-                            <div>
-                              <h3 className="text-lg font-bold text-gray-900">Módulo {game.id.split('-')[1]}</h3>
-                              <div className="flex items-center text-sm text-gray-500 space-x-2">
-                                <Clock className="w-4 h-4" />
-                                <span>{game.estimatedTime}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <h3 className="text-xl font-bold text-gray-900">Módulo {game.id.split('-')[1]}</h3>
+                                {game.moduleStatus === 'completed' && (
+                                  <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
+                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                    <span className="text-xs font-medium text-green-700">Concluído</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center text-sm text-gray-600 space-x-3">
+                                <div className="flex items-center space-x-1">
+                                  <Clock className="w-4 h-4" />
+                                  <span>{game.estimatedTime}</span>
+                                </div>
                                 {!game.isLocked && (
-                                  <>
-                                    <span>•</span>
+                                  <div className="flex items-center space-x-1">
+                                    <Target className="w-4 h-4" />
                                     <span>7 questões</span>
-                                  </>
+                                  </div>
                                 )}
                               </div>
                             </div>
                           </div>
                           
-                          {/* Status Final com Nota */}
+                          {/* Linha 2: Status Final (se já tentou) */}
                           {!game.isLocked && game.hasAttempted && (
-                            <div className="text-right">
-                              <div className="text-xl font-bold text-gray-900">
-                                Status final: {game.bestScore || 0}%
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {getTimeAgo(game.progress?.lastActivity)} | 15 min gasto
+                            <div className="bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-700 mb-1">Status Final</div>
+                                  <div className="text-2xl font-bold text-gray-900">
+                                    {Math.round(game.bestScore || 0)}%
+                                  </div>
+                                </div>
+                                <div className="text-right text-sm text-gray-500">
+                                  <div>{getTimeAgo(game.progress?.lastAccessed)}</div>
+                                  <div>15 min gasto</div>
+                                </div>
                               </div>
                             </div>
                           )}
+                          
+                          {/* Título do Módulo */}
+                          <h4 className="text-xl font-bold text-gray-900 leading-tight">{game.title}</h4>
                         </div>
-
-                        {/* Título do Módulo */}
-                        <h4 className="text-lg font-semibold text-gray-900 mb-2">{game.title}</h4>
                         
-                        {/* Status e Avaliação por Estrelas */}
+                        {/* Status e Avaliação por Estrelas - MELHORADO */}
                         {!game.isLocked && (
-                          <div className="mb-4">
+                          <div className="mb-6">
                             {game.moduleStatus === 'completed' && (
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-green-700">Módulo Concluído</span>
-                                  <StarRating rating={getPerformanceRating(game.bestScore || 0)} />
+                              <div className="space-y-3">
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <CheckCircle className="w-5 h-5 text-green-600" />
+                                      <span className="text-sm font-semibold text-green-800">Módulo Concluído</span>
+                                    </div>
+                                  </div>
+                                  <StarRating 
+                                    rating={getPerformanceRating(game.bestScore || 0)} 
+                                    score={game.bestScore || 0}
+                                  />
                                 </div>
                               </div>
                             )}
                             {game.moduleStatus === 'attempted_failed' && (
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-orange-700">Em Progresso</span>
-                                  <StarRating rating={getPerformanceRating(game.bestScore || 0)} />
+                              <div className="space-y-3">
+                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <Clock className="w-5 h-5 text-orange-600" />
+                                      <span className="text-sm font-semibold text-orange-800">Em Progresso</span>
+                                    </div>
+                                  </div>
+                                  <StarRating 
+                                    rating={getPerformanceRating(game.bestScore || 0)}
+                                    score={game.bestScore || 0}
+                                  />
+                                  <div className="text-xs text-orange-600 mt-2">
+                                    Necessário ≥70% para aprovação
+                                  </div>
                                 </div>
                               </div>
                             )}
                             {game.moduleStatus === 'never_attempted' && (
-                              <div className="text-center p-3 bg-blue-50 rounded-md">
-                                <div className="flex items-center justify-center text-blue-700 text-sm">
-                                  <Trophy className="w-4 h-4 mr-2" />
-                                  <span>🏅 Conquista disponível: "Fundamentos Dominados"</span>
-                                </div>
-                                <div className="text-xs text-blue-600 mt-1">
-                                  Meta: 70% para aprovação
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                                <div className="text-center">
+                                  <div className="flex items-center justify-center text-blue-700 text-sm mb-2">
+                                    <Trophy className="w-5 h-5 mr-2" />
+                                    <span className="font-medium">🏅 Conquista disponível: "Fundamentos Dominados"</span>
+                                  </div>
+                                  <div className="text-xs text-blue-600">
+                                    Meta: ≥70% para aprovação • Até 5⭐ disponíveis
+                                  </div>
+                                  <div className="mt-2">
+                                    <StarRating 
+                                      rating={getPerformanceRating(0)}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             )}
                           </div>
                         )}
 
-                        {/* Descrição */}
-                        <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                        {/* Descrição - MELHORADA */}
+                        <p className="text-base text-gray-700 leading-relaxed mb-6">
                           {game.description}
                         </p>
 
@@ -760,58 +813,76 @@ export default function JogosPage() {
                       </CardHeader>
 
                       <CardContent className="pt-0">
-                        {/* Objetivos - Condensados */}
-                        <div className="mb-4">
-                          <h4 className="font-medium text-gray-900 mb-2">Objetivos de Aprendizado</h4>
-                          <ul className="space-y-1 text-sm text-gray-600">
-                            {game.learningObjectives.slice(0, 4).map((objective, idx) => (
-                              <li key={idx} className="flex items-start">
-                                <span className="w-1 h-1 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                                {objective}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        {/* Tópicos - Mais Compactos */}
+                        {/* Objetivos - LAYOUT APRIMORADO */}
                         <div className="mb-6">
-                          <h4 className="font-medium text-gray-900 mb-2">Tópicos Abordados</h4>
-                          <div className="flex flex-wrap gap-1">
-                            {game.topics.map((topic, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                {topic}
-                              </span>
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <Target className="w-4 h-4 mr-2 text-blue-600" />
+                            Objetivos de Aprendizado
+                          </h4>
+                          <div className="grid gap-2">
+                            {game.learningObjectives.slice(0, 4).map((objective, idx) => (
+                              <div key={idx} className="flex items-start space-x-3 p-2 bg-blue-50 rounded-md">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <span className="text-sm text-gray-700 leading-relaxed">{objective}</span>
+                              </div>
                             ))}
                           </div>
                         </div>
 
-                        {/* Botão de Ação - Simplificado */}
-                        {game.isLocked ? (
-                          <Button disabled className="w-full bg-gray-300 text-gray-500 cursor-not-allowed" size="lg">
-                            <Lock className="w-4 h-4 mr-2" />
-                            Módulo Bloqueado
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={() => handleStartQuiz(game)}
-                            className={`w-full transition-all duration-300 ${
-                              game.moduleStatus === 'completed'
-                                ? 'bg-green-600 hover:bg-green-700'
-                                : game.moduleStatus === 'attempted_failed'
-                                ? 'bg-orange-600 hover:bg-orange-700'
-                                : 'bg-blue-600 hover:bg-blue-700'
-                            }`}
-                            size="lg"
-                          >
-                            {game.moduleStatus === 'completed' ? (
-                              <>Tentar Novamente</>
-                            ) : game.moduleStatus === 'attempted_failed' ? (
-                              <>Tentar Novamente</>
-                            ) : (
-                              <>Iniciar Quiz</>
-                            )}
-                          </Button>
-                        )}
+                        {/* Tópicos - DESIGN MODERNO */}
+                        <div className="mb-8">
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <BookOpen className="w-4 h-4 mr-2 text-green-600" />
+                            Tópicos Abordados
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {game.topics.map((topic, idx) => (
+                              <div key={idx} className="px-3 py-2 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg text-center font-medium">
+                                {topic}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Botão de Ação - DESIGN APRIMORADO */}
+                        <div className="pt-2">
+                          {game.isLocked ? (
+                            <Button disabled className="w-full bg-gray-300 text-gray-500 cursor-not-allowed py-4 text-lg font-semibold rounded-xl">
+                              <Lock className="w-5 h-5 mr-2" />
+                              Módulo Bloqueado
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => handleStartQuiz(game)}
+                              className={`w-full py-4 text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${
+                                game.moduleStatus === 'completed'
+                                  ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-green-200'
+                                  : game.moduleStatus === 'attempted_failed'
+                                  ? 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-orange-200'
+                                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-blue-200'
+                              } shadow-lg`}
+                            >
+                              <div className="flex items-center justify-center space-x-2">
+                                {game.moduleStatus === 'completed' ? (
+                                  <>
+                                    <Trophy className="w-5 h-5" />
+                                    <span>Tentar Superar Desempenho</span>
+                                  </>
+                                ) : game.moduleStatus === 'attempted_failed' ? (
+                                  <>
+                                    <Target className="w-5 h-5" />
+                                    <span>Continuar Tentativas</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-5 h-5" />
+                                    <span>Começar Aventura</span>
+                                  </>
+                                )}
+                              </div>
+                            </Button>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
