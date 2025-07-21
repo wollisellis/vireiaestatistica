@@ -75,31 +75,27 @@ export default function Module1QuizPage() {
           </Card>
         </div>
 
-        {/* Instruções */}
+        {/* Instruções Essenciais */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>📝 Instruções Importantes</CardTitle>
+            <CardTitle>📝 Critérios de Aprovação</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Como Funciona:</h4>
-                <ul className="space-y-1 text-gray-700">
-                  <li>• 7 questões selecionadas aleatoriamente de um banco de 14</li>
-                  <li>• Alternativas embaralhadas para cada estudante</li>
-                  <li>• Cada questão vale aproximadamente 1,43 pontos</li>
-                  <li>• Você pode navegar entre as questões livremente</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Critérios de Aprovação:</h4>
-                <ul className="space-y-1 text-gray-700">
-                  <li>• Mínimo de 70% de acertos (5 questões certas)</li>
-                  <li>• Você pode tentar quantas vezes precisar</li>
-                  <li>• Questões reembaralhadas a cada nova tentativa</li>
-                  <li>• Feedback detalhado para questões incorretas</li>
-                </ul>
-              </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <ul className="space-y-2 text-gray-700">
+                <li className="flex items-center">
+                  <Target className="w-4 h-4 text-blue-600 mr-2 flex-shrink-0" />
+                  <span><strong>Mínimo de 70% de acertos</strong> para aprovação (5 questões certas)</span>
+                </li>
+                <li className="flex items-center">
+                  <Trophy className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                  <span>Você pode <strong>tentar quantas vezes precisar</strong></span>
+                </li>
+                <li className="flex items-center">
+                  <BookOpen className="w-4 h-4 text-purple-600 mr-2 flex-shrink-0" />
+                  <span><strong>Feedback detalhado</strong> será fornecido para cada questão</span>
+                </li>
+              </ul>
             </div>
           </CardContent>
         </Card>

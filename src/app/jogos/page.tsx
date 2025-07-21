@@ -273,13 +273,37 @@ export default function JogosPage() {
     const locked = !unlockedModules.includes(moduleId) && !isProfessor;
     const progress = moduleProgress[moduleId];
     
+    // Determinar o estado do módulo baseado no progresso
+    let moduleStatus = 'never_attempted'; // nunca tentado
+    let hasPassed = false;
+    let hasAttempted = false;
+    let bestScore = 0;
+    
+    if (progress) {
+      hasAttempted = true;
+      bestScore = progress.score || progress.totalScore || 0;
+      
+      // Verificar se passou (considerando diferentes formatos de score)
+      // Assumindo que >70% = passou
+      hasPassed = bestScore >= 70 || progress.completed || false;
+      
+      if (hasPassed) {
+        moduleStatus = 'completed'; // concluído com sucesso
+      } else {
+        moduleStatus = 'attempted_failed'; // tentado mas não passou
+      }
+    }
+    
     return {
       ...game,
       isLocked: locked,
       lockMessage: locked ? 'Aguardando liberação do docente' : undefined,
       progress: progress,
-      isCompleted: progress?.completed || false,
-      bestScore: progress?.score || 0
+      isCompleted: hasPassed,
+      bestScore: bestScore,
+      moduleStatus: moduleStatus,
+      hasAttempted: hasAttempted,
+      hasPassed: hasPassed
     };
   });
 
@@ -490,6 +514,10 @@ export default function JogosPage() {
                     <Card className={`h-full transition-all duration-300 border-2 ${
                       game.isLocked
                         ? 'opacity-75 bg-gray-50 border-gray-200'
+                        : game.moduleStatus === 'completed'
+                        ? 'hover:shadow-xl border-green-200 bg-green-50'
+                        : game.moduleStatus === 'attempted_failed'
+                        ? 'hover:shadow-xl border-orange-200 bg-orange-50'
                         : 'hover:shadow-xl hover:border-blue-200'
                     }`}>
                       <CardHeader className="pb-4">
@@ -520,9 +548,26 @@ export default function JogosPage() {
                           </div>
                         </div>
 
-                        <h3 className={`text-xl font-bold mb-2 ${
-                          game.isLocked ? 'text-gray-500' : 'text-gray-900'
-                        }`}>{game.title}</h3>
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className={`text-xl font-bold ${
+                            game.isLocked ? 'text-gray-500' : 'text-gray-900'
+                          }`}>{game.title}</h3>
+                          
+                          {/* Indicador de Status */}
+                          {!game.isLocked && game.moduleStatus === 'completed' && (
+                            <div className="flex items-center px-2 py-1 bg-green-100 border border-green-200 rounded-full">
+                              <Trophy className="w-3 h-3 text-green-600 mr-1" />
+                              <span className="text-xs text-green-700 font-medium">Concluído</span>
+                            </div>
+                          )}
+                          {!game.isLocked && game.moduleStatus === 'attempted_failed' && (
+                            <div className="flex items-center px-2 py-1 bg-orange-100 border border-orange-200 rounded-full">
+                              <Target className="w-3 h-3 text-orange-600 mr-1" />
+                              <span className="text-xs text-orange-700 font-medium">Em Progresso</span>
+                            </div>
+                          )}
+                        </div>
+                        
                         <p className={`text-sm leading-relaxed ${
                           game.isLocked ? 'text-gray-500' : 'text-gray-600'
                         }`}>{game.description}</p>
@@ -592,16 +637,23 @@ export default function JogosPage() {
                             <Link href={`/jogos/modulo-${game.id}/quiz`}>
                               <Button
                                 className={`w-full mt-4 transition-colors ${
-                                  game.isCompleted 
+                                  game.moduleStatus === 'completed'
                                     ? 'bg-green-600 hover:bg-green-700' 
+                                    : game.moduleStatus === 'attempted_failed'
+                                    ? 'bg-orange-600 hover:bg-orange-700'
                                     : 'bg-blue-600 hover:bg-blue-700 group-hover:bg-blue-600'
                                 }`}
                                 size="lg"
                               >
-                                {game.isCompleted ? (
+                                {game.moduleStatus === 'completed' ? (
                                   <>
                                     <Trophy className="w-4 h-4 mr-2" />
-                                    Tentar Melhorar
+                                    Responder Novamente
+                                  </>
+                                ) : game.moduleStatus === 'attempted_failed' ? (
+                                  <>
+                                    <Target className="w-4 h-4 mr-2" />
+                                    Tentar Novamente
                                   </>
                                 ) : (
                                   <>
