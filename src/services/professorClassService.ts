@@ -218,12 +218,13 @@ export class ProfessorClassService {
     }
   }
 
-  // Obter turmas do professor (excluindo as deletadas)
+  // Obter todas as turmas (excluindo as deletadas) - Acesso compartilhado para todos os professores
   static async getProfessorClasses(professorId: string): Promise<ClassInfo[]> {
     try {
+      console.log('[ProfessorClassService] 🔓 Carregando TODAS as turmas - Acesso compartilhado entre professores')
+      
       const q = query(
         collection(db, this.CLASSES_COLLECTION),
-        where('professorId', '==', professorId),
         where('status', '!=', 'deleted'),
         orderBy('status', 'desc'),
         orderBy('createdAt', 'desc')
@@ -240,15 +241,16 @@ export class ProfessorClassService {
         }
       })
       
+      console.log(`[ProfessorClassService] ✅ ${classes.length} turmas carregadas (de todos os professores)`)
       return classes
     } catch (error) {
-      console.error('Erro ao obter turmas do professor:', error)
+      console.error('Erro ao obter turmas:', error)
       // Se o erro for devido ao índice composto faltando, tentar query alternativa
       if (error.message?.includes('index')) {
         try {
+          console.log('[ProfessorClassService] 🔄 Tentando query alternativa...')
           const altQuery = query(
             collection(db, this.CLASSES_COLLECTION),
-            where('professorId', '==', professorId),
             orderBy('createdAt', 'desc')
           )
           
@@ -263,6 +265,7 @@ export class ProfessorClassService {
             }
           })
           
+          console.log(`[ProfessorClassService] ✅ ${classes.length} turmas carregadas via query alternativa`)
           return classes
         } catch (altError) {
           console.error('Erro na query alternativa:', altError)
@@ -632,14 +635,18 @@ export class ProfessorClassService {
     }
   }
 
-  // Deletar turma
+  // Deletar turma - Acesso compartilhado para todos os professores
   static async deleteClass(classId: string, professorId: string): Promise<void> {
     try {
-      // Verificar se o professor é dono da turma
+      console.log(`[ProfessorClassService] 🗑️ Professor ${professorId} deletando turma ${classId} (acesso compartilhado)`)
+      
+      // Verificar se a turma existe (removida a verificação de proprietário)
       const classInfo = await this.getClassInfo(classId)
-      if (!classInfo || classInfo.professorId !== professorId) {
-        throw new Error('Não autorizado a deletar esta turma')
+      if (!classInfo) {
+        throw new Error('Turma não encontrada')
       }
+
+      console.log(`[ProfessorClassService] ✅ Turma encontrada: ${classInfo.name} (criada por: ${classInfo.professorId})`)
 
       const batch = writeBatch(db)
       
@@ -668,7 +675,7 @@ export class ProfessorClassService {
       })
       
       await batch.commit()
-      console.log('Turma deletada com sucesso:', classId)
+      console.log(`[ProfessorClassService] ✅ Turma ${classId} deletada com sucesso pelo professor ${professorId}`)
     } catch (error) {
       console.error('Erro ao deletar turma:', error)
       throw error
