@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Progress } from '@/components/ui/Progress'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
+import { parseFirebaseDate } from '@/utils/dateUtils'
 import { 
   ProfessorClassService, 
   StudentOverview,
@@ -127,8 +128,10 @@ export function StudentProgressViewer({ classId, className = '' }: StudentProgre
         return filtered.sort((a, b) => b.totalNormalizedScore - a.totalNormalizedScore)
       case 'activity':
         return filtered.sort((a, b) => {
-          const aTime = a.lastActivity?.getTime() || 0
-          const bTime = b.lastActivity?.getTime() || 0
+          const aDate = parseFirebaseDate(a.lastActivity)
+          const bDate = parseFirebaseDate(b.lastActivity)
+          const aTime = aDate?.getTime() || 0
+          const bTime = bDate?.getTime() || 0
           return bTime - aTime
         })
       default:
@@ -408,8 +411,11 @@ function StudentCard({ student, onViewDetails }: StudentCardProps) {
   const getActivityStatus = (lastActivity: any) => {
     if (!lastActivity) return { text: 'Nunca', color: 'gray' }
     
+    const activityDate = parseFirebaseDate(lastActivity)
+    if (!activityDate) return { text: 'Nunca', color: 'gray' }
+    
     const now = new Date()
-    const diffHours = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60)
+    const diffHours = (now.getTime() - activityDate.getTime()) / (1000 * 60 * 60)
     
     if (diffHours < 24) return { text: 'Hoje', color: 'green' }
     if (diffHours < 168) return { text: 'Esta semana', color: 'blue' }

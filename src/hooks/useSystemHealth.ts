@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { SystemHealthService, SystemHealthMetrics, HealthAlert } from '@/services/systemHealthService'
 import { useAuth } from '@/hooks/useHybridAuth'
+import { parseFirebaseDate } from '@/utils/dateUtils'
 
 interface UseSystemHealthOptions {
   autoRefresh?: boolean          // Auto-atualizar periodicamente
@@ -65,7 +66,10 @@ export function useSystemHealth(options: UseSystemHealthOptions = {}) {
         
         if (recentMetrics.length > 0) {
           const latestMetrics = recentMetrics[0]
-          const isRecent = new Date().getTime() - latestMetrics.timestamp.getTime() < refreshInterval
+          const timestampDate = parseFirebaseDate(latestMetrics.timestamp)
+          const isRecent = timestampDate ? 
+            new Date().getTime() - timestampDate.getTime() < refreshInterval : 
+            false
           
           if (isRecent && !compactMode) {
             metrics = latestMetrics
@@ -241,8 +245,11 @@ export function useSystemHealth(options: UseSystemHealthOptions = {}) {
     
     // Helpers para formatação
     formatRelativeTime: (date: Date) => {
+      const parsedDate = parseFirebaseDate(date)
+      if (!parsedDate) return 'data inválida'
+      
       const now = new Date()
-      const diffMs = now.getTime() - date.getTime()
+      const diffMs = now.getTime() - parsedDate.getTime()
       const diffMins = Math.floor(diffMs / 60000)
       
       if (diffMins < 1) return 'agora mesmo'

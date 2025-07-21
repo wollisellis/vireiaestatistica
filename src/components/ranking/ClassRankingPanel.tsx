@@ -20,6 +20,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { isRecentActivity } from '@/utils/dateUtils';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { enhancedClassService } from '@/services/enhancedClassService';
 import ProfessorClassService from '@/services/professorClassService';

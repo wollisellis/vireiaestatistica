@@ -31,6 +31,7 @@ import {
 } from '@/types/classes'
 import { modules } from '@/data/modules'
 import unifiedScoringService from './unifiedScoringService'
+import { parseFirebaseDate } from '@/utils/dateUtils'
 
 export class EnhancedClassService {
   
@@ -636,30 +637,16 @@ export class EnhancedClassService {
   
   // Métodos auxiliares privados
   
-  // Função utilitária para converter lastActivity para timestamp
+  // Função utilitária para converter lastActivity para timestamp (usando dateUtils seguro)
   private static getLastActivityTimestamp(lastActivity: any): number {
     if (!lastActivity) {
       return Date.now()
     }
     
-    // Se é um objeto Date
-    if (lastActivity instanceof Date) {
-      return lastActivity.getTime()
-    }
-    
-    // Se é um Timestamp do Firebase
-    if (lastActivity.toDate && typeof lastActivity.toDate === 'function') {
-      return lastActivity.toDate().getTime()
-    }
-    
-    // Se é um Timestamp do Firebase (formato alternativo)
-    if (lastActivity.seconds) {
-      return lastActivity.seconds * 1000
-    }
-    
-    // Se é um string de data
-    if (typeof lastActivity === 'string') {
-      return new Date(lastActivity).getTime()
+    // Usar função segura do dateUtils
+    const parsedDate = parseFirebaseDate(lastActivity)
+    if (parsedDate) {
+      return parsedDate.getTime()
     }
     
     // Se é um número (timestamp)

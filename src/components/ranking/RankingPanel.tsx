@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { isRecentActivity } from '@/utils/dateUtils';
 import rankingService, { RankingEntry, RankingStats } from '@/services/rankingService';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 
@@ -320,12 +321,12 @@ export function RankingPanel({
                           <div className="flex items-center space-x-1">
                             <div className={`
                               w-2 h-2 rounded-full
-                              ${Date.now() - new Date(entry.lastActivity).getTime() < 24 * 60 * 60 * 1000
+                              ${isRecentActivity(entry.lastActivity)
                                 ? 'bg-green-400' : 'bg-gray-300'
                               }
                             `} />
                             <span className="text-xs text-gray-500">
-                              {Date.now() - new Date(entry.lastActivity).getTime() < 24 * 60 * 60 * 1000
+                              {isRecentActivity(entry.lastActivity)
                                 ? 'Ativo' : 'Offline'
                               }
                             </span>

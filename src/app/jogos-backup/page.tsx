@@ -191,7 +191,7 @@ export default function JogosNT600Page() {
                       Módulos
                     </Button>
                   </Link>
-                  <Link href="/games">
+                  <Link href="/jogos">
                     <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
                       <BarChart3 className="w-4 h-4 mr-2" />
                       AvaliaNutri

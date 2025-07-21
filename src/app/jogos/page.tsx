@@ -544,7 +544,7 @@ export default function JogosPage() {
                   <span className="text-gray-900 font-medium">NT600 - Jogos Educacionais</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Link href="/games">
+                  <Link href="/jogos">
                     <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
                       <BarChart3 className="w-4 h-4 mr-2" />
                       AvaliaNutri
