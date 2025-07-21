@@ -89,6 +89,23 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
     }
   }, [moduleId, user]);
 
+  // ✅ CORREÇÃO: useEffect para atualizar ranking quando quiz é concluído
+  useEffect(() => {
+    if (isSubmitted && results && user?.uid) {
+      console.log('📊 Disparando evento moduleCompleted para atualizar ranking');
+      const event = new CustomEvent('moduleCompleted', {
+        detail: {
+          userId: user.uid,
+          moduleId,
+          score: results.score,
+          percentage: results.percentage,
+          passed: results.passed
+        }
+      });
+      window.dispatchEvent(event);
+    }
+  }, [isSubmitted, results, user?.uid, moduleId]);
+
   /**
    * Carrega ou gera quiz para o estudante
    */
@@ -298,23 +315,6 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
    * Renderiza resultados do quiz
    */
   if (isSubmitted && results && progressReport) {
-    // 🚀 CORREÇÃO: Disparar evento para atualizar ranking automaticamente
-    useEffect(() => {
-      if (results && user?.uid) {
-        console.log('📊 Disparando evento moduleCompleted para atualizar ranking');
-        const event = new CustomEvent('moduleCompleted', {
-          detail: {
-            userId: user.uid,
-            moduleId,
-            score: results.score,
-            percentage: results.percentage,
-            passed: results.passed
-          }
-        });
-        window.dispatchEvent(event);
-      }
-    }, [results, user?.uid, moduleId]);
-
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header dos Resultados */}

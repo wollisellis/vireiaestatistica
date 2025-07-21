@@ -58,10 +58,19 @@ export class ClassTrashService {
         throw new Error('Turma não encontrada')
       }
 
-      // Verificar se o professor tem permissão
-      if (classData.professorId !== deletedBy) {
-        throw new Error('Não autorizado a excluir esta turma')
+      // ✅ CORREÇÃO: Verificar se é um professor válido (acesso compartilhado)
+      // Buscar dados do usuário que está tentando excluir
+      const userDoc = await getDoc(doc(db, 'users', deletedBy))
+      if (!userDoc.exists()) {
+        throw new Error('Usuário não encontrado')
       }
+      
+      const userData = userDoc.data()
+      if (userData.role !== 'professor') {
+        throw new Error('Apenas professores podem excluir turmas')
+      }
+      
+      console.log(`✅ Professor ${userData.fullName || deletedBy} autorizado a excluir turma ${classData.className}`)
 
       const now = new Date()
       const expiresAt = new Date(now.getTime() + (this.RETENTION_DAYS * 24 * 60 * 60 * 1000))
