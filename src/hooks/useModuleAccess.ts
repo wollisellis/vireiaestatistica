@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
 
 interface ModuleSettings {
-  moduleId: number
+  moduleId: string
   isLocked: boolean
   unlockDate?: string
 }
 
 interface ModuleAccessHook {
   moduleSettings: ModuleSettings[]
-  isModuleLocked: (moduleId: number) => boolean
-  canAccessModule: (moduleId: number) => boolean
+  isModuleLocked: (moduleId: string) => boolean
+  canAccessModule: (moduleId: string) => boolean
   loading: boolean
 }
 
@@ -58,21 +58,21 @@ export function useModuleAccess(): ModuleAccessHook {
 
   const setDefaultSettings = () => {
     const defaultSettings: ModuleSettings[] = [
-      { moduleId: 1, isLocked: false }, // Anthropometric Assessment - always unlocked
-      { moduleId: 2, isLocked: true },  // Clinical Assessment - locked by default
-      { moduleId: 3, isLocked: true },  // Socioeconomic Assessment - locked by default
-      { moduleId: 4, isLocked: false }  // Growth Curves - unlocked by default
+      { moduleId: 'module-1', isLocked: false }, // Anthropometric Assessment - always unlocked
+      { moduleId: 'module-2', isLocked: true },  // Clinical Assessment - locked by default
+      { moduleId: 'module-3', isLocked: true },  // Socioeconomic Assessment - locked by default
+      { moduleId: 'module-4', isLocked: false }  // Growth Curves - unlocked by default
     ]
     setModuleSettings(defaultSettings)
     localStorage.setItem('nt600-module-settings', JSON.stringify(defaultSettings))
   }
 
-  const isModuleLocked = (moduleId: number): boolean => {
+  const isModuleLocked = (moduleId: string): boolean => {
     const setting = moduleSettings.find(m => m.moduleId === moduleId)
     return setting?.isLocked || false
   }
 
-  const canAccessModule = (moduleId: number): boolean => {
+  const canAccessModule = (moduleId: string): boolean => {
     return !isModuleLocked(moduleId)
   }
 
@@ -86,7 +86,7 @@ export function useModuleAccess(): ModuleAccessHook {
 
 // Hook to update module settings (for professors)
 export function useModuleManagement() {
-  const toggleModuleLock = (moduleId: number) => {
+  const toggleModuleLock = (moduleId: string) => {
     const savedSettings = localStorage.getItem('nt600-module-settings')
     if (savedSettings) {
       try {
@@ -109,7 +109,7 @@ export function useModuleManagement() {
     }
   }
 
-  const unlockModule = (moduleId: number) => {
+  const unlockModule = (moduleId: string) => {
     const savedSettings = localStorage.getItem('nt600-module-settings')
     if (savedSettings) {
       try {
@@ -132,7 +132,7 @@ export function useModuleManagement() {
     }
   }
 
-  const lockModule = (moduleId: number) => {
+  const lockModule = (moduleId: string) => {
     const savedSettings = localStorage.getItem('nt600-module-settings')
     if (savedSettings) {
       try {
