@@ -42,7 +42,7 @@ export default function ProfessorDashboardPage() {
   const [moduleLoading, setModuleLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
 
-  // Carregar módulos desbloqueados do Firebase
+  // Carregar módulos desbloqueados do Firebase - Otimizado
   useEffect(() => {
     if (!db) {
       setModuleLoading(false)
@@ -50,12 +50,22 @@ export default function ProfessorDashboardPage() {
     }
 
     const unsubscribe = onSnapshot(doc(db, 'settings', 'modules'), (doc) => {
-      if (doc.exists()) {
-        setUnlockedModules(doc.data().unlocked || ['module-1'])
+      try {
+        if (doc.exists()) {
+          setUnlockedModules(doc.data().unlocked || ['module-1'])
+        } else {
+          // Criar documento padrão se não existir
+          setDoc(doc.ref, { unlocked: ['module-1'], lastUpdated: new Date() }, { merge: true })
+        }
+      } catch (error) {
+        console.error('Erro ao processar módulos:', error)
+        setUnlockedModules(['module-1']) // Fallback seguro
+      } finally {
+        setModuleLoading(false)
       }
-      setModuleLoading(false)
     }, (error) => {
       console.error('Erro ao buscar módulos desbloqueados:', error)
+      setUnlockedModules(['module-1']) // Fallback em caso de erro
       setModuleLoading(false)
     })
 
@@ -76,8 +86,12 @@ export default function ProfessorDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <h2 className="text-lg font-medium text-emerald-800">Carregando Dashboard...</h2>
+          <p className="text-emerald-600 text-sm mt-2">Autenticando professor</p>
+        </div>
       </div>
     )
   }
@@ -123,92 +137,68 @@ export default function ProfessorDashboardPage() {
   const toggleModuleAccess = async (moduleId: string) => {
     if (!db) {
       console.error('Firebase não inicializado')
+      alert('Erro: Firebase não está configurado')
+      return
+    }
+
+    if (!user?.id) {
+      console.error('Usuário não autenticado')
+      alert('Erro: Usuário não autenticado')
       return
     }
 
     try {
-      console.log(`Tentando alterar acesso do módulo: ${moduleId}`)
-      console.log('Estado atual dos módulos desbloqueados:', unlockedModules)
-      
       const isCurrentlyUnlocked = unlockedModules.includes(moduleId)
-      console.log(`Módulo ${moduleId} atualmente ${isCurrentlyUnlocked ? 'desbloqueado' : 'bloqueado'}`)
-      
-      let newUnlocked: string[]
-      if (isCurrentlyUnlocked) {
-        // Bloquear módulo (remover da lista)
-        newUnlocked = unlockedModules.filter(id => id !== moduleId)
-        console.log(`Bloqueando módulo ${moduleId}. Nova lista:`, newUnlocked)
-      } else {
-        // Desbloquear módulo (adicionar à lista)
-        newUnlocked = [...unlockedModules, moduleId]
-        console.log(`Desbloqueando módulo ${moduleId}. Nova lista:`, newUnlocked)
-      }
+      const newUnlocked = isCurrentlyUnlocked 
+        ? unlockedModules.filter(id => id !== moduleId)
+        : [...unlockedModules, moduleId]
 
       const updateData = {
         unlocked: newUnlocked,
         lastUpdated: new Date(),
-        lastUpdatedBy: user?.id || 'unknown'
+        lastUpdatedBy: user.id
       }
-      
-      console.log('Dados que serão salvos no Firebase:', updateData)
 
       await setDoc(doc(db, 'settings', 'modules'), updateData, { merge: true })
-
+      
       console.log(`✅ Módulo ${moduleId} ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`)
+      
+      // Notificação visual de sucesso (opcional)
+      // toast.success(`Módulo ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso!`)
+      
     } catch (error) {
       console.error(`❌ Erro ao alterar acesso do módulo ${moduleId}:`, error)
-      alert(`Erro ao ${unlockedModules.includes(moduleId) ? 'bloquear' : 'desbloquear'} módulo. Verifique o console para mais detalhes.`)
+      alert(`Erro ao ${unlockedModules.includes(moduleId) ? 'bloquear' : 'desbloquear'} módulo. Tente novamente.`)
     }
   }
 
   const handleLogout = async () => {
     try {
-      // Clear all authentication state
-      if (typeof window !== 'undefined') {
-        // Clear cookies
-        const cookiesToClear = [
-          'guest-mode',
-          'professor-guest-mode',
-          'auth-token',
-          'firebase-auth-token',
-          'user-role',
-          'user-session'
-        ];
+      // Limpeza eficiente de autenticação
+      const cookiesToClear = ['guest-mode', 'professor-guest-mode', 'auth-token', 'firebase-auth-token', 'user-role', 'user-session']
+      const localStorageKeysToRemove = ['guest-mode', 'professor-guest-mode', 'firebase-auth-token', 'user-data', 'auth-state']
 
-        cookiesToClear.forEach(cookieName => {
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
-        });
+      // Limpar cookies
+      cookiesToClear.forEach(cookieName => {
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+      })
 
-        // Clear localStorage and sessionStorage
-        const localStorageKeysToRemove = [
-          'guest-mode',
-          'professor-guest-mode',
-          'firebase-auth-token',
-          'user-data',
-          'auth-state'
-        ];
+      // Limpar localStorage
+      localStorageKeysToRemove.forEach(key => localStorage.removeItem(key))
+      sessionStorage.clear()
 
-        localStorageKeysToRemove.forEach(key => {
-          localStorage.removeItem(key);
-        });
-
-        sessionStorage.clear();
-      }
-
-      // Sign out from Firebase if user is authenticated
+      // Sign out do Firebase (se não for usuário convidado)
       if (user && user.id !== 'professor-guest-user') {
-        await signOut();
+        await signOut()
       }
 
-      // Redirect to login page
-      window.location.href = '/';
+      // Redirecionamento
+      window.location.href = '/'
     } catch (error) {
-      console.error('Logout error:', error);
-      // Even if logout fails, redirect to login page
-      window.location.href = '/';
+      console.error('Erro no logout:', error)
+      window.location.href = '/' // Sempre redirecionar em caso de erro
     }
-  };
+  }
 
   return (
     <ModuleProgressProvider>
@@ -356,7 +346,7 @@ export default function ProfessorDashboardPage() {
                   {moduleLoading ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
-                      <p className="text-gray-600 mt-2">Carregando módulo...</p>
+                      <p className="text-emerald-700 mt-2">Carregando configurações do módulo...</p>
                     </div>
                   ) : (
                     <div className="grid gap-6">

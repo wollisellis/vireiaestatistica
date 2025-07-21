@@ -225,6 +225,52 @@ service cloud.firestore {
         request.resource.data.studentId == request.auth.uid;
     }
 
+    // STUDENT MODULE PROGRESS COLLECTION - Progresso detalhado dos estudantes nos módulos
+    match /student_module_progress/{progressId} {
+      // Estudantes podem ler/escrever apenas seu próprio progresso
+      allow read, write: if isAuthenticated() &&
+        (resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+
+      // Professores podem ler todo o progresso
+      allow read: if isProfessor();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        (request.resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+    }
+
+    // STUDENT EXERCISE PROGRESS COLLECTION - Progresso dos estudantes nos exercícios
+    match /student_exercise_progress/{progressId} {
+      // Estudantes podem ler/escrever apenas seu próprio progresso
+      allow read, write: if isAuthenticated() &&
+        (resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+
+      // Professores podem ler todo o progresso
+      allow read: if isProfessor();
+
+      // Permitir criação apenas para o próprio usuário
+      allow create: if isAuthenticated() &&
+        (request.resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+    }
+
+    // CLASS ENROLLMENTS COLLECTION - Matrículas de estudantes (alternativa)
+    match /class_enrollments/{enrollmentId} {
+      // Professores podem gerenciar matrículas
+      allow read, write: if isProfessor();
+
+      // Estudantes podem ler apenas suas próprias matrículas
+      allow read: if isStudent() &&
+        (resource.data.studentId == request.auth.uid ||
+         enrollmentId.split('_')[1] == request.auth.uid);
+
+      // Permitir criação de matrícula (para sistema de convites)
+      allow create: if isAuthenticated();
+    }
+
     // EXERCISE ATTEMPTS COLLECTION - Tentativas de exercícios (nova)
     match /exercise_attempts/{attemptId} {
       // Estudantes podem ler/escrever apenas suas próprias tentativas

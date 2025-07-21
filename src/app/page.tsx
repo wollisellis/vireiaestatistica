@@ -10,75 +10,46 @@ import { useRBAC } from '@/hooks/useRBAC'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [isCleared, setIsCleared] = useState(false)
+  const [isReady, setIsReady] = useState(false)
   const [showFirebaseWarning, setShowFirebaseWarning] = useState(false)
-  const { user: firebaseUser } = useFirebaseAuth()
+  const { user: firebaseUser, loading: firebaseLoading } = useFirebaseAuth()
   const { user: rbacUser } = useRBAC(firebaseUser?.uid)
 
-  // Don't auto-redirect - let user choose where to go
-  // The AuthForm will handle redirections based on user choice
-
-  // Clear any authentication state when accessing login page to ensure clean state
+  // Otimização: Verificar autenticação apenas uma vez
   useEffect(() => {
-    // Check if there's a saved session
-    const authToken = document.cookie.includes('auth-token=')
-    
-    // If user is authenticated or has a saved session, show the logged-in screen
-    if (firebaseUser || rbacUser || authToken) {
-      setIsCleared(true)
-      return
-    }
-    if (typeof window !== 'undefined') {
-      // Clear all authentication-related cookies
-      const cookiesToClear = [
-        'auth-token',
-        'firebase-auth-token',
-        'user-role',
-        'user-session'
-      ]
+    if (firebaseLoading) return // Aguardar carregamento do Firebase
 
+    // Verificação simplificada de autenticação
+    const hasExistingSession = firebaseUser || rbacUser || document.cookie.includes('auth-token=')
+    
+    if (!hasExistingSession && typeof window !== 'undefined') {
+      // Limpeza rápida apenas quando necessário
+      const cookiesToClear = ['auth-token', 'firebase-auth-token', 'user-role', 'user-session']
       cookiesToClear.forEach(cookieName => {
         document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
       })
-
-      // Clear any localStorage items that might interfere
-      const localStorageKeysToRemove = [
-        'firebase-auth-token',
-        'user-data',
-        'auth-state'
-      ]
-
-      localStorageKeysToRemove.forEach(key => {
+      
+      // Limpeza básica do localStorage
+      ['firebase-auth-token', 'user-data', 'auth-state'].forEach(key => {
         localStorage.removeItem(key)
       })
-
-      // Clear sessionStorage as well
-      sessionStorage.clear()
-
-      console.log('Login page: All authentication state cleared')
-
-      // Force a small delay to ensure all state is cleared before rendering
-      setTimeout(() => {
-        setIsCleared(true)
-        // Check Firebase configuration after clearing state
-        if (!isFirebaseConfigured()) {
-          setShowFirebaseWarning(true)
-        }
-      }, 100)
-    } else {
-      setIsCleared(true)
     }
-  }, [firebaseUser, rbacUser])
 
-  // Show loading while clearing state
-  if (!isCleared) {
+    // Verificação do Firebase configurado apenas se necessário
+    if (!isFirebaseConfigured()) {
+      setShowFirebaseWarning(true)
+    }
+
+    setIsReady(true)
+  }, [firebaseUser, rbacUser, firebaseLoading])
+
+  // Loading otimizado
+  if (!isReady || firebaseLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-700">Preparando AvaliaNutri...</h2>
-          <p className="text-gray-500 mt-2">Carregando página de login</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <h2 className="text-lg font-medium text-emerald-800">Carregando AvaliaNutri...</h2>
         </div>
       </div>
     )

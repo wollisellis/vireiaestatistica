@@ -52,6 +52,11 @@ rm -rf .next
 - Usar mensagens de commit descritivas em português
 - Fazer commit frequentes durante o desenvolvimento
 - Nunca deixar alterações sem commit ao finalizar uma tarefa
+- **CRÍTICO - Firebase Rules**: Sempre atualizar `firestore.rules` quando:
+  - Criar novas coleções no Firestore (`collection(db, 'nova_colecao')`)
+  - Adicionar novos tipos de documentos ou estruturas de dados
+  - Modificar a estrutura de acesso aos dados ou permissões
+  - Implementar novas funcionalidades que usem o banco de dados
 
 ## Contexto do Projeto
 **bioestat-platform** (anteriormente AvaliaNutri) - Plataforma educacional para avaliação nutricional e estatística em saúde
