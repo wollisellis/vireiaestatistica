@@ -121,29 +121,43 @@ export default function ProfessorDashboardPage() {
   }
 
   const toggleModuleAccess = async (moduleId: string) => {
-    if (!db) return
+    if (!db) {
+      console.error('Firebase não inicializado')
+      return
+    }
 
     try {
+      console.log(`Tentando alterar acesso do módulo: ${moduleId}`)
+      console.log('Estado atual dos módulos desbloqueados:', unlockedModules)
+      
       const isCurrentlyUnlocked = unlockedModules.includes(moduleId)
+      console.log(`Módulo ${moduleId} atualmente ${isCurrentlyUnlocked ? 'desbloqueado' : 'bloqueado'}`)
       
       let newUnlocked: string[]
       if (isCurrentlyUnlocked) {
         // Bloquear módulo (remover da lista)
         newUnlocked = unlockedModules.filter(id => id !== moduleId)
+        console.log(`Bloqueando módulo ${moduleId}. Nova lista:`, newUnlocked)
       } else {
         // Desbloquear módulo (adicionar à lista)
         newUnlocked = [...unlockedModules, moduleId]
+        console.log(`Desbloqueando módulo ${moduleId}. Nova lista:`, newUnlocked)
       }
 
-      await setDoc(doc(db, 'settings', 'modules'), {
+      const updateData = {
         unlocked: newUnlocked,
         lastUpdated: new Date(),
         lastUpdatedBy: user?.id || 'unknown'
-      }, { merge: true })
+      }
+      
+      console.log('Dados que serão salvos no Firebase:', updateData)
 
-      console.log(`Módulo ${moduleId} ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`)
+      await setDoc(doc(db, 'settings', 'modules'), updateData, { merge: true })
+
+      console.log(`✅ Módulo ${moduleId} ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`)
     } catch (error) {
-      console.error('Erro ao alterar acesso do módulo:', error)
+      console.error(`❌ Erro ao alterar acesso do módulo ${moduleId}:`, error)
+      alert(`Erro ao ${unlockedModules.includes(moduleId) ? 'bloquear' : 'desbloquear'} módulo. Verifique o console para mais detalhes.`)
     }
   }
 
@@ -461,12 +475,19 @@ export default function ProfessorDashboardPage() {
                         <div className="flex gap-3 flex-wrap">
                           <Button
                             size="sm"
-                            onClick={() => {
-                              modules.forEach(module => {
-                                if (!unlockedModules.includes(module.id)) {
-                                  toggleModuleAccess(module.id)
-                                }
-                              })
+                            onClick={async () => {
+                              if (!db) return
+                              try {
+                                const allModuleIds = modules.map(m => m.id)
+                                await setDoc(doc(db, 'settings', 'modules'), {
+                                  unlocked: allModuleIds,
+                                  lastUpdated: new Date(),
+                                  lastUpdatedBy: user?.id || 'unknown'
+                                }, { merge: true })
+                                console.log('Todos os módulos desbloqueados com sucesso')
+                              } catch (error) {
+                                console.error('Erro ao desbloquear todos os módulos:', error)
+                              }
                             }}
                             className="bg-emerald-600 hover:bg-emerald-700"
                           >
@@ -476,12 +497,18 @@ export default function ProfessorDashboardPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              modules.forEach(module => {
-                                if (unlockedModules.includes(module.id) && module.id !== 'module-1') {
-                                  toggleModuleAccess(module.id)
-                                }
-                              })
+                            onClick={async () => {
+                              if (!db) return
+                              try {
+                                await setDoc(doc(db, 'settings', 'modules'), {
+                                  unlocked: ['module-1'], // Manter apenas o primeiro módulo desbloqueado
+                                  lastUpdated: new Date(),
+                                  lastUpdatedBy: user?.id || 'unknown'
+                                }, { merge: true })
+                                console.log('Todos os módulos bloqueados (exceto Módulo 1) com sucesso')
+                              } catch (error) {
+                                console.error('Erro ao bloquear módulos:', error)
+                              }
                             }}
                             className="border-red-200 text-red-700 hover:bg-red-50"
                           >
