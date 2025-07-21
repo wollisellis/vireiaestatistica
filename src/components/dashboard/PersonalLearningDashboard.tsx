@@ -64,7 +64,7 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
     
     Object.entries(NUTRITIONAL_COMPETENCIES).forEach(([moduleId, competencies]) => {
       const moduleScore = progress.gameScores.find(score => 
-        score.moduleId === moduleId || score.gameId === parseInt(moduleId.split('-')[1])
+        score.moduleId === moduleId || score.gameId === moduleId
       )
       
       if (moduleScore) {
@@ -89,8 +89,7 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
   const getPathProgress = () => {
     return LEARNING_PATHS.map(path => {
       const moduleProgress = path.modules.map(moduleId => {
-        const gameId = parseInt(moduleId.split('-')[1])
-        const moduleScore = progress.gameScores.find(score => score.gameId === gameId)
+        const moduleScore = progress.gameScores.find(score => score.gameId === moduleId || score.moduleId === moduleId)
         return moduleScore ? (moduleScore.score / moduleScore.maxScore) * 100 : 0
       })
       

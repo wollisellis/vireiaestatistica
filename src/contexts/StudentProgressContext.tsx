@@ -11,7 +11,7 @@ import unifiedScoringService from '@/services/unifiedScoringService'
 import rankingService from '@/services/rankingService'
 
 export interface GameScore {
-  gameId: number
+  gameId: string | number // Suporte para IDs string e legacy number
   score: number
   maxScore: number
   timeElapsed: number
@@ -282,7 +282,7 @@ export function StudentProgressProvider({ children }: { children: React.ReactNod
     if (!module) return
 
     const gameScore = {
-      gameId: parseInt(moduleId.split('-')[1]) || 0,
+      gameId: moduleId,
       score,
       maxScore,
       timeElapsed,

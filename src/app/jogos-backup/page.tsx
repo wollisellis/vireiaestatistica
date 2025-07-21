@@ -57,7 +57,7 @@ const getColorByOrder = (order: number) => {
 // Converter módulos para formato de jogos
 const convertModulesToGames = (modules: any[]) => {
   return modules.map(module => ({
-    id: parseInt(module.id.split('-')[1]), // Converter module-1 para 1
+    id: module.id, // Manter ID string original
     title: module.title,
     description: module.description,
     difficulty: getDifficultyLevel(module.estimatedTime),

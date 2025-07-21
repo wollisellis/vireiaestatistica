@@ -79,7 +79,7 @@ const convertModulesToGames = (modules: any[]) => {
     // Dados específicos melhorados para Módulo 1
     if (module.id === 'module-1') {
       return {
-        id: parseInt(module.id.split('-')[1]),
+        id: module.id,
         title: 'Introdução à Avaliação Nutricional',
         description: 'Fundamentos da avaliação nutricional antropométrica com dados reais brasileiros e metodologia ultra-iniciante.',
         difficulty: 'Iniciante',
@@ -115,7 +115,7 @@ const convertModulesToGames = (modules: any[]) => {
     
     // Fallback para outros módulos
     return {
-      id: parseInt(module.id.split('-')[1]),
+      id: module.id,
       title: module.title,
       description: module.description,
       difficulty: getDifficultyLevel(module.estimatedTime),
@@ -327,7 +327,7 @@ export default function JogosPage() {
 
   // Combine base games with module settings and progress
   const nutritionalGames = baseNutritionalGames.map(game => {
-    const moduleId = `module-${game.id}`;
+    const moduleId = game.id;
     const locked = !unlockedModules.includes(moduleId) && !isProfessor;
     const progress = moduleProgress[moduleId];
     
@@ -608,7 +608,7 @@ export default function JogosPage() {
                             {game.icon}
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-medium text-gray-500">Módulo {game.id}</span>
+                            <span className="text-sm font-medium text-gray-500">Módulo {game.id.split('-')[1]}</span>
                             <div className="flex items-center text-sm text-gray-500 mt-1">
                               <Clock className="w-4 h-4 mr-1" />
                               {game.estimatedTime}
@@ -767,7 +767,7 @@ export default function JogosPage() {
                               Módulo Bloqueado
                             </Button>
                           ) : (
-                            <Link href={`/jogos/modulo-${game.id}/quiz`}>
+                            <Link href={`/jogos/modulo-1/quiz`}>
                               <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
