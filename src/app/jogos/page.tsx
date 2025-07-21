@@ -6,7 +6,7 @@ import { modules } from '@/data/modules';
 import { ModuleCard } from '@/components/games/ModuleCard';
 import { useRoleRedirect } from '@/hooks/useRoleRedirect';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
-import { collection, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, onSnapshot, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
   BookOpen, 
@@ -356,27 +356,55 @@ export default function JogosPage() {
       return;
     }
 
-    // Buscar progresso do usuário de múltiplas fontes
+    // Buscar progresso do usuário da fonte correta (quiz_attempts)
     const fetchProgress = async () => {
       try {
         console.log('🔍 Buscando progresso do usuário:', user.uid);
         
-        // 1. Tentar buscar de userProgress (fonte primária)
+        // 🎯 CORREÇÃO: Buscar da mesma fonte que o RandomizedQuizComponent usa
         let progressData: any = {};
-        const progressDoc = await getDoc(doc(db!, 'userProgress', user.uid));
-        if (progressDoc.exists()) {
-          progressData = progressDoc.data().modules || {};
-          console.log('✅ Progresso encontrado em userProgress:', progressData);
-        } else {
-          console.log('⚠️ userProgress não encontrado, buscando em student_module_progress...');
-        }
+        const modules = ['module-1']; // Lista de módulos disponíveis
+        
+        for (const moduleId of modules) {
+          try {
+            console.log(`📚 Buscando tentativas para ${moduleId}...`);
+            
+            // Buscar última tentativa da coleção quiz_attempts (mesma lógica do RandomizedQuizService)
+            const attemptsQuery = query(
+              collection(db!, 'quiz_attempts'),
+              where('studentId', '==', user.uid),
+              where('moduleId', '==', moduleId),
+              orderBy('startedAt', 'desc'),
+              limit(1)
+            );
 
-        // 2. Se não encontrar em userProgress ou os dados estiverem vazios, 
-        // buscar na coleção student_module_progress
-        if (Object.keys(progressData).length === 0) {
-          const modules = ['module-1']; // Lista de módulos disponíveis
-          
-          for (const moduleId of modules) {
+            const attemptsSnapshot = await getDocs(attemptsQuery);
+            
+            if (!attemptsSnapshot.empty) {
+              const attemptData = attemptsSnapshot.docs[0].data();
+              console.log(`✅ Tentativa encontrada para ${moduleId}:`, attemptData);
+              
+              // Converter para formato esperado pelo ModuleCard
+              progressData[moduleId] = {
+                totalScore: attemptData.percentage || attemptData.score || 0,
+                score: attemptData.percentage || attemptData.score || 0,
+                percentage: attemptData.percentage || 0,
+                completed: attemptData.passed || false,
+                lastAccessed: attemptData.completedAt || attemptData.startedAt,
+                maxScore: 100,
+                attempts: 1,
+                bestScore: attemptData.percentage || attemptData.score || 0,
+                passed: attemptData.passed || false
+              };
+              
+              console.log(`📊 Progresso do ${moduleId} convertido:`, progressData[moduleId]);
+            } else {
+              console.log(`⚠️ Nenhuma tentativa encontrada para ${moduleId}`);
+            }
+          } catch (moduleError) {
+            console.warn(`Erro ao buscar tentativas do ${moduleId}:`, moduleError);
+            
+            // Fallback para as fontes anteriores se a busca em quiz_attempts falhar
             try {
               const moduleProgressDoc = await getDoc(doc(db!, 'student_module_progress', `${user.uid}_${moduleId}`));
               if (moduleProgressDoc.exists()) {
@@ -391,10 +419,10 @@ export default function JogosPage() {
                   attempts: data.attempts || 1,
                   bestScore: data.bestScore || data.score || 0
                 };
-                console.log(`✅ Progresso do ${moduleId} encontrado em student_module_progress:`, progressData[moduleId]);
+                console.log(`🔄 Fallback: Progresso do ${moduleId} encontrado em student_module_progress`);
               }
-            } catch (moduleError) {
-              console.warn(`Erro ao buscar progresso do ${moduleId}:`, moduleError);
+            } catch (fallbackError) {
+              console.warn(`Erro no fallback para ${moduleId}:`, fallbackError);
             }
           }
         }
