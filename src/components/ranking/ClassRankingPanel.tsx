@@ -60,7 +60,13 @@ export function ClassRankingPanel({
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(!compact);
+  const [expanded, setExpanded] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ranking-panel-expanded');
+      return saved ? JSON.parse(saved) : !compact;
+    }
+    return !compact;
+  });
   const [error, setError] = useState<string | null>(null);
 
   const displayLimit = compact ? 5 : 8;
@@ -239,7 +245,13 @@ export function ClassRankingPanel({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setExpanded(!expanded)}
+              onClick={() => {
+                const newState = !expanded;
+                setExpanded(newState);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('ranking-panel-expanded', JSON.stringify(newState));
+                }
+              }}
               className="p-1"
             >
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

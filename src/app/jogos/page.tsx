@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { modules } from '@/data/modules';
 import { ModuleCard } from '@/components/modules/ModuleCard';
 import { useRoleRedirect } from '@/hooks/useRoleRedirect';
@@ -27,7 +27,12 @@ import {
   User,
   GraduationCap,
   LogOut,
-  CheckCircle
+  CheckCircle,
+  ChevronUp,
+  ChevronDown,
+  X,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -135,8 +140,36 @@ export default function JogosPage() {
   const [moduleProgress, setModuleProgress] = useState<ModuleProgress>({});
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
   const [moduleLoading, setModuleLoading] = useState(true);
+  const [rankingCollapsed, setRankingCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ranking-collapsed');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
 
   const isProfessor = user?.role === 'professor';
+
+  // Função para toggle do ranking com localStorage
+  const toggleRanking = () => {
+    const newState = !rankingCollapsed;
+    setRankingCollapsed(newState);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ranking-collapsed', JSON.stringify(newState));
+    }
+  };
+
+  // Calcular módulos concluídos (notas >70%)
+  const getCompletedModules = () => {
+    return modules.filter(module => {
+      const progress = moduleProgress[module.id];
+      if (!progress) return false;
+      const score = progress.score || progress.totalScore || 0;
+      return score >= 70;
+    });
+  };
+
+  const completedModules = getCompletedModules();
 
   // Function to handle logout and redirect to login page
   const handleLogout = async () => {
@@ -369,12 +402,12 @@ export default function JogosPage() {
             </div>
           </header>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Layout Principal com Ranking Fixo */}
-            <div className="grid grid-cols-1 xl:grid-cols-4 lg:grid-cols-3 gap-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-2 py-8">
+            {/* Layout Principal */}
+            <div className="relative">
               
               {/* Conteúdo Principal */}
-              <div className="xl:col-span-3 lg:col-span-2 col-span-1 space-y-8">
+              <div className="space-y-8">
             {/* User Welcome */}
             {user && (
               <motion.div
@@ -428,7 +461,6 @@ export default function JogosPage() {
                     AvaliaNutri
                   </h1>
                   <p className="text-xl text-emerald-600 mt-2 font-medium">Jogos Educacionais para Avaliação Nutricional</p>
-                  <p className="text-sm text-gray-600 mt-1">NT600 - Proposta Inovadora 2025</p>
                 </div>
               </div>
 
@@ -480,6 +512,136 @@ export default function JogosPage() {
                 </div>
               </div>
             </motion.div>
+
+            {/* Módulos Concluídos */}
+            {completedModules.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="mb-12"
+              >
+                <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                  <CardHeader>
+                    <div className="flex items-center">
+                      <Trophy className="w-8 h-8 text-green-600 mr-4" />
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">Módulos Concluídos</h2>
+                        <p className="text-gray-600">Parabéns! Você obteve nota superior a 70% nestes módulos</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {completedModules.map((module, index) => {
+                      const progress = moduleProgress[module.id];
+                      const score = progress?.score || progress?.totalScore || 0;
+                      
+                      return (
+                        <motion.div
+                          key={module.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className="bg-white p-6 rounded-lg border border-green-200 shadow-sm"
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <Scale className="w-6 h-6 text-green-600" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold text-gray-900">Módulo {index + 1}</h3>
+                                <p className="text-sm text-gray-600">10-20 min</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <Trophy className="w-4 h-4 text-green-600" />
+                                <span className="text-lg font-bold text-green-600">{Math.round(score)} pts</span>
+                              </div>
+                              <span className="text-xs text-green-600 font-medium bg-green-100 px-2 py-1 rounded-full">
+                                Concluído
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <h4 className="text-xl font-bold text-gray-900 mb-2">
+                            Introdução à Avaliação Nutricional
+                          </h4>
+                          <p className="text-gray-700 mb-4">
+                            Fundamentos da avaliação nutricional antropométrica com dados reais brasileiros e metodologia ultra-iniciante.
+                          </p>
+                          
+                          <div className="mb-4">
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Iniciante
+                            </span>
+                            <span className="ml-2 text-sm text-gray-600">7 questões</span>
+                          </div>
+                          
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                              <span>Progresso</span>
+                              <span>100%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="h-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" style={{width: '100%'}} />
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <h5 className="font-semibold text-gray-900 mb-2 flex items-center">
+                                <Target className="w-4 h-4 mr-2 text-green-500" />
+                                Objetivos de Aprendizado
+                              </h5>
+                              <ul className="space-y-1">
+                                <li className="text-sm text-gray-600 flex items-start">
+                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                  Compreender os fundamentos da avaliação nutricional
+                                </li>
+                                <li className="text-sm text-gray-600 flex items-start">
+                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                  Diferenciar avaliação individual vs populacional
+                                </li>
+                                <li className="text-sm text-gray-600 flex items-start">
+                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                  Aplicar indicadores antropométricos básicos
+                                </li>
+                                <li className="text-sm text-gray-600 flex items-start">
+                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                  Interpretar dados da população brasileira
+                                </li>
+                              </ul>
+                            </div>
+                            
+                            <div>
+                              <h5 className="font-semibold text-gray-900 mb-2">Tópicos Abordados</h5>
+                              <div className="flex flex-wrap gap-2">
+                                {['Conceitos Fundamentais', 'Indicadores Antropométricos', 'Dados Populacionais Brasileiros', 'Casos Clínicos Práticos', 'Metodologia de Avaliação'].map((topic, idx) => (
+                                  <span key={idx} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-md">
+                                    {topic}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div className="pt-4 border-t border-green-200">
+                              <Link href={`/jogos/modulo-1/quiz`}>
+                                <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-200">
+                                  <Trophy className="w-4 h-4 mr-2" />
+                                  Responder Novamente
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
             {/* Student Progress Dashboard */}
             <motion.div
@@ -868,25 +1030,74 @@ export default function JogosPage() {
             >
             </motion.div>
             </div>
-
-              {/* Sidebar de Ranking Fixo */}
-              <div className="xl:col-span-1 lg:col-span-1 col-span-1">
-                <div className="lg:sticky lg:top-8 space-y-4">
-                  {/* Ranking da Turma */}
+            
+            {/* Ranking Fixo */}
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+                className={`fixed top-24 right-4 z-40 transition-all duration-300 ${
+                  rankingCollapsed ? 'w-12' : 'w-80'
+                }`}
+                style={{ maxHeight: 'calc(100vh - 120px)' }}
+              >
+                {rankingCollapsed ? (
+                  // Botão minimizado
                   <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="bg-white rounded-lg shadow-lg border-2 border-blue-200 p-3 cursor-pointer hover:shadow-xl transition-all"
+                    onClick={toggleRanking}
+                    title="Expandir ranking da turma"
                   >
-                    <ClassRankingPanel 
-                      className="w-full"
-                      compact={false}
-                      showStats={true}
-                      moduleId="module-1"
-                    />
+                    <div className="flex items-center justify-center">
+                      <Trophy className="w-6 h-6 text-blue-600" />
+                    </div>
                   </motion.div>
-                </div>
-              </div>
+                ) : (
+                  // Painel expandido
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-white rounded-lg shadow-lg border-2 border-blue-200 overflow-hidden"
+                    style={{ maxHeight: 'calc(100vh - 120px)' }}
+                  >
+                    {/* Header do Ranking com controles */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Trophy className="w-5 h-5 text-blue-600" />
+                          <h3 className="font-semibold text-gray-900 text-sm">
+                            Ranking da Turma
+                          </h3>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={toggleRanking}
+                            className="p-1 hover:bg-blue-100 rounded transition-colors"
+                            title="Minimizar ranking"
+                          >
+                            <Minimize2 className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Conteúdo do Ranking */}
+                    <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+                      <ClassRankingPanel 
+                        className="border-0 shadow-none"
+                        compact={true}
+                        showStats={true}
+                        moduleId="module-1"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            </AnimatePresence>
             </div>
           </div>
 
