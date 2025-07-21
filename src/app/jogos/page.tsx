@@ -26,7 +26,8 @@ import {
   Heart,
   User,
   GraduationCap,
-  LogOut
+  LogOut,
+  CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +37,7 @@ import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearni
 import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
-import { RankingPanel } from '@/components/ranking/RankingPanel';
+import { ClassRankingPanel } from '@/components/ranking/ClassRankingPanel';
 
 interface ModuleProgress {
   [moduleId: string]: {
@@ -370,10 +371,10 @@ export default function JogosPage() {
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Layout Principal com Ranking Fixo */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-4 lg:grid-cols-3 gap-6">
               
-              {/* Conteúdo Principal - 3 colunas */}
-              <div className="lg:col-span-3 space-y-8">
+              {/* Conteúdo Principal */}
+              <div className="xl:col-span-3 lg:col-span-2 col-span-1 space-y-8">
             {/* User Welcome */}
             {user && (
               <motion.div
@@ -514,25 +515,38 @@ export default function JogosPage() {
                     transition={{ duration: 0.6, delay: 0.1 * index }}
                     className="group"
                   >
-                    <Card className={`h-full transition-all duration-300 border-2 ${
+                    <Card className={`h-full transition-all duration-500 border-2 transform hover:scale-[1.02] ${
                       game.isLocked
-                        ? 'opacity-75 bg-gray-50 border-gray-200'
+                        ? 'opacity-75 bg-gray-50 border-gray-200 cursor-not-allowed'
                         : game.moduleStatus === 'completed'
-                        ? 'hover:shadow-xl border-green-200 bg-green-50'
+                        ? 'hover:shadow-2xl border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-green-100'
                         : game.moduleStatus === 'attempted_failed'
-                        ? 'hover:shadow-xl border-orange-200 bg-orange-50'
-                        : 'hover:shadow-xl hover:border-blue-200'
+                        ? 'hover:shadow-2xl border-orange-300 bg-gradient-to-br from-orange-50 to-yellow-50 shadow-orange-100'
+                        : 'hover:shadow-2xl hover:border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-blue-100'
                     }`}>
                       <CardHeader className="pb-4">
                         <div className="flex items-center justify-between mb-4">
-                          <div className={`p-3 rounded-lg ${
+                          <div className={`p-3 rounded-lg transition-all duration-300 ${
                             game.isLocked ? 'bg-gray-400' : game.color
-                          } text-white relative`}>
+                          } text-white relative group-hover:scale-110`}>
                             {game.isLocked && (
-                              <Lock className="w-3 h-3 absolute -top-1 -right-1 bg-gray-600 rounded-full p-0.5" />
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="absolute -top-1 -right-1"
+                              >
+                                <Lock className="w-3 h-3 bg-gray-600 rounded-full p-0.5" />
+                              </motion.div>
                             )}
                             {game.isCompleted && !game.isLocked && (
-                              <CheckCircle className="w-4 h-4 absolute -top-1 -right-1 bg-green-600 text-white rounded-full" />
+                              <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: "spring", bounce: 0.5 }}
+                                className="absolute -top-1 -right-1"
+                              >
+                                <CheckCircle className="w-4 h-4 bg-green-600 text-white rounded-full" />
+                              </motion.div>
                             )}
                             {game.icon}
                           </div>
@@ -593,6 +607,39 @@ export default function JogosPage() {
                             <span>7 questões</span>
                           </div>
                         </div>
+
+                        {/* Barra de Progresso Visual */}
+                        {!game.isLocked && (
+                          <motion.div 
+                            initial={{ opacity: 0, scaleX: 0 }}
+                            animate={{ opacity: 1, scaleX: 1 }}
+                            transition={{ delay: 0.3, duration: 0.5 }}
+                            className="mt-4"
+                          >
+                            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                              <span>Progresso</span>
+                              <span>
+                                {game.moduleStatus === 'completed' ? '100%' :
+                                 game.moduleStatus === 'attempted_failed' ? '50%' : '0%'}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ 
+                                  width: game.moduleStatus === 'completed' ? '100%' :
+                                         game.moduleStatus === 'attempted_failed' ? '50%' : '0%'
+                                }}
+                                transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+                                className={`h-2 rounded-full transition-colors duration-500 ${
+                                  game.moduleStatus === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                                  game.moduleStatus === 'attempted_failed' ? 'bg-gradient-to-r from-orange-500 to-amber-500' :
+                                  'bg-blue-500'
+                                }`}
+                              />
+                            </div>
+                          </motion.div>
+                        )}
                       </CardHeader>
 
                       <CardContent className="pt-0">
@@ -630,7 +677,7 @@ export default function JogosPage() {
                           {game.isLocked ? (
                             <Button
                               disabled
-                              className="w-full mt-4 bg-gray-300 text-gray-500 cursor-not-allowed"
+                              className="w-full mt-4 bg-gray-300 text-gray-500 cursor-not-allowed transition-all duration-300"
                               size="lg"
                             >
                               <Lock className="w-4 h-4 mr-2" />
@@ -638,33 +685,39 @@ export default function JogosPage() {
                             </Button>
                           ) : (
                             <Link href={`/jogos/modulo-${game.id}/quiz`}>
-                              <Button
-                                className={`w-full mt-4 transition-colors ${
-                                  game.moduleStatus === 'completed'
-                                    ? 'bg-green-600 hover:bg-green-700' 
-                                    : game.moduleStatus === 'attempted_failed'
-                                    ? 'bg-orange-600 hover:bg-orange-700'
-                                    : 'bg-blue-600 hover:bg-blue-700 group-hover:bg-blue-600'
-                                }`}
-                                size="lg"
+                              <motion.div
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
                               >
-                                {game.moduleStatus === 'completed' ? (
-                                  <>
-                                    <Trophy className="w-4 h-4 mr-2" />
-                                    Responder Novamente
-                                  </>
-                                ) : game.moduleStatus === 'attempted_failed' ? (
-                                  <>
-                                    <Target className="w-4 h-4 mr-2" />
-                                    Tentar Novamente
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="w-4 h-4 mr-2" />
-                                    Iniciar Quiz
-                                  </>
-                                )}
-                              </Button>
+                                <Button
+                                  className={`w-full mt-4 transition-all duration-300 transform ${
+                                    game.moduleStatus === 'completed'
+                                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-200' 
+                                      : game.moduleStatus === 'attempted_failed'
+                                      ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg shadow-orange-200'
+                                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-200'
+                                  }`}
+                                  size="lg"
+                                >
+                                  {game.moduleStatus === 'completed' ? (
+                                    <>
+                                      <Trophy className="w-4 h-4 mr-2" />
+                                      Responder Novamente
+                                    </>
+                                  ) : game.moduleStatus === 'attempted_failed' ? (
+                                    <>
+                                      <Target className="w-4 h-4 mr-2" />
+                                      Tentar Novamente
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="w-4 h-4 mr-2" />
+                                      Iniciar Quiz
+                                    </>
+                                  )}
+                                </Button>
+                              </motion.div>
                             </Link>
                           )}
                         </div>
@@ -816,16 +869,16 @@ export default function JogosPage() {
             </motion.div>
             </div>
 
-              {/* Sidebar de Ranking Fixo - 1 coluna */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-8 space-y-4">
-                  {/* Ranking Principal */}
+              {/* Sidebar de Ranking Fixo */}
+              <div className="xl:col-span-1 lg:col-span-1 col-span-1">
+                <div className="lg:sticky lg:top-8 space-y-4">
+                  {/* Ranking da Turma */}
                   <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6, delay: 0.3 }}
                   >
-                    <RankingPanel 
+                    <ClassRankingPanel 
                       className="w-full"
                       compact={false}
                       showStats={true}
