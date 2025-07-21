@@ -93,48 +93,30 @@ export class EnhancedClassService {
         return []
       }
 
-      // Buscar estudantes na coleção 'classStudents' (usada pelo ClassInviteService)
-      const studentsQuery = query(
-        collection(db, 'classStudents'),
-        where('status', '==', 'active')
-      )
+      console.log(`[EnhancedClassService] 🔄 Buscando estudantes para turma: ${classId}`)
 
-      const studentsSnapshot = await getDocs(studentsQuery)
-      const students: EnhancedStudentOverview[] = []
-
-      console.log(`[EnhancedClassService] Buscando estudantes para turma: ${classId}`)
-      console.log(`[EnhancedClassService] Total de documentos encontrados: ${studentsSnapshot.docs.length}`)
-
-      // Filtrar estudantes desta turma específica
-      for (const doc of studentsSnapshot.docs) {
-        const studentData = doc.data()
-        const docId = doc.id
-
-        console.log(`[EnhancedClassService] Verificando documento: ${docId}`)
-        console.log(`[EnhancedClassService] Dados do estudante:`, studentData)
-
-        // Verificar se o documento pertence à turma específica
-        if (docId.startsWith(`${classId}_`)) {
-          console.log(`[EnhancedClassService] ✅ Documento pertence à turma ${classId}`)
-          
-          // Buscar dados detalhados do estudante
-          const studentProgress = await this.getStudentDetailedProgress(
-            studentData.studentId,
-            classId
-          )
-
-          if (studentProgress) {
-            console.log(`[EnhancedClassService] ✅ Progresso do estudante encontrado:`, studentProgress)
-            students.push(studentProgress)
-          } else {
-            console.log(`[EnhancedClassService] ❌ Não foi possível obter progresso do estudante ${studentData.studentId}`)
-          }
+      // Método 1: Query otimizada usando range de document IDs
+      let students = await this.getStudentsMethod1(classId)
+      
+      if (students.length > 0) {
+        console.log(`[EnhancedClassService] ✅ Método 1 bem-sucedido: ${students.length} estudantes encontrados`)
+      } else {
+        console.log(`[EnhancedClassService] ⚠️ Método 1 falhou, tentando Método 2...`)
+        
+        // Método 2: Query por status com filtro posterior
+        students = await this.getStudentsMethod2(classId)
+        
+        if (students.length > 0) {
+          console.log(`[EnhancedClassService] ✅ Método 2 bem-sucedido: ${students.length} estudantes encontrados`)
         } else {
-          console.log(`[EnhancedClassService] ❌ Documento ${docId} não pertence à turma ${classId}`)
+          console.log(`[EnhancedClassService] ⚠️ Método 2 falhou, tentando Método 3 (fallback completo)...`)
+          
+          // Método 3: Fallback - buscar todos os documentos da turma
+          students = await this.getStudentsMethod3(classId)
+          
+          console.log(`[EnhancedClassService] ${students.length > 0 ? '✅' : '❌'} Método 3: ${students.length} estudantes encontrados`)
         }
       }
-
-      console.log(`[EnhancedClassService] Total de estudantes encontrados para a turma: ${students.length}`)
 
       // Aplicar filtros
       let filteredStudents = students || []
@@ -148,10 +130,139 @@ export class EnhancedClassService {
         filteredStudents = this.calculateClassRankings(filteredStudents)
       }
 
+      console.log(`[EnhancedClassService] 📊 Total final de estudantes: ${filteredStudents.length}`)
       return filteredStudents || []
 
     } catch (error) {
-      console.error('Erro ao buscar alunos da turma:', error)
+      console.error('[EnhancedClassService] ❌ Erro crítico ao buscar alunos da turma:', error)
+      return []
+    }
+  }
+
+  // Método 1: Query otimizada usando range de document IDs (mais eficiente)
+  private static async getStudentsMethod1(classId: string): Promise<EnhancedStudentOverview[]> {
+    try {
+      console.log(`[Método 1] Buscando com range query para ${classId}`)
+      
+      // Query usando range para documentos que começam com classId_
+      const studentsQuery = query(
+        collection(db, 'classStudents'),
+        where('__name__', '>=', `${classId}_`),
+        where('__name__', '<', `${classId}_\uf8ff`)
+      )
+
+      const studentsSnapshot = await getDocs(studentsQuery)
+      const students: EnhancedStudentOverview[] = []
+
+      console.log(`[Método 1] ${studentsSnapshot.docs.length} documentos encontrados`)
+
+      for (const doc of studentsSnapshot.docs) {
+        const studentData = doc.data()
+        
+        // Filtrar apenas documentos ativos (se o campo existir)
+        if (studentData.status === 'removed' || studentData.status === 'inactive') {
+          console.log(`[Método 1] Ignorando estudante inativo: ${doc.id}`)
+          continue
+        }
+
+        const studentProgress = await this.getStudentDetailedProgress(
+          studentData.studentId,
+          classId
+        )
+
+        if (studentProgress) {
+          students.push(studentProgress)
+        }
+      }
+
+      return students
+
+    } catch (error) {
+      console.error('[Método 1] Erro:', error)
+      return []
+    }
+  }
+
+  // Método 2: Query por status ativo com filtro posterior (método original otimizado)
+  private static async getStudentsMethod2(classId: string): Promise<EnhancedStudentOverview[]> {
+    try {
+      console.log(`[Método 2] Buscando por status ativo para ${classId}`)
+      
+      const studentsQuery = query(
+        collection(db, 'classStudents'),
+        where('status', '==', 'active')
+      )
+
+      const studentsSnapshot = await getDocs(studentsQuery)
+      const students: EnhancedStudentOverview[] = []
+
+      console.log(`[Método 2] ${studentsSnapshot.docs.length} documentos ativos encontrados`)
+
+      for (const doc of studentsSnapshot.docs) {
+        const studentData = doc.data()
+        const docId = doc.id
+
+        // Verificar se o documento pertence à turma específica
+        if (docId.startsWith(`${classId}_`)) {
+          console.log(`[Método 2] ✅ Documento ${docId} pertence à turma`)
+          
+          const studentProgress = await this.getStudentDetailedProgress(
+            studentData.studentId,
+            classId
+          )
+
+          if (studentProgress) {
+            students.push(studentProgress)
+          }
+        }
+      }
+
+      return students
+
+    } catch (error) {
+      console.error('[Método 2] Erro:', error)
+      return []
+    }
+  }
+
+  // Método 3: Fallback completo - buscar todos os documentos da turma independente do status
+  private static async getStudentsMethod3(classId: string): Promise<EnhancedStudentOverview[]> {
+    try {
+      console.log(`[Método 3] Fallback completo para ${classId}`)
+      
+      // Buscar TODOS os documentos (sem filtro de status)
+      const studentsQuery = query(collection(db, 'classStudents'))
+      const studentsSnapshot = await getDocs(studentsQuery)
+      const students: EnhancedStudentOverview[] = []
+
+      console.log(`[Método 3] ${studentsSnapshot.docs.length} documentos totais encontrados`)
+
+      for (const doc of studentsSnapshot.docs) {
+        const studentData = doc.data()
+        const docId = doc.id
+
+        // Verificar se o documento pertence à turma específica
+        if (docId.startsWith(`${classId}_`)) {
+          console.log(`[Método 3] ✅ Documento ${docId} pertence à turma (status: ${studentData.status || 'undefined'})`)
+          
+          // Aceitar qualquer status, exceto explicitamente removido
+          if (studentData.status !== 'removed') {
+            const studentProgress = await this.getStudentDetailedProgress(
+              studentData.studentId,
+              classId
+            )
+
+            if (studentProgress) {
+              students.push(studentProgress)
+            }
+          }
+        }
+      }
+
+      return students
+
+    } catch (error) {
+      console.error('[Método 3] Erro:', error)
       return []
     }
   }
@@ -568,28 +679,59 @@ export class EnhancedClassService {
         return []
       }
 
-      // Buscar estudantes na coleção 'classStudents' (usada pelo ClassInviteService)
-      const studentsQuery = query(
-        collection(db, 'classStudents'),
-        where('status', '==', 'active')
-      )
+      console.log(`[getClassStudentsBasic] 🔄 Buscando estudantes básicos para turma: ${classId}`)
 
-      const studentsSnapshot = await getDocs(studentsQuery)
+      // Tentar múltiplos métodos para garantir que encontramos os dados
+      let studentsSnapshot
+
+      try {
+        // Método 1: Query otimizada por range de document ID  
+        console.log(`[getClassStudentsBasic] Tentando Método 1: range query`)
+        const rangeQuery = query(
+          collection(db, 'classStudents'),
+          where('__name__', '>=', `${classId}_`),
+          where('__name__', '<', `${classId}_\uf8ff`)
+        )
+        studentsSnapshot = await getDocs(rangeQuery)
+        
+        if (studentsSnapshot.docs.length > 0) {
+          console.log(`[getClassStudentsBasic] ✅ Método 1 bem-sucedido: ${studentsSnapshot.docs.length} documentos`)
+        } else {
+          throw new Error('Nenhum documento encontrado no Método 1')
+        }
+      } catch (error1) {
+        console.log(`[getClassStudentsBasic] ⚠️ Método 1 falhou: ${error1.message}`)
+        
+        try {
+          // Método 2: Query por status ativo
+          console.log(`[getClassStudentsBasic] Tentando Método 2: status query`)
+          const statusQuery = query(
+            collection(db, 'classStudents'),
+            where('status', '==', 'active')
+          )
+          studentsSnapshot = await getDocs(statusQuery)
+          console.log(`[getClassStudentsBasic] Método 2: ${studentsSnapshot.docs.length} documentos ativos encontrados`)
+        } catch (error2) {
+          console.log(`[getClassStudentsBasic] ⚠️ Método 2 falhou: ${error2.message}`)
+          
+          // Método 3: Fallback - buscar todos os documentos
+          console.log(`[getClassStudentsBasic] Tentando Método 3: fallback completo`)
+          const allDocsQuery = query(collection(db, 'classStudents'))
+          studentsSnapshot = await getDocs(allDocsQuery)
+          console.log(`[getClassStudentsBasic] Método 3: ${studentsSnapshot.docs.length} documentos totais encontrados`)
+        }
+      }
+
       const students: any[] = []
 
-      console.log(`[getClassStudentsBasic] Buscando estudantes básicos para turma: ${classId}`)
-      console.log(`[getClassStudentsBasic] Total de documentos encontrados: ${studentsSnapshot.docs.length}`)
-
-      // Filtrar estudantes desta turma específica
+      // Processar documentos encontrados
       for (const doc of studentsSnapshot.docs) {
         const studentData = doc.data()
         const docId = doc.id
 
-        console.log(`[getClassStudentsBasic] Verificando documento: ${docId}`)
-
-        // Verificar se o documento pertence à turma específica e se studentData é válido
-        if (docId.startsWith(`${classId}_`) && studentData) {
-          console.log(`[getClassStudentsBasic] ✅ Documento pertence à turma ${classId}`)
+        // Verificar se o documento pertence à turma específica e não foi removido
+        if (docId.startsWith(`${classId}_`) && studentData && studentData.status !== 'removed') {
+          console.log(`[getClassStudentsBasic] ✅ Adicionando estudante: ${docId} (status: ${studentData.status || 'undefined'})`)
           
           const lastActivityTimestamp = this.getLastActivityTimestamp(
             studentData.lastActivity || studentData.enrolledAt
@@ -600,20 +742,19 @@ export class EnhancedClassService {
             studentName: studentData.studentName || studentData.name || 'Usuário Anônimo',
             email: studentData.email || studentData.studentEmail || '',
             status: studentData.status || 'active',
-            lastActivity: { getTime: () => lastActivityTimestamp }, // Wrapper compatível
-            overallProgress: 0, // Será calculado
-            totalNormalizedScore: 0, // Será calculado
-            completedModules: 0 // Será calculado
+            lastActivity: { getTime: () => lastActivityTimestamp },
+            overallProgress: 0,
+            totalNormalizedScore: 0,
+            completedModules: 0
           })
-        } else {
-          console.log(`[getClassStudentsBasic] ❌ Documento ${docId} não pertence à turma ${classId} ou dados inválidos`)
         }
       }
 
-      console.log(`[getClassStudentsBasic] Total de estudantes básicos encontrados: ${students.length}`)
+      console.log(`[getClassStudentsBasic] 📊 Total de estudantes básicos encontrados: ${students.length}`)
       return students || []
+      
     } catch (error) {
-      console.error('Erro ao buscar estudantes básicos da turma:', error)
+      console.error('[getClassStudentsBasic] ❌ Erro crítico ao buscar estudantes básicos da turma:', error)
       return []
     }
   }
