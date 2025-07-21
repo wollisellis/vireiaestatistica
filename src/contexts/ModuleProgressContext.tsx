@@ -12,7 +12,7 @@ import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { AdvancedScoringSystem, QuestionMetrics } from '@/lib/scoringSystem'
 import { modules } from '@/data/modules'
 import { useUnifiedProgress } from '@/hooks/useUnifiedProgress'
-import { unifiedScoringService } from '@/services/unifiedScoringService'
+import unifiedScoringService from '@/services/unifiedScoringService'
 
 interface ModuleProgressContextType {
   // Estado principal

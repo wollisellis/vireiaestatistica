@@ -20,15 +20,31 @@ import { ModuleProgressSystem } from '@/lib/moduleProgressSystem'
 
 export interface UnifiedScore {
   studentId: string
+  userId: string // Alias para compatibilidade
+  userName?: string
   totalScore: number
   normalizedScore: number // 0-100
   moduleScores: Record<string, number>
   gameScores: Record<string, number>
   exerciseScores?: Record<string, number> // Para exercícios individuais
-  achievements: string[]
+  achievements: {
+    level?: string
+    currentStreak?: number
+    longestStreak?: number
+  } | string[] // Compatibilidade com ambos formatos
   lastActivity: Date
   streak: number
   level: number
+  completionRate?: number
+  classRank?: number
+  moduleProgress?: Record<string, {
+    title?: string
+    completionPercentage?: number
+    exercises?: any[]
+    timeSpent?: number
+    lastActivity?: Date
+    averageAttempts?: number
+  }>
 }
 
 export interface ScoreValidation {
@@ -355,6 +371,8 @@ class UnifiedScoringService {
   private createEmptyScore(studentId: string): UnifiedScore {
     return {
       studentId,
+      userId: studentId, // Alias para compatibilidade
+      userName: 'Estudante',
       totalScore: 0,
       normalizedScore: 0,
       moduleScores: {},
@@ -362,7 +380,10 @@ class UnifiedScoringService {
       achievements: [],
       lastActivity: new Date(),
       streak: 0,
-      level: 1
+      level: 1,
+      completionRate: 0,
+      classRank: 0,
+      moduleProgress: {}
     }
   }
 
@@ -520,6 +541,34 @@ class UnifiedScoringService {
         legacyData: null,
         rankingData: null
       }
+    }
+  }
+
+  // 🚀 NOVO: Método saveExerciseScore compatível com useUnifiedProgress
+  async saveExerciseScore(
+    studentId: string,
+    moduleId: string,
+    exerciseId: string,
+    questionMetrics: any[], // QuestionMetrics from scoringSystem
+    timeSpent: number
+  ): Promise<void> {
+    try {
+      console.log('[UnifiedScoringService] 💾 Salvando pontuação de exercício:', {
+        studentId, moduleId, exerciseId, metrics: questionMetrics.length, timeSpent
+      })
+
+      // Calcular pontuação baseada nas métricas das questões
+      const totalQuestions = questionMetrics.length
+      const correctAnswers = questionMetrics.filter(m => m.correct).length
+      const exerciseScore = Math.round((correctAnswers / totalQuestions) * 100)
+
+      // Usar método existente updateExerciseScore
+      await this.updateExerciseScore(studentId, moduleId, exerciseId, exerciseScore, 100)
+      
+      console.log('[UnifiedScoringService] ✅ Exercício salvo com sucesso')
+    } catch (error) {
+      console.error('[UnifiedScoringService] ❌ Erro ao salvar exercício:', error)
+      throw error
     }
   }
 

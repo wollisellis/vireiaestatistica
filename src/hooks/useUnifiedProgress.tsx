@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { unifiedScoringService } from '@/services/unifiedScoringService'
+import unifiedScoringService from '@/services/unifiedScoringService'
 import { QuestionMetrics } from '@/lib/scoringSystem'
 import { StudentModuleProgress, ModuleProgress, ExerciseProgress } from '@/lib/moduleProgressSystem'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
