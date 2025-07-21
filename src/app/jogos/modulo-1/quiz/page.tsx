@@ -19,11 +19,9 @@ export default function Module1QuizPage() {
   const handleQuizComplete = (attempt: QuizAttempt) => {
     console.log('Quiz concluído:', attempt);
     
-    // 🚀 CORREÇÃO: Aumentar tempo de redirecionamento para 50 segundos para dar tempo suficiente de ler o feedback
+    // ✅ MELHORIA: Removido redirecionamento automático para dar controle total ao estudante
+    // O estudante pode revisar o feedback pelo tempo que precisar
     // Nota: O evento moduleCompleted é disparado automaticamente pelo RandomizedQuizComponent
-    setTimeout(() => {
-      router.push('/jogos');
-    }, 50000);
   };
 
   return (

@@ -504,19 +504,50 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
           </CardContent>
         </Card>
 
+        {/* Mensagem Educativa */}
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex items-start space-x-3">
+              <Lightbulb className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-2">
+                  📝 Aproveite para Revisar o Feedback!
+                </h3>
+                <p className="text-blue-800 text-sm">
+                  Recomendamos que você revise cuidadosamente as explicações acima. 
+                  Elas contêm informações importantes que vão ajudar nos próximos módulos. 
+                  <strong>Você tem total controle</strong> - saia apenas quando estiver pronto!
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Ações */}
-        <div className="flex justify-center space-x-4">
+        <div className="flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-4">
           {!results.passed && (
-            <Button onClick={handleRetryQuiz} className="px-8">
+            <Button onClick={handleRetryQuiz} className="px-8 w-full sm:w-auto">
               <RotateCcw className="h-4 w-4 mr-2" />
               Tentar Novamente
             </Button>
           )}
+          
+          {results.passed && (
+            <Button 
+              onClick={() => router.push('/jogos')}
+              className="px-8 w-full sm:w-auto bg-green-600 hover:bg-green-700"
+            >
+              <Trophy className="h-4 w-4 mr-2" />
+              Continuar para Próximos Módulos
+            </Button>
+          )}
+          
           <Button 
             variant="outline" 
             onClick={() => router.push('/jogos')}
-            className="px-8"
+            className="px-8 w-full sm:w-auto"
           >
+            <Home className="h-4 w-4 mr-2" />
             Voltar aos Jogos
           </Button>
         </div>
