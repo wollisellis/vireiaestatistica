@@ -742,6 +742,12 @@ export default function JogosPage() {
                               <Clock className="w-4 h-4 mr-1" />
                               {game.estimatedTime}
                             </div>
+                            {!game.isLocked && !game.isCompleted && (
+                              <div className="flex items-center text-sm text-gray-500 mt-1">
+                                <Award className="w-4 h-4 mr-1 text-yellow-500" />
+                                <span className="font-medium">0-100 pts disponíveis</span>
+                              </div>
+                            )}
                             {game.isCompleted && (
                               <div className="flex items-center text-xs text-green-600 mt-1 font-medium">
                                 <Trophy className="w-3 h-3 mr-1" />
@@ -781,6 +787,26 @@ export default function JogosPage() {
                               <Lock className="w-4 h-4 mr-2" />
                               {game.lockMessage}
                             </div>
+                          </div>
+                        )}
+
+                        {/* Badge de Conquista Disponível */}
+                        {!game.isLocked && !game.isCompleted && (
+                          <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-md">
+                            <div className="flex items-center text-purple-800 text-sm">
+                              <Trophy className="w-4 h-4 mr-2 text-purple-600" />
+                              <span className="font-medium">🏅 Conquista disponível: "Fundamentos Dominados"</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Meta de Aprovação */}
+                        {!game.isLocked && (
+                          <div className="mt-3 p-2 bg-blue-50 rounded-md text-center">
+                            <p className="text-xs text-blue-700 font-medium">
+                              <Target className="w-3 h-3 inline mr-1" />
+                              Meta: 70% para aprovação
+                            </p>
                           </div>
                         )}
 

@@ -11,6 +11,8 @@ import ModuleProgressService from '@/services/moduleProgressService'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { AdvancedScoringSystem, QuestionMetrics } from '@/lib/scoringSystem'
 import { modules } from '@/data/modules'
+import { useUnifiedProgress } from '@/hooks/useUnifiedProgress'
+import { unifiedScoringService } from '@/services/unifiedScoringService'
 
 interface ModuleProgressContextType {
   // Estado principal
@@ -112,6 +114,11 @@ export function ModuleProgressProvider({ children }: { children: React.ReactNode
   const [error, setError] = useState<string | null>(null)
   const [newAchievements, setNewAchievements] = useState<string[]>([])
   const { user } = useFirebaseAuth()
+  const { 
+    loadUnifiedProgress, 
+    saveExerciseScore: saveUnifiedScore,
+    syncAllSystems 
+  } = useUnifiedProgress()
 
   // Carregar progresso ao inicializar
   useEffect(() => {
@@ -125,7 +132,7 @@ export function ModuleProgressProvider({ children }: { children: React.ReactNode
     }
   }, [user])
 
-  // Carregar progresso do Firebase
+  // 🚀 CORREÇÃO: Carregar progresso do sistema DUAL (unificado + legacy)
   const loadStudentProgress = async () => {
     if (!user?.uid) return
 
@@ -133,17 +140,51 @@ export function ModuleProgressProvider({ children }: { children: React.ReactNode
       setIsLoading(true)
       setError(null)
 
-      let progress = await ModuleProgressService.loadStudentProgress(user.uid)
+      console.log('[ModuleProgressContext] 🔄 Carregando progresso DUAL (unificado + legacy)')
+
+      // 1. Tentar carregar do sistema unificado primeiro
+      let unifiedProgress = await loadUnifiedProgress(user.uid)
       
-      if (!progress) {
-        // Criar novo progresso se não existe
-        progress = createInitialProgress(user.uid, user.displayName || 'Estudante')
-        await ModuleProgressService.saveStudentProgress(progress)
+      // 2. Carregar também do sistema legacy para comparação
+      let legacyProgress = await ModuleProgressService.loadStudentProgress(user.uid)
+      
+      if (unifiedProgress && legacyProgress) {
+        // Ambos existem - usar unificado como primário
+        console.log('[ModuleProgressContext] ✅ Usando sistema unificado como primário')
+        setStudentProgress(unifiedProgress)
+        
+        // Verificar discrepâncias
+        const unifiedScore = unifiedProgress.totalNormalizedScore
+        const legacyScore = legacyProgress.totalNormalizedScore
+        if (Math.abs(unifiedScore - legacyScore) > 5) {
+          console.warn('[ModuleProgressContext] ⚠️ Discrepância detectada:', {
+            unificado: unifiedScore,
+            legacy: legacyScore,
+            diferença: Math.abs(unifiedScore - legacyScore)
+          })
+        }
+      } else if (legacyProgress && !unifiedProgress) {
+        // Apenas legacy existe - migrar para unificado
+        console.log('[ModuleProgressContext] 🔄 Migrando dados legacy para sistema unificado')
+        setStudentProgress(legacyProgress)
+        
+        // Sincronizar com sistema unificado
+        await syncAllSystems(user.uid)
+      } else if (!legacyProgress && !unifiedProgress) {
+        // Nenhum existe - criar novo
+        console.log('[ModuleProgressContext] 🆕 Criando novo progresso')
+        const newProgress = createInitialProgress(user.uid, user.displayName || 'Estudante')
+        await ModuleProgressService.saveStudentProgress(newProgress)
+        await syncAllSystems(user.uid)
+        setStudentProgress(newProgress)
+      } else if (unifiedProgress && !legacyProgress) {
+        // Apenas unificado existe - usar diretamente
+        console.log('[ModuleProgressContext] ✅ Usando apenas sistema unificado')
+        setStudentProgress(unifiedProgress)
       }
 
-      setStudentProgress(progress)
     } catch (err) {
-      console.error('Erro ao carregar progresso:', err)
+      console.error('[ModuleProgressContext] ❌ Erro ao carregar progresso:', err)
       setError('Erro ao carregar progresso do estudante')
       
       // Fallback para progresso inicial
@@ -226,14 +267,32 @@ export function ModuleProgressProvider({ children }: { children: React.ReactNode
         updatedModules
       )
 
-      // Salvar no Firebase
+      // 🚀 CORREÇÃO: Salvar em AMBOS sistemas (unificado + legacy)
       if (user?.uid && user.uid !== 'demo-user') {
+        console.log('[ModuleProgressContext] 💾 Salvando em sistema DUAL')
+        
+        // 1. Salvar no sistema legacy (mantém compatibilidade)
         await ModuleProgressService.updateExerciseProgress(
           studentProgress.studentId,
           moduleId,
           newExerciseProgress
         )
         await ModuleProgressService.saveStudentProgress(updatedStudentProgress)
+        
+        // 2. Salvar no sistema unificado (nova fonte de verdade)
+        try {
+          await saveUnifiedScore(
+            studentProgress.studentId,
+            moduleId,
+            exerciseId,
+            questionMetrics,
+            timeSpent
+          )
+          console.log('[ModuleProgressContext] ✅ Salvo em ambos sistemas')
+        } catch (unifiedErr) {
+          console.error('[ModuleProgressContext] ⚠️ Erro ao salvar no sistema unificado:', unifiedErr)
+          // Continua mesmo se unificado falhar (degradação graceful)
+        }
       }
 
       // Atualizar estado local
@@ -283,14 +342,25 @@ export function ModuleProgressProvider({ children }: { children: React.ReactNode
     }
   }
 
-  // Completar módulo
+  // 🚀 CORREÇÃO: Completar módulo em ambos sistemas
   const completeModule = async (moduleId: string): Promise<void> => {
     if (!studentProgress || !user?.uid) return
 
     try {
-      // Marcar módulo como concluído no Firebase
+      console.log('[ModuleProgressContext] 🎯 Completando módulo em sistema DUAL:', moduleId)
+      
+      // Marcar módulo como concluído em AMBOS sistemas
       if (user.uid !== 'demo-user') {
+        // 1. Sistema legacy
         await ModuleProgressService.completeModule(studentProgress.studentId, moduleId)
+        
+        // 2. Sistema unificado (sincronizar todos os dados)
+        try {
+          await syncAllSystems(studentProgress.studentId)
+          console.log('[ModuleProgressContext] ✅ Módulo completado em ambos sistemas')
+        } catch (syncErr) {
+          console.error('[ModuleProgressContext] ⚠️ Erro ao sincronizar sistema unificado:', syncErr)
+        }
       }
 
       // Desbloquear próximo módulo
