@@ -69,6 +69,12 @@ export default function StudentDetailPage() {
   const [activeTab, setActiveTab] = useState('overview');
   
   useEffect(() => {
+    // Redirecionar automaticamente se studentId estiver ausente
+    if (!studentId && classId) {
+      router.push(`/professor/turma/${classId}`);
+      return;
+    }
+
     const fetchStudentData = async () => {
       try {
         const studentData = await enhancedClassService.getStudentDetail(classId, studentId);
@@ -83,7 +89,7 @@ export default function StudentDetailPage() {
     if (classId && studentId) {
       fetchStudentData();
     }
-  }, [classId, studentId]);
+  }, [classId, studentId, router]);
   
   const generateActivityTimeline = (): ActivityTimelineItem[] => {
     if (!data) return [];
