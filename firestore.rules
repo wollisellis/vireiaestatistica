@@ -471,6 +471,49 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid;
     }
 
+    // SYSTEM HEALTH COLLECTION - Métricas de saúde do sistema (ACESSO COMPARTILHADO)
+    match /system_health/{healthId} {
+      // ✅ TODOS os professores podem ler métricas de saúde (acesso compartilhado)
+      allow read: if isProfessor();
+
+      // Sistema pode escrever métricas (via serviços automatizados)
+      allow create: if isProfessor();
+    }
+
+    // HEALTH ISSUES COLLECTION - Issues detectadas pelo sistema (ACESSO COMPARTILHADO)
+    match /health_issues/{issueId} {
+      // ✅ TODOS os professores podem ler issues do sistema (acesso compartilhado)
+      allow read: if isProfessor();
+
+      // Sistema pode criar issues (via SystemHealthService)
+      allow create: if isProfessor();
+
+      // Professores podem marcar issues como resolvidas
+      allow update: if isProfessor();
+    }
+
+    // HEALTH ALERTS COLLECTION - Alertas do sistema para professores (ACESSO COMPARTILHADO)
+    match /health_alerts/{alertId} {
+      // ✅ TODOS os professores podem ler alertas do sistema (acesso compartilhado)
+      allow read: if isProfessor();
+
+      // Sistema pode criar alertas para professores
+      allow create: if isProfessor();
+
+      // Professores podem marcar alertas como lidos
+      allow update: if isProfessor() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+    }
+
+    // SYSTEM LOGS COLLECTION - Logs do sistema para debug e auditoria (ACESSO COMPARTILHADO)
+    match /system_logs/{logId} {
+      // ✅ TODOS os professores podem ler logs do sistema (acesso compartilhado)
+      allow read: if isProfessor();
+
+      // Sistema pode criar logs
+      allow create: if isProfessor();
+    }
+
     // STUDY CASES COLLECTION - Casos de estudo colaborativos
     match /studyCases/{caseId} {
       // Todos os usuários autenticados podem ler casos de estudo

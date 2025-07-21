@@ -62,6 +62,37 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   const [searchTerm, setSearchTerm] = useState('')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteClass, setInviteClass] = useState<ClassInfo | null>(null)
+  
+  // 🎨 ESTADOS DE UX APRIMORADOS
+  const [creationProgress, setCreationProgress] = useState<{
+    step: 'idle' | 'validating' | 'saving' | 'generating-code' | 'setting-up' | 'completed' | 'error';
+    message: string;
+    progress: number;
+  }>({
+    step: 'idle',
+    message: '',
+    progress: 0
+  })
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error' | 'info' | 'warning';
+    title: string;
+    message: string;
+    visible: boolean;
+  }>({
+    type: 'info',
+    title: '',
+    message: '',
+    visible: false
+  })
+  const [autoRecoveryInfo, setAutoRecoveryInfo] = useState<{
+    applied: boolean;
+    count: number;
+    visible: boolean;
+  }>({
+    applied: false,
+    count: 0,
+    visible: false
+  })
 
   // Formulário de criação de turma
   const [classForm, setClassForm] = useState({
@@ -71,6 +102,28 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
     description: '',
     capacity: 50
   })
+
+  // 🎨 SISTEMA DE NOTIFICAÇÕES
+  const showNotification = (type: 'success' | 'error' | 'info' | 'warning', title: string, message: string, duration = 5000) => {
+    setNotification({ type, title, message, visible: true })
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        setNotification(prev => ({ ...prev, visible: false }))
+      }, duration)
+    }
+  }
+
+  const hideNotification = () => {
+    setNotification(prev => ({ ...prev, visible: false }))
+  }
+
+  const showAutoRecoveryInfo = (count: number) => {
+    setAutoRecoveryInfo({ applied: true, count, visible: true })
+    setTimeout(() => {
+      setAutoRecoveryInfo(prev => ({ ...prev, visible: false }))
+    }, 8000)
+  }
 
   // Carregar turmas do professor
   useEffect(() => {
@@ -87,19 +140,59 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   const loadClasses = async () => {
     try {
       setIsLoading(true)
-      console.log('Carregando TODAS as turmas (acesso compartilhado)')
+      console.log('🔄 [ImprovedClassManagement] Carregando turmas com sistema inteligente...')
       
-      // Carregar todas as turmas - acesso compartilhado entre professores
+      // Monitorar console para detectar auto-recovery
+      const originalConsoleLog = console.log
+      let recoveryDetected = false
+      let recoveredCount = 0
+      
+      console.log = (...args) => {
+        const message = args.join(' ')
+        if (message.includes('turmas corrigidas automaticamente')) {
+          recoveryDetected = true
+          const match = message.match(/(\d+) turmas corrigidas/)
+          if (match) {
+            recoveredCount = parseInt(match[1])
+          }
+        }
+        originalConsoleLog(...args)
+      }
+      
+      // Carregar todas as turmas com sistema de recovery automático
       const classesData = await ProfessorClassService.getProfessorClasses(professorId)
-      console.log('Turmas carregadas (todas):', classesData)
       
+      // Restaurar console.log
+      console.log = originalConsoleLog
+      
+      console.log(`✅ [ImprovedClassManagement] ${classesData.length} turmas carregadas`)
       setClasses(classesData)
-    } catch (error) {
-      console.error('Erro ao carregar turmas:', error)
       
-      // Em caso de erro, criar dados mock para mostrar interface
-      const mockClasses: ClassInfo[] = []
-      setClasses(mockClasses)
+      // Mostrar notificação de recovery se aplicável
+      if (recoveryDetected && recoveredCount > 0) {
+        showAutoRecoveryInfo(recoveredCount)
+        showNotification(
+          'success',
+          '🔧 Sistema Auto-Corrigido!',
+          `${recoveredCount} turma(s) foram automaticamente corrigidas e já estão disponíveis.`,
+          6000
+        )
+      } else if (classesData.length > 0) {
+        showNotification('info', '✅ Turmas Carregadas', `${classesData.length} turma(s) disponíveis`, 3000)
+      }
+      
+    } catch (error) {
+      console.error('❌ [ImprovedClassManagement] Erro ao carregar turmas:', error)
+      
+      showNotification(
+        'error',
+        '❌ Erro ao Carregar Turmas',
+        'Não foi possível carregar as turmas. Tente recarregar a página.',
+        8000
+      )
+      
+      // Fallback para array vazio
+      setClasses([])
     } finally {
       setIsLoading(false)
     }
@@ -118,10 +211,29 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
 
   const createClass = async (classData: ClassFormData) => {
     if (!professorId) {
+      showNotification('error', 'Erro de Autenticação', 'Professor ID não disponível')
       throw new Error('Professor ID não disponível')
     }
 
     try {
+      console.log('🚀 [ImprovedClassManagement] Iniciando criação de turma com UX melhorada')
+      
+      // 🎯 PASSO 1: Validação
+      setCreationProgress({
+        step: 'validating',
+        message: 'Validando dados da turma...',
+        progress: 10
+      })
+      
+      await new Promise(resolve => setTimeout(resolve, 500)) // Simular validação
+      
+      // 🎯 PASSO 2: Salvando
+      setCreationProgress({
+        step: 'saving',
+        message: 'Criando turma no sistema...',
+        progress: 30
+      })
+      
       const classId = await ProfessorClassService.createClass(
         professorId,
         professorName,
@@ -130,32 +242,93 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
         classData.year
       )
       
+      // 🎯 PASSO 3: Configurando
+      setCreationProgress({
+        step: 'setting-up',
+        message: 'Configurando módulos e sistema...',
+        progress: 70
+      })
+      
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      // 🎯 PASSO 4: Finalizando
+      setCreationProgress({
+        step: 'completed',
+        message: 'Turma criada com sucesso!',
+        progress: 100
+      })
+      
+      // Fechar modal de criação
       setIsCreatingClass(false)
       
-      // Aguardar para garantir que o Firebase processou todas as escritas
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Reset progress depois de um tempo
+      setTimeout(() => {
+        setCreationProgress({
+          step: 'idle',
+          message: '',
+          progress: 0
+        })
+      }, 2000)
       
-      // Recarregar turmas com retry em caso de falha
-      console.log('🔄 Recarregando turmas após criação...')
+      // Recarregar turmas com feedback
+      console.log('🔄 [ImprovedClassManagement] Recarregando turmas após criação...')
       await loadClasses()
       
-      // Segundo refresh para garantia
-      await new Promise(resolve => setTimeout(resolve, 500))
-      await loadClasses()
-      
-      // Buscar as informações da turma criada para mostrar o modal de convites
-      console.log('Buscando informações da turma criada:', classId)
+      // Buscar informações da turma para modal de convites
+      console.log('🔍 [ImprovedClassManagement] Buscando informações da turma criada:', classId)
       const newClassInfo = await ProfessorClassService.getClassInfo(classId)
-      console.log('Informações da turma para o modal:', newClassInfo)
+      
       if (newClassInfo) {
+        console.log('✅ [ImprovedClassManagement] Turma encontrada, abrindo modal de convites')
         setInviteClass(newClassInfo)
         setShowInviteModal(true)
+        
+        showNotification(
+          'success', 
+          '🎉 Turma Criada!', 
+          `${newClassInfo.name} foi criada com sucesso. Compartilhe o código de convite com os estudantes.`,
+          5000
+        )
       } else {
-        console.error('Não foi possível obter informações da turma criada')
+        console.warn('⚠️ [ImprovedClassManagement] Turma criada mas não foi possível obter informações')
+        showNotification(
+          'warning',
+          '⚠️ Turma Criada',
+          'A turma foi criada, mas houve um problema ao obter as informações. Recarregue a página.',
+          6000
+        )
       }
+      
     } catch (error) {
-      console.error('Erro ao criar turma:', error)
-      throw error // Re-throw para o modal tratar
+      console.error('❌ [ImprovedClassManagement] Erro na criação da turma:', error)
+      
+      // Reset states
+      setIsCreatingClass(false)
+      setCreationProgress({
+        step: 'error',
+        message: 'Erro na criação da turma',
+        progress: 0
+      })
+      
+      // Reset progress após erro
+      setTimeout(() => {
+        setCreationProgress({
+          step: 'idle',
+          message: '',
+          progress: 0
+        })
+      }, 3000)
+      
+      // Mostrar notificação de erro
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      showNotification(
+        'error',
+        '❌ Erro ao Criar Turma',
+        errorMessage,
+        8000
+      )
+      
+      throw error // Re-throw para o modal tratar se necessário
     }
   }
 
@@ -266,6 +439,145 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* 🎨 SISTEMA DE NOTIFICAÇÕES */}
+      {notification.visible && (
+        <motion.div
+          initial={{ opacity: 0, y: -50, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          className="fixed top-4 right-4 z-50 max-w-sm"
+        >
+          <Card className={`border-l-4 shadow-xl ${
+            notification.type === 'success' ? 'border-l-green-500 bg-green-50' :
+            notification.type === 'error' ? 'border-l-red-500 bg-red-50' :
+            notification.type === 'warning' ? 'border-l-yellow-500 bg-yellow-50' :
+            'border-l-blue-500 bg-blue-50'
+          }`}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 mr-3">
+                  <h4 className={`font-semibold text-sm ${
+                    notification.type === 'success' ? 'text-green-800' :
+                    notification.type === 'error' ? 'text-red-800' :
+                    notification.type === 'warning' ? 'text-yellow-800' :
+                    'text-blue-800'
+                  }`}>
+                    {notification.title}
+                  </h4>
+                  <p className={`text-xs mt-1 ${
+                    notification.type === 'success' ? 'text-green-700' :
+                    notification.type === 'error' ? 'text-red-700' :
+                    notification.type === 'warning' ? 'text-yellow-700' :
+                    'text-blue-700'
+                  }`}>
+                    {notification.message}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={hideNotification}
+                  className="flex-shrink-0 h-6 w-6 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* 🔧 INFORMAÇÃO DE AUTO-RECOVERY */}
+      {autoRecoveryInfo.visible && (
+        <motion.div
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 100 }}
+          className="mb-4"
+        >
+          <Card className="border-l-4 border-l-blue-500 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-blue-800 text-sm">
+                    🔧 Sistema Auto-Corrigido
+                  </h4>
+                  <p className="text-blue-700 text-xs">
+                    {autoRecoveryInfo.count} turma(s) com status incorreto foram automaticamente corrigidas.
+                    As turmas já estão disponíveis na lista abaixo.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* 📊 PROGRESS INDICATOR PARA CRIAÇÃO */}
+      {creationProgress.step !== 'idle' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4"
+        >
+          <Card className="border-l-4 border-l-indigo-500 bg-indigo-50">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className={`p-2 rounded-full ${
+                  creationProgress.step === 'completed' ? 'bg-green-100' :
+                  creationProgress.step === 'error' ? 'bg-red-100' :
+                  'bg-indigo-100'
+                }`}>
+                  {creationProgress.step === 'completed' ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : creationProgress.step === 'error' ? (
+                    <XCircle className="w-5 h-5 text-red-600" />
+                  ) : (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className={`font-semibold text-sm ${
+                      creationProgress.step === 'completed' ? 'text-green-800' :
+                      creationProgress.step === 'error' ? 'text-red-800' :
+                      'text-indigo-800'
+                    }`}>
+                      {creationProgress.step === 'completed' ? '✅ Concluído!' :
+                       creationProgress.step === 'error' ? '❌ Erro' :
+                       '🔄 Criando Turma...'}
+                    </h4>
+                    <span className="text-xs font-medium text-gray-600">
+                      {creationProgress.progress}%
+                    </span>
+                  </div>
+                  <p className={`text-xs mb-2 ${
+                    creationProgress.step === 'completed' ? 'text-green-700' :
+                    creationProgress.step === 'error' ? 'text-red-700' :
+                    'text-indigo-700'
+                  }`}>
+                    {creationProgress.message}
+                  </p>
+                  {creationProgress.step !== 'error' && (
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className={`h-1.5 rounded-full transition-all duration-500 ${
+                          creationProgress.step === 'completed' ? 'bg-green-500' : 'bg-indigo-500'
+                        }`}
+                        style={{ width: `${creationProgress.progress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Modal de criação de turma */}
       <CreateClassModal

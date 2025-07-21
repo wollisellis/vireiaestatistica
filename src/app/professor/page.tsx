@@ -31,10 +31,12 @@ import {
   Scale,
   Play,
   Lock,
-  CheckCircle
+  CheckCircle,
+  Monitor
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
-import { FirestoreDebugger } from '@/components/debug/FirestoreDebugger'
+import { HealthIndicator } from '@/components/system/HealthIndicator'
+import { HealthDashboard } from '@/components/system/HealthDashboard'
 
 export default function ProfessorDashboardPage() {
   const { user, loading, hasAccess } = useFlexibleAccess()
@@ -233,6 +235,13 @@ export default function ProfessorDashboardPage() {
                 </div>
                 
                 <div className="flex items-center space-x-2">
+                  <HealthIndicator 
+                    showRefreshButton={true}
+                    showDetailsPopover={true}
+                    onHealthChange={(health) => {
+                      console.log('Health status changed:', health)
+                    }}
+                  />
                   <NotificationCenter role="professor" />
                   <Button variant="ghost" size="sm" onClick={handleHelpClick}>
                     <HelpCircle className="w-4 h-4" />
@@ -289,14 +298,18 @@ export default function ProfessorDashboardPage() {
                   <Activity className="w-4 h-4 mr-2" />
                   Analytics
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="system" 
+                  className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-4 py-4"
+                >
+                  <Monitor className="w-4 h-4 mr-2" />
+                  Sistema
+                </TabsTrigger>
               </TabsList>
 
               {/* Main Content */}
               <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <TabsContent value="dashboard" className="space-y-6">
-                  {/* 🔧 DEBUG TEMPORÁRIO - Remover após diagnosticar problema */}
-                  <FirestoreDebugger />
-                  
                   {/* Welcome Banner */}
                   <Card className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-0">
                     <CardContent className="p-6">
@@ -631,6 +644,31 @@ export default function ProfessorDashboardPage() {
 
                 <TabsContent value="analytics" className="space-y-6">
                   <AnalyticsDashboard professorId={user?.id || 'demo'} />
+                </TabsContent>
+
+                <TabsContent value="system" className="space-y-6">
+                  {/* Header da seção */}
+                  <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-3">
+                        <Monitor className="w-8 h-8 text-blue-600" />
+                        <div>
+                          <h2 className="text-xl font-bold text-blue-900">
+                            Monitoramento do Sistema
+                          </h2>
+                          <p className="text-blue-700">
+                            Acompanhe a saúde e performance da plataforma em tempo real
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Dashboard de Saúde */}
+                  <HealthDashboard 
+                    professorId={user?.id || 'demo'} 
+                    compactMode={false}
+                  />
                 </TabsContent>
               </main>
             </Tabs>
