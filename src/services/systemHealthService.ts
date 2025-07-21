@@ -14,7 +14,7 @@ import {
   writeBatch,
   Timestamp
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 
 export interface SystemHealthMetrics {
   // Métricas gerais
@@ -94,6 +94,68 @@ export class SystemHealthService {
   private static readonly ISSUES_COLLECTION = 'health_issues';
   private static readonly ALERTS_COLLECTION = 'health_alerts';
   private static readonly LOGS_COLLECTION = 'system_logs';
+
+  /**
+   * Verifica se o usuário atual está autenticado e tem permissões adequadas
+   */
+  private static async checkAuthenticationAndPermissions(): Promise<{
+    isAuthenticated: boolean,
+    hasPermissions: boolean,
+    userRole: string | null,
+    reason?: string
+  }> {
+    try {
+      // Verificar se Firebase Auth está disponível
+      if (!auth || !db) {
+        return {
+          isAuthenticated: false,
+          hasPermissions: false,
+          userRole: null,
+          reason: 'Firebase não configurado'
+        };
+      }
+
+      // Verificar se há usuário atual
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        return {
+          isAuthenticated: false,
+          hasPermissions: false,
+          userRole: null,
+          reason: 'Usuário não autenticado'
+        };
+      }
+
+      // Verificar custom claims para role
+      const idTokenResult = await currentUser.getIdTokenResult();
+      const userRole = idTokenResult.claims.role || null;
+
+      // Tentar acesso simples ao Firestore para verificar permissões
+      try {
+        await getDocs(query(collection(db, 'classes'), limit(1)));
+        return {
+          isAuthenticated: true,
+          hasPermissions: true,
+          userRole: userRole as string
+        };
+      } catch (permError: any) {
+        return {
+          isAuthenticated: true,
+          hasPermissions: false,
+          userRole: userRole as string,
+          reason: `Erro de permissão: ${permError.code || permError.message}`
+        };
+      }
+
+    } catch (error: any) {
+      return {
+        isAuthenticated: false,
+        hasPermissions: false,
+        userRole: null,
+        reason: `Erro na verificação: ${error.message || 'Erro desconhecido'}`
+      };
+    }
+  }
   
   /**
    * Converte timestamp do Firebase para Date de forma segura
@@ -137,6 +199,16 @@ export class SystemHealthService {
     console.log('🏥 [SystemHealthService] Iniciando verificação de saúde do sistema...');
     
     try {
+      // CORREÇÃO: Verificar autenticação e permissões primeiro
+      const authStatus = await this.checkAuthenticationAndPermissions();
+      console.log('🔐 [SystemHealthService] Status de autenticação:', authStatus);
+
+      // Se não tem permissões, retornar métricas limitadas mas funcionais
+      if (!authStatus.hasPermissions) {
+        console.warn('⚠️ [SystemHealthService] Sem permissões suficientes, retornando métricas limitadas');
+        return this.generateLimitedHealthMetrics(authStatus.reason || 'Sem permissões');
+      }
+
       // Executar todas as verificações em paralelo
       const [classMetrics, userMetrics, performanceMetrics] = await Promise.all([
         this.checkClassHealth(),
@@ -163,12 +235,20 @@ export class SystemHealthService {
         recoveryActions
       };
       
-      // Salvar métricas no banco
-      await this.saveHealthMetrics(healthMetrics);
+      // Tentar salvar métricas no banco (pode falhar se sem permissões)
+      try {
+        await this.saveHealthMetrics(healthMetrics);
+      } catch (saveError) {
+        console.warn('⚠️ [SystemHealthService] Não foi possível salvar métricas:', saveError);
+      }
       
-      // Gerar alertas se necessário
+      // Tentar gerar alertas se necessário
       if (detectedIssues.length > 0) {
-        await this.generateAlerts(detectedIssues);
+        try {
+          await this.generateAlerts(detectedIssues);
+        } catch (alertError) {
+          console.warn('⚠️ [SystemHealthService] Não foi possível gerar alertas:', alertError);
+        }
       }
       
       const totalTime = Date.now() - startTime;
@@ -179,7 +259,15 @@ export class SystemHealthService {
     } catch (error) {
       console.error('❌ [SystemHealthService] Erro na verificação de saúde:', error);
       
-      // Retornar métricas de erro
+      // CORREÇÃO: Verificar se é erro de permissão especificamente
+      const isPermissionError = error instanceof Error && 
+        (error.message.includes('permission') || error.message.includes('Permission'));
+        
+      if (isPermissionError) {
+        return this.generateLimitedHealthMetrics(error.message);
+      }
+      
+      // Para outros erros, retornar métricas de erro padrão
       const errorMetrics: SystemHealthMetrics = {
         timestamp: new Date(),
         overallHealth: 'error',
@@ -216,9 +304,51 @@ export class SystemHealthService {
         recoveryActions: []
       };
       
-      await this.saveHealthMetrics(errorMetrics);
       return errorMetrics;
     }
+  }
+
+  /**
+   * CORREÇÃO: Gera métricas limitadas quando não há permissões suficientes
+   */
+  private static generateLimitedHealthMetrics(reason: string): SystemHealthMetrics {
+    console.log('📊 [SystemHealthService] Gerando métricas limitadas devido a:', reason);
+    
+    return {
+      timestamp: new Date(),
+      overallHealth: 'warning',
+      classMetrics: {
+        totalClasses: 0,
+        activeClasses: 0,
+        classesWithoutStatus: 0,
+        classesWithDeletedStatus: 0,
+        recentCreations: 0,
+        failedCreations: 0,
+        averageCreationTime: 0
+      },
+      userMetrics: {
+        totalUsers: 0,
+        professorsCount: 0,
+        studentsCount: 0,
+        usersWithoutRole: 0
+      },
+      performanceMetrics: {
+        averageQueryTime: 0,
+        dbConnectionHealth: 'disconnected',
+        errorRate: 0
+      },
+      detectedIssues: [{
+        id: `permission-issue-${Date.now()}`,
+        severity: 'critical',
+        category: 'performance',
+        title: 'Falha na Verificação de Saúde',
+        description: `${reason}`,
+        affectedCount: 0,
+        detectedAt: new Date(),
+        autoFixable: false
+      }],
+      recoveryActions: []
+    };
   }
   
   /**
@@ -228,6 +358,11 @@ export class SystemHealthService {
     const startTime = Date.now();
     
     try {
+      // CORREÇÃO: Verificar se database está disponível
+      if (!db) {
+        throw new Error('Database não configurado');
+      }
+
       // Buscar todas as turmas
       const allClassesSnapshot = await getDocs(collection(db, 'classes'));
       const totalClasses = allClassesSnapshot.size;
@@ -271,8 +406,23 @@ export class SystemHealthService {
         averageCreationTime: queryTime
       };
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [SystemHealthService] Erro ao verificar saúde das turmas:', error);
+      
+      // CORREÇÃO: Retornar métricas vazias em caso de erro de permissão
+      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        console.warn('⚠️ [SystemHealthService] Sem permissão para acessar coleção classes');
+        return {
+          totalClasses: 0,
+          activeClasses: 0,
+          classesWithoutStatus: 0,
+          classesWithDeletedStatus: 0,
+          recentCreations: 0,
+          failedCreations: 0,
+          averageCreationTime: Date.now() - startTime
+        };
+      }
+      
       throw error;
     }
   }
@@ -282,6 +432,11 @@ export class SystemHealthService {
    */
   private static async checkUserHealth() {
     try {
+      // CORREÇÃO: Verificar se database está disponível
+      if (!db) {
+        throw new Error('Database não configurado');
+      }
+
       const usersSnapshot = await getDocs(collection(db, 'users'));
       const totalUsers = usersSnapshot.size;
       
@@ -309,8 +464,20 @@ export class SystemHealthService {
         usersWithoutRole
       };
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [SystemHealthService] Erro ao verificar saúde dos usuários:', error);
+      
+      // CORREÇÃO: Retornar métricas vazias em caso de erro de permissão
+      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        console.warn('⚠️ [SystemHealthService] Sem permissão para acessar coleção users');
+        return {
+          totalUsers: 0,
+          professorsCount: 0,
+          studentsCount: 0,
+          usersWithoutRole: 0
+        };
+      }
+      
       throw error;
     }
   }
@@ -322,6 +489,15 @@ export class SystemHealthService {
     const startTime = Date.now();
     
     try {
+      // CORREÇÃO: Verificar se database está disponível
+      if (!db) {
+        return {
+          averageQueryTime: 0,
+          dbConnectionHealth: 'disconnected' as const,
+          errorRate: 100
+        };
+      }
+
       // Teste de conectividade simples
       await getDocs(query(collection(db, 'classes'), limit(1)));
       
@@ -334,13 +510,20 @@ export class SystemHealthService {
         errorRate: 0 // TODO: implementar tracking de erro
       };
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [SystemHealthService] Erro ao verificar performance:', error);
       
+      const queryTime = Date.now() - startTime;
+      
+      // CORREÇÃO: Dar informações mais específicas sobre o erro
+      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        console.warn('⚠️ [SystemHealthService] Sem permissão para verificar performance');
+      }
+      
       return {
-        averageQueryTime: 0,
+        averageQueryTime: queryTime,
         dbConnectionHealth: 'disconnected' as const,
-        errorRate: 100
+        errorRate: error.code === 'permission-denied' ? 0 : 100
       };
     }
   }
