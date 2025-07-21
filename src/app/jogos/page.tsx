@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modules } from '@/data/modules';
-import { ModuleCard } from '@/components/modules/ModuleCard';
+import { ModuleCard } from '@/components/games/ModuleCard';
 import { useRoleRedirect } from '@/hooks/useRoleRedirect';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { collection, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -77,26 +77,46 @@ const getPerformanceRating = (score: number) => {
   return { stars: 0, label: 'Não Avaliado', color: 'text-gray-400', bgColor: 'bg-gray-50', textColor: 'text-gray-600' };
 };
 
-// Função para calcular tempo decorrido - CORRIGIDA
-const getTimeAgo = (lastActivity: Date | undefined) => {
+// Função para calcular tempo decorrido - CORRIGIDA para Firebase
+const getTimeAgo = (lastActivity: any) => {
   if (!lastActivity) return 'Nunca tentado';
   
-  // Se lastActivity é uma string, converter para Date
-  const activityDate = typeof lastActivity === 'string' ? new Date(lastActivity) : lastActivity;
+  let activityDate: Date;
   
-  // Verificar se a data é válida
-  if (isNaN(activityDate.getTime())) return 'Nunca tentado';
-  
-  const now = new Date();
-  const diff = now.getTime() - activityDate.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor(diff / (1000 * 60));
-  
-  if (days > 0) return `Há ${days} dia${days === 1 ? '' : 's'}`;
-  if (hours > 0) return `Há ${hours} hora${hours === 1 ? '' : 's'}`;
-  if (minutes > 0) return `Há ${minutes} minuto${minutes === 1 ? '' : 's'}`;
-  return 'Agora há pouco';
+  try {
+    // Lidar com diferentes formatos de data do Firebase
+    if (lastActivity instanceof Date) {
+      activityDate = lastActivity;
+    } else if (lastActivity?.toDate && typeof lastActivity.toDate === 'function') {
+      // Timestamp do Firebase
+      activityDate = lastActivity.toDate();
+    } else if (typeof lastActivity === 'string') {
+      // String de data
+      activityDate = new Date(lastActivity);
+    } else if (lastActivity?.seconds) {
+      // Timestamp do Firebase em formato de objeto
+      activityDate = new Date(lastActivity.seconds * 1000);
+    } else {
+      return 'Nunca tentado';
+    }
+    
+    // Verificar se a data é válida
+    if (isNaN(activityDate.getTime())) return 'Nunca tentado';
+    
+    const now = new Date();
+    const diff = now.getTime() - activityDate.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor(diff / (1000 * 60));
+    
+    if (days > 0) return `Há ${days} dia${days === 1 ? '' : 's'}`;
+    if (hours > 0) return `Há ${hours} hora${hours === 1 ? '' : 's'}`;
+    if (minutes > 0) return `Há ${minutes} minuto${minutes === 1 ? '' : 's'}`;
+    return 'Agora há pouco';
+  } catch (error) {
+    console.error('Erro ao processar data:', error);
+    return 'Nunca tentado';
+  }
 };
 
 // Componente de estrelas - MELHORADO
@@ -679,240 +699,22 @@ export default function JogosPage() {
                 </p>
               </div>
 
-              <div className="flex justify-center">
-                <div className="max-w-2xl w-full">
-                {nutritionalGames.map((game, index) => (
-                  <motion.div
-                    key={game.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 * index }}
-                    className="group mb-6"
-                  >
-                    {/* Card Limpo e Focado - LAYOUT MELHORADO */}
-                    <Card className={`transition-all duration-300 border-2 hover:shadow-xl hover:scale-[1.02] ${
-                      game.isLocked
-                        ? 'opacity-75 bg-gray-50 border-gray-200 cursor-not-allowed'
-                        : game.moduleStatus === 'completed'
-                        ? 'border-green-300 bg-gradient-to-br from-green-50 to-emerald-50'
-                        : game.moduleStatus === 'attempted_failed'
-                        ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-yellow-50'
-                        : 'border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50'
-                    }`}>
-                      <CardHeader className="pb-4">
-                        {/* Header Principal - LAYOUT OTIMIZADO */}
-                        <div className="space-y-4">
-                          {/* Linha 1: Ícone e Informações Básicas */}
-                          <div className="flex items-center space-x-4">
-                            <div className={`p-4 rounded-xl ${game.isLocked ? 'bg-gray-400' : game.color} text-white shadow-lg`}>
-                              {game.isLocked && <Lock className="w-7 h-7" />}
-                              {!game.isLocked && <div className="scale-110">{game.icon}</div>}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <h3 className="text-xl font-bold text-gray-900">Módulo {game.id.split('-')[1]}</h3>
-                                {game.moduleStatus === 'completed' && (
-                                  <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
-                                    <CheckCircle className="w-4 h-4 text-green-600" />
-                                    <span className="text-xs font-medium text-green-700">Concluído</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center text-sm text-gray-600 space-x-3">
-                                <div className="flex items-center space-x-1">
-                                  <Clock className="w-4 h-4" />
-                                  <span>{game.estimatedTime}</span>
-                                </div>
-                                {!game.isLocked && (
-                                  <div className="flex items-center space-x-1">
-                                    <Target className="w-4 h-4" />
-                                    <span>7 questões</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Linha 2: Status Final (apenas se realmente tentou e tem score > 0) */}
-                          {!game.isLocked && game.hasAttempted && game.bestScore > 0 && (
-                            <div className={`border border-gray-200 rounded-lg p-4 ${
-                              game.bestScore >= 70 
-                                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
-                                : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200'
-                            }`}>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className={`text-sm font-medium mb-1 ${
-                                    game.bestScore >= 70 ? 'text-green-700' : 'text-orange-700'
-                                  }`}>Status Final</div>
-                                  <div className={`text-2xl font-bold ${
-                                    game.bestScore >= 70 ? 'text-green-900' : 'text-orange-900'
-                                  }`}>
-                                    {game.bestScore}%
-                                  </div>
-                                </div>
-                                <div className="text-right text-sm text-gray-500">
-                                  <div>{getTimeAgo(game.progress?.lastAccessed)}</div>
-                                  <div>~15 min gasto</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Título do Módulo */}
-                          <h4 className="text-xl font-bold text-gray-900 leading-tight">{game.title}</h4>
-                        </div>
-                        
-                        {/* Status e Avaliação por Estrelas - MELHORADO */}
-                        {!game.isLocked && (
-                          <div className="mb-6">
-                            {game.moduleStatus === 'completed' && (
-                              <div className="space-y-3">
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-2">
-                                      <CheckCircle className="w-5 h-5 text-green-600" />
-                                      <span className="text-sm font-semibold text-green-800">Módulo Concluído</span>
-                                    </div>
-                                  </div>
-                                  <StarRating 
-                                    rating={getPerformanceRating(game.bestScore || 0)} 
-                                    score={game.bestScore || 0}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                            {game.moduleStatus === 'attempted_failed' && (
-                              <div className="space-y-3">
-                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-2">
-                                      <Clock className="w-5 h-5 text-orange-600" />
-                                      <span className="text-sm font-semibold text-orange-800">Em Progresso</span>
-                                    </div>
-                                  </div>
-                                  <StarRating 
-                                    rating={getPerformanceRating(game.bestScore || 0)}
-                                    score={game.bestScore || 0}
-                                  />
-                                  <div className="text-xs text-orange-600 mt-2">
-                                    Necessário ≥70% para aprovação
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            {game.moduleStatus === 'never_attempted' && (
-                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                                <div className="text-center">
-                                  <div className="flex items-center justify-center text-blue-700 text-sm mb-2">
-                                    <Trophy className="w-5 h-5 mr-2" />
-                                    <span className="font-medium">🏅 Conquista disponível: "Fundamentos Dominados"</span>
-                                  </div>
-                                  <div className="text-xs text-blue-600">
-                                    Meta: ≥70% para aprovação • Até 5⭐ disponíveis
-                                  </div>
-                                  <div className="mt-2">
-                                    <StarRating 
-                                      rating={getPerformanceRating(0)}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Descrição - MELHORADA */}
-                        <p className="text-base text-gray-700 leading-relaxed mb-6">
-                          {game.description}
-                        </p>
-
-                        {/* Bloqueado */}
-                        {game.isLocked && (
-                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md mb-4">
-                            <div className="flex items-center text-yellow-800 text-sm">
-                              <Lock className="w-4 h-4 mr-2" />
-                              {game.lockMessage}
-                            </div>
-                          </div>
-                        )}
-                      </CardHeader>
-
-                      <CardContent className="pt-0">
-                        {/* Objetivos - LAYOUT APRIMORADO */}
-                        <div className="mb-6">
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                            <Target className="w-4 h-4 mr-2 text-blue-600" />
-                            Objetivos de Aprendizado
-                          </h4>
-                          <div className="grid gap-2">
-                            {game.learningObjectives.slice(0, 4).map((objective, idx) => (
-                              <div key={idx} className="flex items-start space-x-3 p-2 bg-blue-50 rounded-md">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                                <span className="text-sm text-gray-700 leading-relaxed">{objective}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Tópicos - DESIGN MODERNO */}
-                        <div className="mb-8">
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                            <BookOpen className="w-4 h-4 mr-2 text-green-600" />
-                            Tópicos Abordados
-                          </h4>
-                          <div className="grid grid-cols-2 gap-2">
-                            {game.topics.map((topic, idx) => (
-                              <div key={idx} className="px-3 py-2 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg text-center font-medium">
-                                {topic}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Botão de Ação - DESIGN APRIMORADO */}
-                        <div className="pt-2">
-                          {game.isLocked ? (
-                            <Button disabled className="w-full bg-gray-300 text-gray-500 cursor-not-allowed py-4 text-lg font-semibold rounded-xl">
-                              <Lock className="w-5 h-5 mr-2" />
-                              Módulo Bloqueado
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={() => handleStartQuiz(game)}
-                              className={`w-full py-4 text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${
-                                game.moduleStatus === 'completed'
-                                  ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-green-200'
-                                  : game.moduleStatus === 'attempted_failed'
-                                  ? 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-orange-200'
-                                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-blue-200'
-                              } shadow-lg`}
-                            >
-                              <div className="flex items-center justify-center space-x-2">
-                                {game.moduleStatus === 'completed' ? (
-                                  <>
-                                    <Trophy className="w-5 h-5" />
-                                    <span>Tentar Superar Desempenho</span>
-                                  </>
-                                ) : game.moduleStatus === 'attempted_failed' ? (
-                                  <>
-                                    <Target className="w-5 h-5" />
-                                    <span>Continuar Tentativas</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="w-5 h-5" />
-                                    <span>Começar Aventura</span>
-                                  </>
-                                )}
-                              </div>
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
+              <div className="max-w-6xl mx-auto px-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {nutritionalGames.map((game, index) => (
+                    <motion.div
+                      key={game.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.1 * index }}
+                    >
+                      <ModuleCard
+                        game={game}
+                        onClick={() => handleStartQuiz(game)}
+                        isProfessor={isProfessor}
+                      />
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             </motion.div>

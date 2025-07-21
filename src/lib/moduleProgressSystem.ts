@@ -58,8 +58,8 @@ export interface StudentModuleProgress {
 }
 
 export class ModuleProgressSystem {
-  private static readonly COMPLETION_THRESHOLD = 80 // 80% para considerar exercício completo
-  private static readonly MODULE_COMPLETION_THRESHOLD = 75 // 75% exercícios completados para módulo completo
+  private static readonly COMPLETION_THRESHOLD = 70 // 70% para considerar exercício completo (UNIFICADO)
+  private static readonly MODULE_COMPLETION_THRESHOLD = 70 // 70% exercícios completados para módulo completo (UNIFICADO)
   private static readonly PERFECT_SCORE_THRESHOLD = 95 // 95%+ para considerar perfeito
   
   // Calcular progresso de um exercício
@@ -329,9 +329,10 @@ export class ModuleProgressSystem {
   }
 
   private static calculateAchievementLevel(overallProgress: number, totalScore: number): string {
-    if (overallProgress >= 100 && totalScore >= 360) return 'Expert'
-    if (overallProgress >= 75 && totalScore >= 270) return 'Avançado'
-    if (overallProgress >= 50 && totalScore >= 180) return 'Intermediário'
+    // Critério unificado com 70% como base para conclusão
+    if (overallProgress >= 100 && totalScore >= 280) return 'Expert' // 70% de 400 pontos máximos
+    if (overallProgress >= 75 && totalScore >= 210) return 'Avançado' // 70% de 300 pontos
+    if (overallProgress >= 50 && totalScore >= 140) return 'Intermediário' // 70% de 200 pontos
     return 'Iniciante'
   }
 
@@ -384,10 +385,10 @@ export class ModuleProgressSystem {
       nextSteps.push(`Completar ${incompleteExercises.length} exercícios do ${nextModule.moduleName}`)
     }
 
-    // Conquistas
+    // Conquistas (critério unificado 70%)
     const achievements = []
     if (completedModules > 0) achievements.push(`${completedModules} módulo(s) completado(s)`)
-    if (totalNormalizedScore >= 300) achievements.push('Pontuação de Elite (300+)')
+    if (totalNormalizedScore >= 280) achievements.push('Pontuação de Elite (280+)') // 70% de 400 pontos
     if (studentProgress.currentStreak >= 7) achievements.push('Sequência de 7+ dias')
 
     return {
