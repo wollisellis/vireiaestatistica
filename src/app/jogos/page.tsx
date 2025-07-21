@@ -356,15 +356,55 @@ export default function JogosPage() {
       return;
     }
 
-    // Buscar progresso do usuário
+    // Buscar progresso do usuário de múltiplas fontes
     const fetchProgress = async () => {
       try {
+        console.log('🔍 Buscando progresso do usuário:', user.uid);
+        
+        // 1. Tentar buscar de userProgress (fonte primária)
+        let progressData: any = {};
         const progressDoc = await getDoc(doc(db!, 'userProgress', user.uid));
         if (progressDoc.exists()) {
-          setModuleProgress(progressDoc.data().modules || {});
+          progressData = progressDoc.data().modules || {};
+          console.log('✅ Progresso encontrado em userProgress:', progressData);
+        } else {
+          console.log('⚠️ userProgress não encontrado, buscando em student_module_progress...');
         }
+
+        // 2. Se não encontrar em userProgress ou os dados estiverem vazios, 
+        // buscar na coleção student_module_progress
+        if (Object.keys(progressData).length === 0) {
+          const modules = ['module-1']; // Lista de módulos disponíveis
+          
+          for (const moduleId of modules) {
+            try {
+              const moduleProgressDoc = await getDoc(doc(db!, 'student_module_progress', `${user.uid}_${moduleId}`));
+              if (moduleProgressDoc.exists()) {
+                const data = moduleProgressDoc.data();
+                progressData[moduleId] = {
+                  totalScore: data.progress || data.score || 0,
+                  score: data.progress || data.score || 0,
+                  percentage: data.progress || data.score || 0,
+                  completed: data.isCompleted || false,
+                  lastAccessed: data.updatedAt || data.lastAttempt,
+                  maxScore: data.maxScore || 100,
+                  attempts: data.attempts || 1,
+                  bestScore: data.bestScore || data.score || 0
+                };
+                console.log(`✅ Progresso do ${moduleId} encontrado em student_module_progress:`, progressData[moduleId]);
+              }
+            } catch (moduleError) {
+              console.warn(`Erro ao buscar progresso do ${moduleId}:`, moduleError);
+            }
+          }
+        }
+
+        // 3. Definir o progresso encontrado
+        setModuleProgress(progressData);
+        console.log('📊 Progresso final carregado:', progressData);
+        
       } catch (error) {
-        console.error('Erro ao buscar progresso:', error);
+        console.error('❌ Erro ao buscar progresso:', error);
       }
     };
 
