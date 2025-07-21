@@ -350,19 +350,54 @@ export default function JogosPage() {
     }
   };
 
+  // 🎯 USEEFFECT PRINCIPAL COM AGUARDA INTELIGENTE
   useEffect(() => {
-    console.log('🔥 [USEEFFECT] useEffect EXECUTADO!', { userUid: user?.uid, db: !!db });
+    console.log('🔥 [USEEFFECT-MAIN] useEffect EXECUTADO!', { 
+      userUid: user?.uid, 
+      db: !!db, 
+      timestamp: new Date().toISOString() 
+    });
     
-    if (!user?.uid || !db) {
-      console.log('🚫 [USEEFFECT] Condições não atendidas:', { userUid: user?.uid, db: !!db });
-      setModuleLoading(false);
-      return;
-    }
+    // 🎯 FUNÇÃO DE AGUARDA INTELIGENTE
+    const waitForDependencies = async (): Promise<boolean> => {
+      const maxAttempts = 10;
+      const delayMs = 500;
+      
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        console.log(`⏳ [WAIT-DEPS] Tentativa ${attempt}/${maxAttempts} - Verificando dependências...`);
+        console.log(`⏳ [WAIT-DEPS] user?.uid: ${user?.uid}, db: ${!!db}`);
+        
+        if (user?.uid && db) {
+          console.log(`✅ [WAIT-DEPS] Dependências OK após ${attempt} tentativas!`);
+          return true;
+        }
+        
+        if (attempt < maxAttempts) {
+          console.log(`⏳ [WAIT-DEPS] Aguardando ${delayMs}ms antes da próxima tentativa...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+      
+      console.log(`❌ [WAIT-DEPS] Timeout após ${maxAttempts} tentativas`);
+      return false;
+    };
+    
+    // 🎯 EXECUÇÃO COM AGUARDA
+    const initializeWithWait = async () => {
+      const dependenciesReady = await waitForDependencies();
+      
+      if (!dependenciesReady) {
+        console.log('🚫 [USEEFFECT-MAIN] Dependências não disponíveis após aguarda');
+        setModuleLoading(false);
+        return;
+      }
 
-    console.log('✅ [USEEFFECT] Condições atendidas, iniciando busca de progresso...');
+      console.log('✅ [USEEFFECT-MAIN] Dependências prontas, iniciando busca de progresso...');
+      console.log('✅ [USEEFFECT-MAIN] user.uid:', user?.uid);
+      console.log('✅ [USEEFFECT-MAIN] db disponível:', !!db);
 
-    // 🎯 IMPLEMENTAÇÃO ROBUSTA: Buscar progresso com logs detalhados e múltiplas tentativas
-    const fetchProgress = async () => {
+      // 🎯 IMPLEMENTAÇÃO ROBUSTA: Buscar progresso com logs detalhados e múltiplas tentativas
+      const fetchProgress = async () => {
       try {
         console.log('🔍 [DEBUG] Iniciando busca de progresso para usuário:', user.uid);
         console.log('🔍 [DEBUG] Database disponível:', !!db);
@@ -499,46 +534,65 @@ export default function JogosPage() {
           console.log('📊 [FINAL] Estado atual após atualização:', progressData);
         }, 100);
         
-      } catch (error) {
-        console.error('❌ [FINAL] Erro crítico ao buscar progresso:', error);
-      }
-    };
+        } catch (error) {
+          console.error('❌ [FINAL] Erro crítico ao buscar progresso:', error);
+        }
+      };
 
-    // Buscar módulos desbloqueados
-    const unsubscribe = onSnapshot(doc(db!, 'settings', 'modules'), (doc) => {
-      if (doc.exists()) {
-        setUnlockedModules(doc.data().unlocked || ['module-1']);
-      }
-      setModuleLoading(false);
-    }, (error) => {
-      console.error('Erro ao buscar módulos desbloqueados:', error);
+      // Buscar módulos desbloqueados
+      const unsubscribe = onSnapshot(doc(db!, 'settings', 'modules'), (doc) => {
+        if (doc.exists()) {
+          setUnlockedModules(doc.data().unlocked || ['module-1']);
+        }
+        setModuleLoading(false);
+      }, (error) => {
+        console.error('Erro ao buscar módulos desbloqueados:', error);
+        setModuleLoading(false);
+      });
+
+      await fetchProgress();
+      
+      // 🎯 LISTENER PARA EVENTO DE MÓDULO COMPLETADO
+      const handleModuleCompleted = (event: CustomEvent) => {
+        console.log('🎉 [EVENT] Evento moduleCompleted recebido:', event.detail);
+        // Forçar busca de progresso quando módulo for completado
+        setTimeout(() => {
+          console.log('🔄 [EVENT] Executando busca de progresso após módulo completado...');
+          fetchProgress();
+        }, 1000); // Aguardar 1 segundo para dados serem salvos
+      };
+      
+      window.addEventListener('moduleCompleted', handleModuleCompleted as EventListener);
+      
+      // 🎯 RETRY AUTOMÁTICO SE NÃO ENCONTRAR DADOS
+      const retryTimer = setTimeout(() => {
+        console.log('🔄 [RETRY] Tentativa automática de busca após 3 segundos...');
+        fetchProgress();
+      }, 3000);
+      
+      // 🎯 RETORNAR FUNÇÃO DE CLEANUP
+      return () => {
+        unsubscribe();
+        window.removeEventListener('moduleCompleted', handleModuleCompleted as EventListener);
+        clearTimeout(retryTimer);
+      };
+    };
+    
+    // 🎯 EXECUTAR INICIALIZAÇÃO COM AGUARDA (não pode usar await diretamente no useEffect)
+    let cleanupFunction: (() => void) | undefined;
+    
+    initializeWithWait().then((cleanup) => {
+      cleanupFunction = cleanup;
+    }).catch((error) => {
+      console.error('❌ [USEEFFECT-MAIN] Erro na inicialização:', error);
       setModuleLoading(false);
     });
-
-    fetchProgress();
     
-    // 🎯 LISTENER PARA EVENTO DE MÓDULO COMPLETADO
-    const handleModuleCompleted = (event: CustomEvent) => {
-      console.log('🎉 [EVENT] Evento moduleCompleted recebido:', event.detail);
-      // Forçar busca de progresso quando módulo for completado
-      setTimeout(() => {
-        console.log('🔄 [EVENT] Executando busca de progresso após módulo completado...');
-        fetchProgress();
-      }, 1000); // Aguardar 1 segundo para dados serem salvos
-    };
-    
-    window.addEventListener('moduleCompleted', handleModuleCompleted as EventListener);
-    
-    // 🎯 RETRY AUTOMÁTICO SE NÃO ENCONTRAR DADOS
-    const retryTimer = setTimeout(() => {
-      console.log('🔄 [RETRY] Tentativa automática de busca após 3 segundos...');
-      fetchProgress();
-    }, 3000);
-    
+    // Retorna função que chamará cleanup quando disponível
     return () => {
-      unsubscribe();
-      window.removeEventListener('moduleCompleted', handleModuleCompleted as EventListener);
-      clearTimeout(retryTimer);
+      if (cleanupFunction) {
+        cleanupFunction();
+      }
     };
   }, [user?.uid]);
   
@@ -843,13 +897,34 @@ export default function JogosPage() {
                       <div className="flex space-x-2">
                         <Button
                           onClick={() => {
-                            console.log('🔄 [DEBUG] Forçando recarga IMEDIATA de progresso...');
+                            console.log('🔄 [DEBUG] Executando nova lógica de aguarda...');
                             setModuleProgress({});
-                            if (user?.uid && db) {
-                              // Executar busca IMEDIATA
-                              const fetchProgressDebug = async () => {
+                            
+                            // 🎯 EXECUTAR NOVA LÓGICA DE AGUARDA COMO TESTE
+                            const testWaitLogic = async () => {
+                              console.log('⏳ [DEBUG-WAIT] Iniciando teste da lógica de aguarda...');
+                              console.log('⏳ [DEBUG-WAIT] user?.uid:', user?.uid);
+                              console.log('⏳ [DEBUG-WAIT] db:', !!db);
+                              
+                              if (!user?.uid || !db) {
+                                console.log('❌ [DEBUG-WAIT] Dependências não disponíveis imediatamente');
+                                
+                                // Aguardar dependências
+                                for (let i = 1; i <= 5; i++) {
+                                  await new Promise(resolve => setTimeout(resolve, 500));
+                                  console.log(`⏳ [DEBUG-WAIT] Tentativa ${i}/5 - user?.uid: ${user?.uid}, db: ${!!db}`);
+                                  
+                                  if (user?.uid && db) {
+                                    console.log(`✅ [DEBUG-WAIT] Dependências OK após ${i} tentativas!`);
+                                    break;
+                                  }
+                                }
+                              }
+                              
+                              if (user?.uid && db) {
+                                console.log('🔍 [DEBUG-WAIT] Executando busca com dependências válidas...');
+                                
                                 try {
-                                  console.log('🔍 [DEBUG IMEDIATO] Iniciando busca para usuário:', user.uid);
                                   const attemptsQuery = query(
                                     collection(db!, 'quiz_attempts'),
                                     where('studentId', '==', user.uid),
@@ -858,14 +933,14 @@ export default function JogosPage() {
                                     limit(1)
                                   );
                                   const attemptsSnapshot = await getDocs(attemptsQuery);
-                                  console.log('🔍 [DEBUG IMEDIATO] Documentos:', attemptsSnapshot.size);
+                                  console.log('✅ [DEBUG-WAIT] Query executada. Documentos:', attemptsSnapshot.size);
                                   
                                   if (!attemptsSnapshot.empty) {
                                     const attemptDoc = attemptsSnapshot.docs[0];
                                     const attemptData = attemptDoc.data();
-                                    console.log('✅ [DEBUG IMEDIATO] DADOS ENCONTRADOS:', attemptData);
+                                    console.log('🎉 [DEBUG-WAIT] SUCESSO! Dados encontrados:', attemptData);
                                     
-                                    const progressData = {
+                                    setModuleProgress({
                                       'module-1': {
                                         percentage: attemptData.percentage || 0,
                                         score: attemptData.percentage || 0,
@@ -873,53 +948,29 @@ export default function JogosPage() {
                                         passed: attemptData.passed || false,
                                         completed: attemptData.passed || false,
                                         bestScore: attemptData.percentage || 0,
-                                        _source: 'debug_forced',
+                                        _source: 'debug_wait_logic',
                                         _attemptId: attemptDoc.id,
                                         _timestamp: new Date().toISOString()
                                       }
-                                    };
-                                    
-                                    console.log('📊 [DEBUG IMEDIATO] Definindo progresso:', progressData);
-                                    setModuleProgress(progressData);
-                                    
-                                    setTimeout(() => {
-                                      console.log('🔍 [DEBUG IMEDIATO] Estado após setModuleProgress:', progressData);
-                                    }, 100);
+                                    });
                                   } else {
-                                    console.log('❌ [DEBUG IMEDIATO] NENHUM DOCUMENTO ENCONTRADO!');
-                                    
-                                    // Tentar outras coleções
-                                    try {
-                                      console.log('🔄 [DEBUG IMEDIATO] Tentando student_module_progress...');
-                                      const moduleProgressDoc = await getDoc(doc(db!, 'student_module_progress', `${user.uid}_module-1`));
-                                      if (moduleProgressDoc.exists()) {
-                                        const data = moduleProgressDoc.data();
-                                        console.log('✅ [DEBUG IMEDIATO] Dados em student_module_progress:', data);
-                                        setModuleProgress({
-                                          'module-1': {
-                                            ...data,
-                                            _source: 'student_module_progress'
-                                          }
-                                        });
-                                      } else {
-                                        console.log('❌ [DEBUG IMEDIATO] Nada em student_module_progress');
-                                      }
-                                    } catch (fallbackError) {
-                                      console.error('❌ [DEBUG IMEDIATO] Erro no fallback:', fallbackError);
-                                    }
+                                    console.log('❌ [DEBUG-WAIT] Nenhum documento encontrado');
                                   }
                                 } catch (error) {
-                                  console.error('❌ [DEBUG IMEDIATO] Erro crítico:', error);
+                                  console.error('❌ [DEBUG-WAIT] Erro na query:', error);
                                 }
-                              };
-                              fetchProgressDebug();
-                            }
+                              } else {
+                                console.log('❌ [DEBUG-WAIT] Dependências ainda não disponíveis após aguarda');
+                              }
+                            };
+                            
+                            testWaitLogic();
                           }}
                           size="sm"
                           variant="outline"
-                          className="border-yellow-400 text-yellow-700 hover:bg-yellow-100"
+                          className="border-purple-400 text-purple-700 hover:bg-purple-100"
                         >
-                          🔄 Busca Forçada
+                          ⏳ Teste Aguarda
                         </Button>
                         <Button
                           onClick={() => console.log('📊 [DEBUG] Estado atual:', { moduleProgress, user: user?.uid, db: !!db })}
