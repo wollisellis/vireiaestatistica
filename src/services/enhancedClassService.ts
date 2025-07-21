@@ -67,7 +67,7 @@ export class EnhancedClassService {
         // Estatísticas calculadas
         studentsCount: students.length,
         activeStudents: students.filter(s => s.status === 'active' && 
-          (Date.now() - s.lastActivity.getTime()) < 7 * 24 * 60 * 60 * 1000).length,
+          (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
         totalModules: modules.length,
         avgProgress: analytics?.averageProgress || 0,
         avgScore: analytics?.averageScore || 0,
@@ -328,7 +328,7 @@ export class EnhancedClassService {
       // Calcular métricas básicas
       const totalStudents = students.length
       const activeStudents = students.filter(s => 
-        (Date.now() - s.lastActivity.getTime()) < 7 * 24 * 60 * 60 * 1000
+        (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000
       ).length
       
       const progressSum = students.reduce((sum, s) => sum + s.overallProgress, 0)
@@ -479,6 +479,41 @@ export class EnhancedClassService {
   
   // Métodos auxiliares privados
   
+  // Função utilitária para converter lastActivity para timestamp
+  private static getLastActivityTimestamp(lastActivity: any): number {
+    if (!lastActivity) {
+      return Date.now()
+    }
+    
+    // Se é um objeto Date
+    if (lastActivity instanceof Date) {
+      return lastActivity.getTime()
+    }
+    
+    // Se é um Timestamp do Firebase
+    if (lastActivity.toDate && typeof lastActivity.toDate === 'function') {
+      return lastActivity.toDate().getTime()
+    }
+    
+    // Se é um Timestamp do Firebase (formato alternativo)
+    if (lastActivity.seconds) {
+      return lastActivity.seconds * 1000
+    }
+    
+    // Se é um string de data
+    if (typeof lastActivity === 'string') {
+      return new Date(lastActivity).getTime()
+    }
+    
+    // Se é um número (timestamp)
+    if (typeof lastActivity === 'number') {
+      return lastActivity
+    }
+    
+    // Fallback para agora
+    return Date.now()
+  }
+
   private static async getClassStudentsBasic(classId: string): Promise<any[]> {
     try {
       // Validar parâmetros
@@ -503,12 +538,16 @@ export class EnhancedClassService {
 
         // Verificar se o documento pertence à turma específica e se studentData é válido
         if (docId.startsWith(`${classId}_`) && studentData) {
+          const lastActivityTimestamp = this.getLastActivityTimestamp(
+            studentData.lastActivity || studentData.enrolledAt
+          )
+          
           students.push({
             studentId: studentData.studentId || '',
             studentName: studentData.studentName || studentData.name || 'Usuário Anônimo',
             email: studentData.email || studentData.studentEmail || '',
             status: studentData.status || 'active',
-            lastActivity: studentData.lastActivity || studentData.enrolledAt || new Date(),
+            lastActivity: { getTime: () => lastActivityTimestamp }, // Wrapper compatível
             overallProgress: 0, // Será calculado
             totalNormalizedScore: 0, // Será calculado
             completedModules: 0 // Será calculado

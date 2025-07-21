@@ -36,7 +36,7 @@ import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearni
 import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
-import { RankingPanel } from '@/components/ranking/RankingPanel';
+import { CollapsibleRanking } from '@/components/ranking/CollapsibleRanking';
 
 interface ModuleProgress {
   [moduleId: string]: {
@@ -345,11 +345,8 @@ export default function JogosPage() {
           </header>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Layout Principal com Grid Ajustado */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Conteúdo Principal - 2 colunas */}
-              <div className="lg:col-span-2 space-y-8">
+            {/* Conteúdo Principal */}
+            <div className="space-y-8">
             {/* User Welcome */}
             {user && (
               <motion.div
@@ -558,17 +555,12 @@ export default function JogosPage() {
                               Objetivos de Aprendizado
                             </h4>
                             <ul className="space-y-1">
-                              {game.learningObjectives.slice(0, 2).map((objective, idx) => (
+                              {game.learningObjectives.slice(0, 4).map((objective, idx) => (
                                 <li key={idx} className="text-sm text-gray-600 flex items-start">
                                   <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                                   {objective}
                                 </li>
                               ))}
-                              {game.learningObjectives.length > 2 && (
-                                <li className="text-sm text-gray-500 italic">
-                                  +{game.learningObjectives.length - 2} objetivos adicionais
-                                </li>
-                              )}
                             </ul>
                           </div>
 
@@ -586,22 +578,6 @@ export default function JogosPage() {
                             </div>
                           </div>
 
-                          {game.features && (
-                            <div>
-                              <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                                <Trophy className="w-4 h-4 mr-2 text-purple-500" />
-                                Características do Quiz
-                              </h4>
-                              <ul className="space-y-1">
-                                {game.features.slice(0, 3).map((feature, idx) => (
-                                  <li key={idx} className="text-sm text-gray-600 flex items-start">
-                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                                    {feature}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
 
                           {game.isLocked ? (
                             <Button
@@ -783,68 +759,11 @@ export default function JogosPage() {
               className="mt-16"
             >
             </motion.div>
-              </div>
-
-              {/* Sidebar de Ranking Expandida - 1 coluna */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-8 space-y-4">
-                  {/* Ranking Panel Principal - Maior e Mais Espaçoso */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: 0.5 }}
-                  >
-                    <RankingPanel 
-                      className="w-full"
-                      compact={false}
-                      showStats={true}
-                      moduleId="module-1" // Foca no módulo 1 disponível
-                    />
-                  </motion.div>
-
-                  {/* Card de Performance Pessoal */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: 0.7 }}
-                    className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200"
-                  >
-                    <div className="flex items-center space-x-2 mb-3">
-                      <Trophy className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-semibold text-blue-900">Seu Progresso</h3>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-blue-700">Módulos Completos:</span>
-                        <span className="font-medium text-blue-900">1/4</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-blue-700">Pontuação Total:</span>
-                        <span className="font-medium text-blue-900">{stats.totalScore} pts</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-blue-700">Exercícios:</span>
-                        <span className="font-medium text-blue-900">{stats.exerciseProgress}%</span>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Ranking Geral Compacto */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: 0.9 }}
-                  >
-                    <RankingPanel 
-                      className="w-full"
-                      compact={true}
-                      showStats={false}
-                    />
-                  </motion.div>
-                </div>
-              </div>
             </div>
           </div>
+
+          {/* Ranking Flutuante Recolhível */}
+          <CollapsibleRanking moduleId="module-1" />
 
           {/* Footer */}
           <Footer />

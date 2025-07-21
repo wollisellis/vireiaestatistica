@@ -188,16 +188,16 @@ export class QuizScoringService {
       const weakCategories = categoryAnalysis.filter(cat => cat.percentage < 50);
       if (weakCategories.length > 0) {
         const categoryNames: Record<string, string> = {
-          'conceitos-fundamentais': 'conceitos fundamentais',
-          'antropometria': 'antropometria',
-          'avaliacao-individual': 'avaliação individual',
-          'avaliacao-populacional': 'avaliação populacional',
-          'inqueritos-alimentares': 'inquéritos alimentares',
-          'metodologia-cientifica': 'metodologia científica',
-          'tecnicas-antropometricas': 'técnicas antropométricas',
-          'erros-antropometricos': 'erros em antropometria',
-          'anamnese-clinica': 'anamnese clínica',
-          'composicao-corporal': 'composição corporal'
+          'conceitos-fundamentais': 'Conceitos fundamentais',
+          'antropometria': 'Antropometria',
+          'avaliacao-individual': 'Avaliação individual',
+          'avaliacao-populacional': 'Avaliação populacional',
+          'inqueritos-alimentares': 'Inquéritos alimentares',
+          'metodologia-cientifica': 'Metodologia científica',
+          'tecnicas-antropometricas': 'Técnicas antropométricas',
+          'erros-antropometricos': 'Erros em antropometria',
+          'anamnese-clinica': 'Anamnese clínica',
+          'composicao-corporal': 'Composição corporal'
         };
 
         const weakTopics = weakCategories
