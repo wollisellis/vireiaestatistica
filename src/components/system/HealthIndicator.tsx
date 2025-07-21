@@ -13,16 +13,11 @@ import {
   XCircle, 
   RefreshCw, 
   Bell,
-  ChevronDown,
   Zap
 } from 'lucide-react'
 import { useSystemHealth } from '@/hooks/useSystemHealth'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/Popover'
+// Popover component removed - using simple tooltip approach instead
 
 interface HealthIndicatorProps {
   className?: string
@@ -162,191 +157,59 @@ export function HealthIndicator({
     )
   }
 
-  // Versão com popover detalhado
+  // Versão simplificada sem popover (para evitar dependências)
   return (
-    <Popover>
-      <PopoverTrigger asChild>
+    <div className={`flex items-center space-x-2 ${className}`}>
+      <div className="flex items-center space-x-1">
+        {getHealthIcon(healthMetrics.overallHealth)}
+        <span className="text-sm font-medium">
+          Sistema
+        </span>
+        <Badge 
+          variant="outline" 
+          className={`text-xs ${getHealthColor(healthMetrics.overallHealth)}`}
+        >
+          {getStatusText(healthMetrics.overallHealth)}
+        </Badge>
+      </div>
+      
+      {hasAlerts && (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="relative"
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+            onClick={onAlertClick}
+            title={`${alerts.length} alertas do sistema`}
+          >
+            <Bell className="h-3 w-3" />
+          </Button>
+          <Badge 
+            variant="destructive" 
+            className="absolute -top-1 -right-1 h-3 w-3 p-0 text-xs flex items-center justify-center"
+          >
+            {alerts.length}
+          </Badge>
+        </motion.div>
+      )}
+      
+      {showRefreshButton && (
         <Button
           variant="ghost"
-          className={`flex items-center space-x-2 h-auto px-3 py-1.5 hover:bg-gray-100 ${className}`}
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={refresh}
+          disabled={refreshing}
+          title="Atualizar status do sistema"
         >
-          <div className="flex items-center space-x-1">
-            {getHealthIcon(healthMetrics.overallHealth)}
-            <span className="text-sm font-medium">
-              Sistema
-            </span>
-            <Badge 
-              variant="outline" 
-              className={`text-xs ${getHealthColor(healthMetrics.overallHealth)}`}
-            >
-              {getStatusText(healthMetrics.overallHealth)}
-            </Badge>
-          </div>
-          
-          {hasAlerts && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="relative"
-            >
-              <Bell className="h-3 w-3 text-red-600" />
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-3 w-3 p-0 text-xs flex items-center justify-center"
-              >
-                {alerts.length}
-              </Badge>
-            </motion.div>
-          )}
-          
-          <ChevronDown className="h-3 w-3 text-gray-400" />
+          <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
         </Button>
-      </PopoverTrigger>
-      
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              {getHealthIcon(healthMetrics.overallHealth)}
-              <h3 className="font-semibold text-gray-900">
-                Saúde do Sistema
-              </h3>
-            </div>
-            
-            <div className="flex items-center space-x-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={refresh}
-                disabled={refreshing}
-                title="Atualizar"
-              >
-                <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Status Geral */}
-          <div className={`p-3 rounded-lg mb-4 ${getHealthColor(healthMetrics.overallHealth)}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">
-                  {getStatusText(healthMetrics.overallHealth)}
-                </p>
-                <p className="text-sm opacity-80">
-                  {summary?.activeClasses} turmas ativas
-                </p>
-              </div>
-              <Badge variant="outline" className="text-xs">
-                {formatRelativeTime(healthMetrics.timestamp)}
-              </Badge>
-            </div>
-          </div>
-          
-          {/* Métricas Rápidas */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-900">
-                {healthMetrics.classMetrics.activeClasses}
-              </div>
-              <div className="text-xs text-gray-600">Turmas Ativas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-900">
-                {healthMetrics.performanceMetrics.averageQueryTime}ms
-              </div>
-              <div className="text-xs text-gray-600">Resposta DB</div>
-            </div>
-          </div>
-          
-          {/* Issues Críticas */}
-          {criticalIssues > 0 && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-              <div className="flex items-center space-x-2">
-                <XCircle className="h-4 w-4 text-red-600" />
-                <span className="text-sm font-medium text-red-900">
-                  {criticalIssues} issue{criticalIssues > 1 ? 's' : ''} crítica{criticalIssues > 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
-          )}
-          
-          {/* Alertas Recentes */}
-          {alerts.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">
-                  Alertas ({alerts.length})
-                </span>
-                {onAlertClick && (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-xs p-0 h-auto"
-                    onClick={onAlertClick}
-                  >
-                    Ver todos
-                  </Button>
-                )}
-              </div>
-              
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {alerts.slice(0, 3).map((alert) => (
-                  <div
-                    key={alert.id}
-                    className={`p-2 rounded text-xs border-l-2 ${
-                      alert.type === 'critical' || alert.type === 'error' 
-                        ? 'border-red-500 bg-red-50' 
-                        : 'border-yellow-500 bg-yellow-50'
-                    }`}
-                  >
-                    <div className="font-medium mb-1 truncate">
-                      {alert.title}
-                    </div>
-                    <div className="text-gray-600 text-xs">
-                      {formatRelativeTime(alert.createdAt)}
-                    </div>
-                  </div>
-                ))}
-                
-                {alerts.length > 3 && (
-                  <div className="text-xs text-gray-500 text-center py-1">
-                    +{alerts.length - 3} alertas adicionais
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Recovery Actions */}
-          {healthMetrics.recoveryActions.length > 0 && (
-            <div className="mb-4">
-              <div className="text-sm font-medium text-gray-900 mb-2">
-                Recovery Automático
-              </div>
-              <div className="text-xs text-green-700 bg-green-50 p-2 rounded">
-                <Zap className="h-3 w-3 inline mr-1" />
-                {healthMetrics.recoveryActions.filter(a => a.status === 'completed').length} ações executadas
-              </div>
-            </div>
-          )}
-          
-          {/* Footer */}
-          <div className="pt-3 border-t border-gray-200">
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>
-                Auto-atualização ativa
-              </span>
-              <span>
-                {formatRelativeTime(healthMetrics.timestamp)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   )
 }
 
