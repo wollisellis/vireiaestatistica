@@ -8,6 +8,7 @@ import {
   ProgressReport,
   StudentQuizStats 
 } from '@/types/randomizedQuiz';
+import { parseFirebaseDate } from '@/utils/dateUtils';
 
 export class QuizScoringService {
   /**
@@ -250,9 +251,13 @@ export class QuizScoringService {
       throw new Error('Nenhuma tentativa encontrada');
     }
 
-    const sortedAttempts = attempts.sort((a, b) => 
-      a.startedAt.getTime() - b.startedAt.getTime()
-    );
+    const sortedAttempts = attempts.sort((a, b) => {
+      const aDate = parseFirebaseDate(a.startedAt)
+      const bDate = parseFirebaseDate(b.startedAt)
+      const aTime = aDate?.getTime() || 0
+      const bTime = bDate?.getTime() || 0
+      return aTime - bTime
+    });
 
     const scores = attempts.map(a => a.score);
     const percentages = attempts.map(a => a.percentage);

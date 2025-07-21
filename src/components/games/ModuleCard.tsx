@@ -20,42 +20,11 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Progress } from '@/components/ui/Progress'
+import { parseFirebaseDate, getTimeAgo as safeGetTimeAgo } from '@/utils/dateUtils'
 
-// Função para calcular tempo decorrido - UNIFICADA
+// Função para calcular tempo decorrido - UNIFICADA E SEGURA
 const getTimeAgo = (lastActivity: any) => {
-  if (!lastActivity) return 'Nunca tentado';
-  
-  let activityDate: Date;
-  
-  try {
-    if (lastActivity instanceof Date) {
-      activityDate = lastActivity;
-    } else if (lastActivity?.toDate && typeof lastActivity.toDate === 'function') {
-      activityDate = lastActivity.toDate();
-    } else if (typeof lastActivity === 'string') {
-      activityDate = new Date(lastActivity);
-    } else if (lastActivity?.seconds) {
-      activityDate = new Date(lastActivity.seconds * 1000);
-    } else {
-      return 'Nunca tentado';
-    }
-    
-    if (isNaN(activityDate.getTime())) return 'Nunca tentado';
-    
-    const now = new Date();
-    const diff = now.getTime() - activityDate.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor(diff / (1000 * 60));
-    
-    if (days > 0) return `Há ${days} dia${days === 1 ? '' : 's'}`;
-    if (hours > 0) return `Há ${hours} hora${hours === 1 ? '' : 's'}`;
-    if (minutes > 0) return `Há ${minutes} minuto${minutes === 1 ? '' : 's'}`;
-    return 'Agora há pouco';
-  } catch (error) {
-    console.error('Erro ao processar data:', error);
-    return 'Nunca tentado';
-  }
+  return safeGetTimeAgo(lastActivity);
 };
 
 // Função para calcular rating por estrelas
