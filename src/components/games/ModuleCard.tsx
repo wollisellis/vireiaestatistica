@@ -76,7 +76,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       <Card className={`
-        cursor-pointer transition-all duration-300 border-2 h-full
+        cursor-pointer transition-all duration-300 border-2 h-full min-h-[420px]
         ${game.isLocked 
           ? 'bg-gray-50 border-gray-200 opacity-60' 
           : game.moduleStatus === 'completed'
@@ -87,12 +87,12 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
         }
         hover:shadow-xl group
       `}>
-        <div className="p-6 h-full flex flex-col">
+        <div className="p-7 h-full flex flex-col">
           {/* Header com Status */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex items-start space-x-4">
               <div className={`
-                w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+                w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0
                 ${game.isLocked 
                   ? 'bg-gray-200 text-gray-400' 
                   : game.moduleStatus === 'completed'
@@ -105,11 +105,11 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
                 {game.isLocked ? '🔒' : game.icon}
               </div>
               
-              <div>
-                <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-xl text-gray-900 group-hover:text-blue-600 transition-colors leading-tight mb-1">
                   {game.title}
                 </h3>
-                <p className="text-sm text-gray-600">{game.estimatedTime}</p>
+                <p className="text-sm text-gray-600 font-medium">{game.estimatedTime}</p>
               </div>
             </div>
 
@@ -152,39 +152,39 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
           </div>
 
           {/* Action Button */}
-          <div className="mt-6">
+          <div className="mt-auto pt-6">
             {game.isLocked ? (
-              <Button disabled className="w-full">
+              <Button disabled className="w-full h-12 text-base">
                 🔒 Aguardando Liberação
               </Button>
             ) : (
               <Button 
                 onClick={onClick}
                 className={`
-                  w-full flex items-center justify-center space-x-2 transition-all
+                  w-full h-12 text-base font-semibold flex items-center justify-center space-x-2 transition-all shadow-lg hover:shadow-xl
                   ${game.moduleStatus === 'completed' 
-                    ? 'bg-green-600 hover:bg-green-700' 
+                    ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800' 
                     : game.moduleStatus === 'attempted_failed'
-                      ? 'bg-orange-600 hover:bg-orange-700'
-                      : 'bg-blue-600 hover:bg-blue-700'
+                      ? 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800'
+                      : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
                   }
                 `}
               >
                 {game.moduleStatus === 'completed' ? (
                   <>
-                    <Award className="w-4 h-4" />
+                    <Award className="w-5 h-5" />
                     <span>Revisar Módulo</span>
                   </>
                 ) : game.moduleStatus === 'attempted_failed' ? (
                   <>
-                    <TrendingUp className="w-4 h-4" />
+                    <TrendingUp className="w-5 h-5" />
                     <span>Melhorar Pontuação</span>
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4" />
+                    <Zap className="w-5 h-5" />
                     <span>Iniciar Módulo</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-5 h-5" />
                   </>
                 )}
               </Button>
@@ -244,31 +244,40 @@ const CompletedModuleContent = ({ game, rating }: { game: any, rating: any }) =>
 
 // Componente para módulo tentado mas não concluído
 const AttemptedModuleContent = ({ game, rating }: { game: any, rating: any }) => (
-  <div className="space-y-4">
-    {/* Rating atual */}
+  <div className="space-y-5">
+    {/* Rating atual - mais destaque */}
     <div className="flex justify-center">
       <StarRating rating={rating} score={game.bestScore} />
     </div>
 
-    {/* Progresso visual */}
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-600">Progresso para Aprovação</span>
-        <span className="text-orange-600 font-medium">{game.bestScore}/70%</span>
+    {/* Progresso visual melhorado */}
+    <div className="bg-white/80 rounded-lg p-4 space-y-3">
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-medium text-gray-700">Progresso para Aprovação</span>
+        <span className="text-lg font-bold text-orange-600">{game.bestScore}/70%</span>
       </div>
-      <Progress value={(game.bestScore / 70) * 100} className="h-2" />
+      <Progress 
+        value={(game.bestScore / 70) * 100} 
+        className="h-3 bg-gray-200" 
+        indicatorClassName="bg-gradient-to-r from-orange-400 to-orange-600"
+      />
+      <div className="text-center">
+        <span className="text-sm text-gray-600">
+          Faltam <span className="font-semibold text-orange-700">{Math.max(0, 70 - game.bestScore)}%</span> para aprovação
+        </span>
+      </div>
     </div>
 
-    {/* Motivação */}
-    <div className="bg-orange-100 border border-orange-200 rounded-lg p-3 text-center">
-      <TrendingUp className="w-5 h-5 text-orange-600 mx-auto mb-1" />
-      <p className="text-xs text-orange-800">
-        Faltam {Math.max(0, 70 - game.bestScore)}% para a aprovação
+    {/* Motivação visual */}
+    <div className="bg-gradient-to-r from-orange-100 to-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+      <TrendingUp className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+      <p className="text-sm text-orange-800 font-medium">
+        Continue tentando! Você está no caminho certo 💪
       </p>
     </div>
 
     {/* Última tentativa */}
-    <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+    <div className="flex items-center justify-center space-x-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
       <Clock className="w-4 h-4" />
       <span>Última tentativa: {getTimeAgo(game.progress?.lastAccessed)}</span>
     </div>
@@ -277,40 +286,43 @@ const AttemptedModuleContent = ({ game, rating }: { game: any, rating: any }) =>
 
 // Componente para módulo novo
 const NewModuleContent = ({ game }: { game: any }) => (
-  <div className="space-y-4">
+  <div className="space-y-5">
     {/* Preview do conteúdo */}
-    <div className="bg-white/70 rounded-lg p-4">
-      <h4 className="font-medium text-gray-800 mb-2 flex items-center">
-        <BookOpen className="w-4 h-4 mr-2" />
+    <div className="bg-white/80 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+        <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
         O que você vai aprender:
       </h4>
-      <ul className="text-sm text-gray-600 space-y-1">
+      <ul className="text-sm text-gray-700 space-y-2">
         {game.learningObjectives?.slice(0, 3).map((objective: string, index: number) => (
-          <li key={index} className="flex items-start space-x-2">
-            <span className="text-blue-500 mt-0.5">•</span>
-            <span>{objective}</span>
+          <li key={index} className="flex items-start space-x-3">
+            <span className="text-blue-500 mt-1 font-bold">•</span>
+            <span className="leading-relaxed">{objective}</span>
           </li>
         ))}
       </ul>
     </div>
 
-    {/* Info de tempo */}
-    <div className="flex items-center justify-center space-x-4 text-sm">
-      <div className="flex items-center space-x-1">
-        <Clock className="w-4 h-4 text-gray-500" />
-        <span className="text-gray-600">{game.estimatedTime}</span>
+    {/* Info de tempo e dificuldade */}
+    <div className="grid grid-cols-2 gap-3">
+      <div className="flex items-center justify-center space-x-2 bg-white/60 rounded-lg p-3">
+        <Clock className="w-5 h-5 text-blue-500" />
+        <span className="text-sm font-medium text-gray-700">{game.estimatedTime}</span>
       </div>
-      <div className="flex items-center space-x-1">
-        <Target className="w-4 h-4 text-gray-500" />
-        <span className="text-gray-600">{game.difficulty}</span>
+      <div className="flex items-center justify-center space-x-2 bg-white/60 rounded-lg p-3">
+        <Target className="w-5 h-5 text-blue-500" />
+        <span className="text-sm font-medium text-gray-700">{game.difficulty}</span>
       </div>
     </div>
 
-    {/* Call to action */}
-    <div className="bg-blue-100 border border-blue-200 rounded-lg p-3 text-center">
-      <div className="text-2xl mb-2">🚀</div>
-      <p className="text-sm text-blue-800 font-medium">
+    {/* Call to action melhorado */}
+    <div className="bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-lg p-4 text-center">
+      <div className="text-3xl mb-2">🚀</div>
+      <p className="text-sm text-blue-900 font-semibold">
         Comece agora e desbloqueie o próximo módulo!
+      </p>
+      <p className="text-xs text-blue-700 mt-1 opacity-80">
+        Primeiro módulo do seu percurso de aprendizagem
       </p>
     </div>
   </div>
