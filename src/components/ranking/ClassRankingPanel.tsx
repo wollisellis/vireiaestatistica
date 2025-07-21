@@ -79,26 +79,38 @@ export function ClassRankingPanel({
     }
   }, [user?.id, moduleId]);
 
-  // 🚀 CORREÇÃO: Atualização automática do ranking a cada 30 segundos
+  // 🚀 OTIMIZAÇÃO: Atualização automática do ranking a cada 60 segundos (otimizado para performance)
   useEffect(() => {
     if (user?.id && user.role === 'student') {
       const interval = setInterval(() => {
+        console.log('🔄 Atualização automática do ranking (60s)...');
         loadClassRankingData();
-      }, 30000); // Atualizar a cada 30 segundos
+      }, 60000); // Otimizado: 60 segundos para melhor performance
 
       return () => clearInterval(interval);
     }
   }, [user?.id]);
 
-  // 🚀 CORREÇÃO: Listener para atualização imediata quando módulo for completado
+  // 🚀 MELHORADO: Listener otimizado para atualização quando módulo é completado
   useEffect(() => {
     const handleModuleCompleted = (event: any) => {
-      console.log('📊 Evento moduleCompleted recebido no ranking:', event.detail);
-      // Atualizar ranking imediatamente quando módulo for completado
+      const eventDetail = event.detail || {};
+      console.log('🎯 Evento moduleCompleted recebido:', {
+        userId: eventDetail.userId,
+        moduleId: eventDetail.moduleId,
+        score: eventDetail.score,
+        percentage: eventDetail.percentage,
+        passed: eventDetail.passed
+      });
+      
+      // Atualização com delay específico por usuário para evitar conflitos
+      const isCurrentUser = eventDetail.userId === user?.id;
+      const updateDelay = isCurrentUser ? 2000 : 5000; // Usuário atual: 2s, outros: 5s
+      
       setTimeout(() => {
-        console.log('📊 Atualizando ranking após conclusão do módulo...');
+        console.log(`📊 Atualizando ranking após conclusão (delay: ${updateDelay}ms)...`);
         loadClassRankingData();
-      }, 3000); // Aguardar 3 segundos para o sistema processar a pontuação
+      }, updateDelay);
     };
 
     window.addEventListener('moduleCompleted', handleModuleCompleted);
@@ -106,7 +118,7 @@ export function ClassRankingPanel({
     return () => {
       window.removeEventListener('moduleCompleted', handleModuleCompleted);
     };
-  }, []);
+  }, [user?.id]);
 
   const loadClassRankingData = async () => {
     try {
@@ -142,16 +154,35 @@ export function ClassRankingPanel({
         return;
       }
 
-      // Transformar dados para o formato esperado
-      const transformedStudents: ClassStudent[] = studentsData.map((student: any) => ({
-        studentId: student.studentId || student.id || '',
-        studentName: student.studentName || student.name || 'Usuário Anônimo',
-        email: student.email || '',
-        totalScore: student.totalScore || student.totalNormalizedScore || 0,
-        completedModules: student.completedModules || 0,
-        lastActivity: student.lastActivity,
-        isCurrentUser: student.studentId === user.id
-      }));
+      // 📊 MELHORADO: Transformar dados com melhor processamento e debug
+      const transformedStudents: ClassStudent[] = studentsData.map((student: any) => {
+        // Priorizar totalNormalizedScore (escala 0-100) para ranking consistente
+        const studentScore = student.totalNormalizedScore || student.totalScore || student.score || 0;
+        const studentId = student.studentId || student.id || student.uid || '';
+        const isCurrentUser = studentId === user.id;
+        
+        // Log detalhado para debug
+        console.log(`🎯 Processando estudante:`, {
+          name: student.studentName || student.name,
+          id: studentId.slice(-6),
+          totalNormalizedScore: student.totalNormalizedScore,
+          totalScore: student.totalScore,
+          score: student.score,
+          scoreUsed: studentScore,
+          completedModules: student.completedModules,
+          isCurrentUser
+        });
+        
+        return {
+          studentId,
+          studentName: student.studentName || student.name || student.displayName || `Estudante (${studentId.slice(-6)})`,
+          email: student.email || '',
+          totalScore: Math.round(Math.max(0, studentScore)), // Garantir valor não-negativo
+          completedModules: student.completedModules || (studentScore > 0 ? 1 : 0), // Inferir se completou pelo score
+          lastActivity: student.lastActivity ? new Date(student.lastActivity) : new Date(),
+          isCurrentUser
+        };
+      });
 
       // Ordenar por pontuação e definir posições
       const sortedStudents = transformedStudents
@@ -319,11 +350,25 @@ export function ClassRankingPanel({
             {/* Posição do usuário atual */}
             {classStudents.find(s => s.isCurrentUser) && (
               <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
-                <p className="text-xs text-blue-800">
-                  <strong>Sua posição: #{classStudents.find(s => s.isCurrentUser)?.position}</strong>
-                  <span className="ml-2">
-                    {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)} pts
-                  </span>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-blue-800">
+                    <strong>Sua posição: #{classStudents.find(s => s.isCurrentUser)?.position}</strong>
+                  </p>
+                  <div className="text-xs text-blue-700">
+                    <span className={`font-medium ${
+                      (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 90 ? 'text-green-600' :
+                      (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'text-blue-600' :
+                      'text-orange-600'
+                    }`}>
+                      {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)}%
+                    </span>
+                    {(classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 && (
+                      <span className="ml-2 text-green-600">✅ Aprovado</span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  ID: ...{user?.id?.slice(-6)} • {classStudents.find(s => s.isCurrentUser)?.completedModules || 0} módulo(s) concluído(s)
                 </p>
               </div>
             )}
@@ -372,22 +417,35 @@ export function ClassRankingPanel({
                             {student.studentName}
                           </p>
                           {student.isCurrentUser && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
                               Você
                             </Badge>
                           )}
+                          {/* 🏦 Mostrar ID parcial para identificação */}
+                          <span className="text-xs text-gray-400 font-mono">
+                            ID: ...{student.studentId.slice(-6)}
+                          </span>
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
                           <div className="flex items-center space-x-1">
                             <Star className="w-3 h-3 text-yellow-500" />
-                            <span className="text-xs text-gray-600">
-                              {formatScore(student.totalScore)} pts
+                            <span className={`text-xs font-medium ${
+                              student.totalScore >= 90 ? 'text-green-600' :
+                              student.totalScore >= 70 ? 'text-blue-600' :
+                              student.totalScore >= 50 ? 'text-yellow-600' :
+                              'text-gray-600'
+                            }`}>
+                              {formatScore(student.totalScore)}%
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              ({student.totalScore >= 70 ? '✅ Aprovado' : student.totalScore > 0 ? '📚 Cursando' : '⏳ Aguardando'})
                             </span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Target className="w-3 h-3 text-green-500" />
                             <span className="text-xs text-gray-600">
-                              {student.completedModules}/4 módulos
+                              {student.completedModules}/1 módulo{student.completedModules !== 1 ? 's' : ''}
+                              {student.totalScore >= 70 && <span className="ml-1 text-green-600">✓</span>}
                             </span>
                           </div>
                         </div>
@@ -419,10 +477,13 @@ export function ClassRankingPanel({
                 {classStudents.length === 0 && (
                   <div className="text-center py-6">
                     <GraduationCap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">Nenhum resultado ainda</p>
+                    <p className="text-sm text-gray-500">Ranking em construção</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Complete exercícios para aparecer no ranking da turma!
+                      Complete o Módulo 1 para aparecer no ranking da turma!
                     </p>
+                    <div className="mt-3 text-xs text-blue-600">
+                      🏆 Seja o primeiro a pontuar!
+                    </div>
                   </div>
                 )}
               </div>
