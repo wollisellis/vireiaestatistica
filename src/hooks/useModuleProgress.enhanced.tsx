@@ -230,7 +230,7 @@ export function useModuleProgress(userId: string | null, moduleId: string): UseM
     }
   }, [userId, moduleId, getCacheKey, getLocalStorageKey]);
 
-  // 🎯 REFRESH COM DEBOUNCE
+  // 🎯 REFRESH COM DEBOUNCE E TIMEOUT DE SEGURANÇA
   const refresh = useCallback(async (): Promise<void> => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
@@ -241,19 +241,31 @@ export function useModuleProgress(userId: string | null, moduleId: string): UseM
         setIsLoading(true);
         setError(null);
         
-        const data = await fetchProgress();
+        // ⏱️ TIMEOUT DE SEGURANÇA: Máximo 10 segundos para evitar loading infinito
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout: Loading muito longo')), 10000);
+        });
+        
+        const data = await Promise.race([
+          fetchProgress(),
+          timeoutPromise
+        ]) as ModuleProgressData | null;
+        
         setProgressData(data);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar progresso';
         setError(errorMessage);
         devLog('Refresh error:', err);
+        // Em caso de erro, definir dados vazios para exibir estado "novo"
+        setProgressData(null);
       } finally {
+        // ✅ GARANTIA: Sempre definir loading como false
         setIsLoading(false);
       }
     }, 300); // 300ms debounce
   }, [fetchProgress]);
 
-  // 🎯 EFEITO PRINCIPAL LIMPO
+  // 🎯 EFEITO PRINCIPAL LIMPO - CORRIGIDO LOOP INFINITO
   useEffect(() => {
     if (!userId || !moduleId) {
       setProgressData(null);
@@ -262,15 +274,25 @@ export function useModuleProgress(userId: string | null, moduleId: string): UseM
       return;
     }
 
+    // ✅ FIX: Chamar refresh diretamente, sem incluir nas dependências
     refresh();
+
+    // 🛡️ TIMEOUT DE SEGURANÇA FINAL: Se ainda estiver loading após 15s, forçar false
+    const safetyTimeout = setTimeout(() => {
+      devLog('SAFETY TIMEOUT: Forçando isLoading = false após 15s');
+      setIsLoading(false);
+      setProgressData(null); // Exibir como módulo novo se timeout
+      setError('Timeout ao carregar dados do módulo');
+    }, 15000);
 
     // Cleanup
     return () => {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
       }
+      clearTimeout(safetyTimeout);
     };
-  }, [userId, moduleId, refresh]);
+  }, [userId, moduleId]); // ✅ REMOVIDO: refresh das dependências para quebrar loop infinito
 
   // 🎯 RETORNAR ESTADO CALCULADO
   const state = getModuleState(progressData, isLoading, error);
