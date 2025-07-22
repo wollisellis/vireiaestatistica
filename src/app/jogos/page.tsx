@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { modules } from '@/data/modules';
 import EnhancedModuleCard from '@/components/games/EnhancedModuleCard';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
-import { collection, doc, onSnapshot, startTransition } from 'firebase/firestore';
+import { doc, onSnapshot, startTransition } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
   BookOpen, 
@@ -51,9 +51,18 @@ interface ModuleData {
 const ENABLED_MODULES = ['module-1'] as const;
 type EnabledModuleId = typeof ENABLED_MODULES[number];
 
-// 🎯 CONVERTER MÓDULOS PARA FORMATO LIMPO
-const convertModulesToGames = (modules: any[]): ModuleData[] => {
-  return modules.filter(module => ENABLED_MODULES.includes(module.id)).map(module => ({
+// 🎯 CONVERTER MÓDULOS PARA FORMATO LIMPO (COM SAFE GUARDS)
+const convertModulesToGames = (modules: any[] | null | undefined): ModuleData[] => {
+  // 🛡️ SAFE GUARD: Verificar se modules é válido
+  if (!modules || !Array.isArray(modules)) {
+    console.warn('convertModulesToGames: modules is null/undefined or not an array, returning empty array');
+    return [];
+  }
+  
+  return modules.filter(module => {
+    // 🛡️ SAFE GUARD: Verificar se module é válido
+    return module && module.id && ENABLED_MODULES.includes(module.id);
+  }).map(module => ({
     id: module.id,
     title: module.title || 'Módulo',
     description: module.description || 'Descrição do módulo',
@@ -145,8 +154,8 @@ export default function JogosPage() {
   // 🎯 REFS PARA DEBOUNCE
   const refreshTimeoutRef = useRef<NodeJS.Timeout>();
   
-  // 🎯 DADOS DOS MÓDULOS
-  const nutritionalGames = convertModulesToGames(modules);
+  // 🎯 DADOS DOS MÓDULOS (COM VERIFICAÇÃO DE SEGURANÇA)
+  const nutritionalGames = convertModulesToGames(modules || []);
   
   // 🎯 DEBOUNCED REFRESH FUNCTION
   const debouncedRefresh = useCallback(
@@ -267,7 +276,7 @@ export default function JogosPage() {
         sessionStorage.clear();
       }
       
-      if (user && !user.id.includes('guest')) {
+      if (user && !user.uid?.includes('guest')) {
         await signOut();
       }
       
@@ -302,7 +311,7 @@ export default function JogosPage() {
   }
   
   // 🎯 ACCESS CHECK
-  if (!hasAccess && user?.id !== 'guest-user' && user?.id !== 'professor-guest-user') {
+  if (!hasAccess && user?.uid !== 'guest-user' && user?.uid !== 'professor-guest-user') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -342,7 +351,7 @@ export default function JogosPage() {
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <User className="w-4 h-4" />
                   <span className="font-medium">
-                    {user?.displayName || user?.name || (user?.id?.includes('guest') ? 'Visitante' : 'Usuário')}
+                    {user?.displayName || user?.name || (user?.uid?.includes('guest') ? 'Visitante' : 'Usuário')}
                   </span>
                   {isProfessor && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
