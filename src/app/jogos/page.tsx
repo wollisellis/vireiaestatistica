@@ -357,7 +357,21 @@ export default function JogosPage() {
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <User className="w-4 h-4" />
                   <span className="font-medium">
-                    {user?.displayName || user?.name || (user?.uid?.includes('guest') ? 'Visitante' : 'Usuário')}
+                    {(() => {
+                      // Extrair primeiro nome do aluno
+                      const fullName = user?.displayName || user?.name;
+                      const firstName = fullName ? fullName.split(' ')[0] : null;
+                      const isGuest = user?.uid?.includes('guest');
+                      
+                      if (isGuest) return 'Visitante';
+                      if (firstName) return firstName;
+                      return 'Aluno';
+                    })()}
+                    {user?.uid && !user.uid.includes('guest') && (
+                      <span className="ml-2 text-xs text-gray-500 font-mono">
+                        (ID:{user.uid.slice(-6).toUpperCase()})
+                      </span>
+                    )}
                   </span>
                   {isProfessor && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
