@@ -39,9 +39,64 @@ const deleteCookie = (name: string) => {
   document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`
 }
 
+// Global state to prevent multiple auth listeners
+let globalAuthListener: (() => void) | null = null
+let globalUser: FirebaseUser | null = null
+let globalLoading = true
+const authStateCallbacks = new Set<(user: FirebaseUser | null, loading: boolean) => void>()
+
+// Initialize auth listener once globally
+const initializeGlobalAuthListener = () => {
+  if (globalAuthListener || !auth || !isFirebaseConfigured()) {
+    return
+  }
+
+  console.log('🔥 Configurando listener de autenticação global...')
+
+  globalAuthListener = onAuthStateChanged(auth, async (firebaseUser) => {
+    console.log('🔄 Estado de autenticação mudou:', firebaseUser ? 'Logado' : 'Deslogado')
+
+    if (firebaseUser) {
+      console.log('✅ Usuário autenticado:', firebaseUser)
+
+      try {
+        // Set authentication cookie when user is authenticated
+        const token = await firebaseUser.getIdToken()
+        setCookie('auth-token', token, 7) // 7 days
+
+        // Save last login time
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('last-login', new Date().toISOString())
+        }
+      } catch (error) {
+        console.error('❌ Erro ao obter token de autenticação:', error)
+        // Continue mesmo com erro no token
+        setCookie('auth-token', firebaseUser.uid, 7) // Fallback to UID
+
+        // Save last login time even on error
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('last-login', new Date().toISOString())
+        }
+      }
+    } else {
+      console.log('❌ Usuário não autenticado')
+      // Clear auth token cookie
+      deleteCookie('auth-token')
+    }
+
+    globalUser = firebaseUser
+    globalLoading = false
+
+    // Notify all subscribers
+    authStateCallbacks.forEach(callback => {
+      callback(firebaseUser, false)
+    })
+  })
+}
+
 export function useFirebaseAuth() {
-  const [user, setUser] = useState<FirebaseUser | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<FirebaseUser | null>(globalUser)
+  const [loading, setLoading] = useState(globalLoading)
 
   useEffect(() => {
     if (!auth || !isFirebaseConfigured()) {
@@ -50,55 +105,23 @@ export function useFirebaseAuth() {
       return
     }
 
-    // Prevenir múltiplos listeners em desenvolvimento (React Strict Mode)
-    let isMounted = true
-    console.log('🔥 Configurando listener de autenticação...')
+    // Initialize global listener if not already done
+    initializeGlobalAuthListener()
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!isMounted) return // Prevenir updates se componente foi desmontado
-      
-      console.log('🔄 Estado de autenticação mudou:', firebaseUser ? 'Logado' : 'Deslogado')
+    // Subscribe to auth state changes
+    const callback = (user: FirebaseUser | null, loading: boolean) => {
+      setUser(user)
+      setLoading(loading)
+    }
 
-      if (firebaseUser) {
-        console.log('✅ Usuário autenticado:', {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName
-        })
+    authStateCallbacks.add(callback)
 
-        try {
-          // Set authentication cookie when user is authenticated
-          const token = await firebaseUser.getIdToken()
-          setCookie('auth-token', token, 7) // 7 days
-          
-          // Save last login time
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('last-login', new Date().toISOString())
-          }
-        } catch (error) {
-          console.error('❌ Erro ao obter token de autenticação:', error)
-          // Continue mesmo com erro no token
-          setCookie('auth-token', firebaseUser.uid, 7) // Fallback to UID
-          
-          // Save last login time even on error
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('last-login', new Date().toISOString())
-          }
-        }
-      } else {
-        console.log('❌ Usuário não autenticado')
-        // Clear auth token cookie
-        deleteCookie('auth-token')
-      }
-
-      setUser(firebaseUser)
-      setLoading(false)
-    })
+    // Set initial state
+    setUser(globalUser)
+    setLoading(globalLoading)
 
     return () => {
-      isMounted = false // Marcar como desmontado para prevenir updates
-      console.log('🔄 Removendo listener de autenticação')
-      unsubscribe()
+      authStateCallbacks.delete(callback)
     }
   }, [])
 

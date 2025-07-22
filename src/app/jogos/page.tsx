@@ -10,7 +10,7 @@ import { modules } from '@/data/modules';
 import EnhancedModuleCard from '@/components/games/EnhancedModuleCard';
 import CompletedModuleModal from '@/components/games/CompletedModuleModal';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDocs, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
   BookOpen, 
@@ -83,7 +83,7 @@ const convertModulesToGames = (modules: any[] | null | undefined): ModuleData[] 
 // Modal foi movido para componente separado em /components/games/CompletedModuleModal.tsx
 
 // 🎯 COMPONENTE PRINCIPAL SIMPLIFICADO
-export default function JogosPage() {
+function JogosPageContent() {
   // 🎯 ESTADOS MÍNIMOS NECESSÁRIOS
   const router = useRouter();
   const { user, loading, hasAccess, isProfessor } = useFlexibleAccess();
@@ -132,9 +132,15 @@ export default function JogosPage() {
     debounce(async () => {
       devLog('Refreshing rankings...');
       try {
+        const userId = getUserId();
+        if (!userId) {
+          console.warn('No user ID available for ranking refresh');
+          return;
+        }
+
         // 🛡️ SAFE GUARD: Verificar se o método existe antes de chamar
         if (unifiedScoringService && typeof unifiedScoringService.updateStudentRanking === 'function') {
-          await unifiedScoringService.updateStudentRanking(getUserId() || '');
+          await unifiedScoringService.updateStudentRanking(userId);
         } else {
           console.warn('updateStudentRanking method not available');
         }
@@ -231,11 +237,13 @@ export default function JogosPage() {
   
   // 🎯 FUNÇÃO AUXILIAR PARA BUSCAR PROGRESSO DO MÓDULO
   const getModuleProgress = useCallback(async (userId: string, moduleId: string) => {
-    if (!db) return null;
-    
+    if (!db) {
+      console.warn('Database not available for module progress');
+      return null;
+    }
+
     try {
       // Buscar dados do quiz_attempts (fonte primária)
-      const { getDocs, collection, query, where, orderBy, limit } = await import('firebase/firestore');
       const attemptsQuery = query(
         collection(db, 'quiz_attempts'),
         where('studentId', '==', userId),
@@ -243,7 +251,7 @@ export default function JogosPage() {
         orderBy('startedAt', 'desc'),
         limit(1)
       );
-      
+
       const attemptsSnapshot = await getDocs(attemptsQuery);
       
       if (!attemptsSnapshot.empty) {
@@ -574,5 +582,57 @@ export default function JogosPage() {
         <Footer />
       </div>
     </StudentProgressProvider>
+  );
+}
+
+// 🛡️ ERROR BOUNDARY WRAPPER
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('🚨 JogosPage Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center">
+          <div className="text-center max-w-md p-6">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Erro na Aplicação</h2>
+            <p className="text-gray-600 mb-6">
+              Ocorreu um erro inesperado. Tente recarregar a página.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+            >
+              Recarregar Página
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 🎯 EXPORT PRINCIPAL COM ERROR BOUNDARY
+export default function JogosPage() {
+  return (
+    <ErrorBoundary>
+      <JogosPageContent />
+    </ErrorBoundary>
   );
 }

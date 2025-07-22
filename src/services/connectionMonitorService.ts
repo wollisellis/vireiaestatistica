@@ -33,14 +33,15 @@ export interface ConnectionMetrics {
 
 export class ConnectionMonitorService {
   private static instance: ConnectionMonitorService;
+  private isInitialized = false; // Prevent multiple initializations
   private status: ConnectionStatus = {
     firestore: 'disconnected',
-    auth: 'disconnected', 
+    auth: 'disconnected',
     lastCheck: new Date(),
     errorCount: 0,
     uptime: 0
   };
-  
+
   private metrics: ConnectionMetrics = {
     totalConnections: 0,
     activeListeners: 0,
@@ -53,6 +54,8 @@ export class ConnectionMonitorService {
   private healthCheckInterval?: NodeJS.Timeout;
   private connectionStartTime: Date = new Date();
   private statusChangeCallbacks: Array<(status: ConnectionStatus) => void> = [];
+  private authListener?: (() => void) | null = null;
+  private firestoreListener?: (() => void) | null = null;
   
   // Singleton pattern
   static getInstance(): ConnectionMonitorService {
@@ -70,23 +73,29 @@ export class ConnectionMonitorService {
    * Inicializa monitoramento de conexões
    */
   private initializeMonitoring(): void {
+    if (this.isInitialized) {
+      console.log('⚠️ [ConnectionMonitor] Já inicializado, ignorando...');
+      return;
+    }
+
     console.log('🔌 [ConnectionMonitor] Iniciando monitoramento de conexões...');
-    
+
     try {
       // Monitorar estado do Firestore
       this.setupFirestoreMonitoring();
-      
-      // Monitorar estado do Authentication  
+
+      // Monitorar estado do Authentication
       this.setupAuthMonitoring();
-      
+
       // Iniciar health checks periódicos
       this.startHealthChecks();
-      
+
       // Cleanup automático de listeners órfãos
       this.startListenerCleanup();
-      
+
+      this.isInitialized = true;
       console.log('✅ [ConnectionMonitor] Monitoramento inicializado com sucesso');
-      
+
     } catch (error) {
       console.error('❌ [ConnectionMonitor] Erro ao inicializar:', error);
       this.status.firestore = 'error';
@@ -102,7 +111,13 @@ export class ConnectionMonitorService {
       console.warn('⚠️ [ConnectionMonitor] Firestore não inicializado');
       return;
     }
-    
+
+    // Evitar múltiplos listeners
+    if (this.firestoreListener) {
+      console.log('⚠️ [ConnectionMonitor] Firestore listener já existe, ignorando...');
+      return;
+    }
+
     try {
       // Listener para sincronização do Firestore
       const unsubscribe = onSnapshotsInSync(db, () => {
@@ -110,18 +125,19 @@ export class ConnectionMonitorService {
         this.status.firestore = 'connected';
         this.status.lastCheck = new Date();
         this.status.uptime = Date.now() - this.connectionStartTime.getTime();
-        
+
         if (!wasConnected) {
           console.log('🔥 [ConnectionMonitor] Firestore reconectado');
           this.notifyStatusChange();
         }
       });
-      
+
+      this.firestoreListener = unsubscribe;
       this.listeners.push(unsubscribe);
       this.metrics.totalConnections++;
-      
+
       console.log('🔥 [ConnectionMonitor] Firestore monitoring configurado');
-      
+
     } catch (error) {
       console.error('❌ [ConnectionMonitor] Erro ao configurar Firestore monitoring:', error);
       this.status.firestore = 'error';
@@ -137,23 +153,31 @@ export class ConnectionMonitorService {
       console.warn('⚠️ [ConnectionMonitor] Auth não inicializado');
       return;
     }
-    
+
+    // Evitar múltiplos listeners
+    if (this.authListener) {
+      console.log('⚠️ [ConnectionMonitor] Auth listener já existe, ignorando...');
+      return;
+    }
+
     try {
       // Monitorar conexão do Auth
-      auth.onIdTokenChanged((user) => {
+      const unsubscribe = auth.onIdTokenChanged((user) => {
         const wasConnected = this.status.auth === 'connected';
         this.status.auth = user ? 'connected' : 'disconnected';
         this.status.lastCheck = new Date();
-        
+
         if (!wasConnected && user) {
           console.log('🔑 [ConnectionMonitor] Auth reconectado');
           this.notifyStatusChange();
         }
       });
-      
+
+      this.authListener = unsubscribe;
+      this.listeners.push(unsubscribe);
       this.metrics.totalConnections++;
       console.log('🔑 [ConnectionMonitor] Auth monitoring configurado');
-      
+
     } catch (error) {
       console.error('❌ [ConnectionMonitor] Erro ao configurar Auth monitoring:', error);
       this.status.auth = 'error';

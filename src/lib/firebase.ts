@@ -45,38 +45,56 @@ let app: FirebaseApp | null = null
 let auth: Auth | null = null
 let db: Firestore | null = null
 
-try {
-  if (isFirebaseConfigured()) {
-    console.log('🔥 Initializing Firebase with configured credentials...')
+// Singleton pattern to prevent multiple initializations
+let isInitialized = false
 
-    // Check for demo-project issue
-    if (firebaseConfig.projectId === 'demo-project') {
-      console.error('❌ CRITICAL: Firebase is trying to connect to demo-project!')
-      console.error('🔧 This means environment variables are not being loaded correctly')
-      console.error('📝 Check Vercel environment variables or .env.local configuration')
-      throw new Error('Invalid Firebase project configuration')
-    }
-
-    app = initializeApp(firebaseConfig)
-    auth = getAuth(app)
-    db = getFirestore(app)
-
-    // Enable offline persistence for better offline experience
-    if (typeof window !== 'undefined') {
-      // Only enable in browser environment
-      console.log('🔄 Enabling Firestore offline persistence...')
-    }
-
-    console.log('✅ Firebase initialized successfully!')
-    console.log(`🎯 Connected to project: ${firebaseConfig.projectId}`)
-  } else {
-    console.warn('⚠️ Firebase not configured - using fallback mode')
-    console.warn('📝 To use Firebase, configure NEXT_PUBLIC_FIREBASE_* variables in .env.local')
+const initializeFirebase = () => {
+  if (isInitialized) {
+    return { app, auth, db }
   }
-} catch (error) {
-  console.error('❌ Firebase initialization failed:', error)
-  console.warn('🔄 Using fallback mode')
+
+  try {
+    if (isFirebaseConfigured()) {
+      console.log('🔥 Initializing Firebase with configured credentials...')
+
+      // Check for demo-project issue
+      if (firebaseConfig.projectId === 'demo-project') {
+        console.error('❌ CRITICAL: Firebase is trying to connect to demo-project!')
+        console.error('🔧 This means environment variables are not being loaded correctly')
+        console.error('📝 Check Vercel environment variables or .env.local configuration')
+        throw new Error('Invalid Firebase project configuration')
+      }
+
+      app = initializeApp(firebaseConfig)
+      auth = getAuth(app)
+      db = getFirestore(app)
+
+      // Enable offline persistence for better offline experience
+      if (typeof window !== 'undefined') {
+        // Only enable in browser environment
+        console.log('🔄 Enabling Firestore offline persistence...')
+      }
+
+      isInitialized = true
+      console.log('✅ Firebase initialized successfully!')
+      console.log(`🎯 Connected to project: ${firebaseConfig.projectId}`)
+    } else {
+      console.warn('⚠️ Firebase not configured - using fallback mode')
+      console.warn('📝 To use Firebase, configure NEXT_PUBLIC_FIREBASE_* variables in .env.local')
+    }
+  } catch (error) {
+    console.error('❌ Firebase initialization failed:', error)
+    console.warn('🔄 Using fallback mode')
+  }
+
+  return { app, auth, db }
 }
+
+// Initialize Firebase
+const { app: firebaseApp, auth: firebaseAuth, db: firebaseDb } = initializeFirebase()
+app = firebaseApp
+auth = firebaseAuth
+db = firebaseDb
 
 // Helper function to handle Firestore errors
 export const handleFirestoreError = (error: any): string => {
