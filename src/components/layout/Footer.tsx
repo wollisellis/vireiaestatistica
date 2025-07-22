@@ -148,19 +148,18 @@ export function Footer() {
 
         {/* Support Button - Destacado no topo */}
         <div className="text-center mt-8 mb-6">
-          <motion.a
-            href="mailto:e165905@dac.unicamp.br?subject=Suporte%20AvaliaNutri%20-%20Dúvida&body=Olá%20Ellis,%0D%0A%0D%0ATenho%20uma%20dúvida%20sobre%20a%20plataforma%20AvaliaNutri:%0D%0A%0D%0A[Descreva%20sua%20dúvida%20aqui]%0D%0A%0D%0AObrigado!"
+          <a
+            href="mailto:e165905@dac.unicamp.br?subject=Suporte AvaliaNutri - Dúvida"
             className="inline-flex items-center space-x-3 bg-gradient-to-r from-emerald-600 to-teal-600 
                      hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl 
                      shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105
-                     font-semibold text-base"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+                     font-semibold text-base hover:no-underline"
+            title="Clique para enviar email de suporte"
           >
             <HelpCircle className="w-5 h-5" />
             <span>Precisa de Ajuda?</span>
             <MessageCircle className="w-5 h-5" />
-          </motion.a>
+          </a>
           <p className="text-sm text-gray-500 mt-2">
             Entre em contato para tirar dúvidas ou reportar problemas
           </p>

@@ -23,7 +23,6 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Progress } from '@/components/ui/Progress'
 import { useStudentProgress } from '@/contexts/StudentProgressContext'
-import { EducationalBadges } from '@/components/achievements/EducationalBadges'
 
 interface PersonalLearningDashboardProps {
   compact?: boolean
@@ -57,45 +56,38 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
   const { progress, calculateOverallPerformance } = useStudentProgress()
   const performance = calculateOverallPerformance()
 
-  // Calcular competências dominadas
+  // Calcular competências dominadas - CORRIGIDO para usar gameId: 1
   const getMasteredCompetencies = () => {
     const mastered: string[] = []
     const inProgress: string[] = []
     
-    Object.entries(NUTRITIONAL_COMPETENCIES).forEach(([moduleId, competencies]) => {
-      const moduleScore = progress.gameScores.find(score => 
-        score.moduleId === moduleId || score.gameId === moduleId
-      )
+    // Buscar especificamente pelo jogo 1 (módulo de antropometria)
+    const moduleScore = progress.gameScores.find(score => score.gameId === 1)
+    
+    if (moduleScore && NUTRITIONAL_COMPETENCIES['module-1']) {
+      const completionRate = (moduleScore.score / moduleScore.maxScore) * 100
+      const competencies = NUTRITIONAL_COMPETENCIES['module-1']
       
-      if (moduleScore) {
-        const completionRate = (moduleScore.score / moduleScore.maxScore) * 100
-        
-        competencies.forEach(comp => {
-          if (completionRate >= 80) {
-            mastered.push(comp.name)
-          } else if (completionRate >= 50) {
-            inProgress.push(comp.name)
-          }
-        })
-      }
-    })
+      competencies.forEach(comp => {
+        if (completionRate >= 80) {
+          mastered.push(comp.name)
+        } else if (completionRate >= 50) {
+          inProgress.push(comp.name)
+        }
+      })
+    }
     
     return { mastered, inProgress }
   }
 
   const { mastered, inProgress } = getMasteredCompetencies()
 
-  // Calcular progresso por trilha de aprendizagem
+  // Calcular progresso por trilha de aprendizagem - CORRIGIDO
   const getPathProgress = () => {
     return LEARNING_PATHS.map(path => {
-      const moduleProgress = path.modules.map(moduleId => {
-        const moduleScore = progress.gameScores.find(score => score.gameId === moduleId || score.moduleId === moduleId)
-        return moduleScore ? (moduleScore.score / moduleScore.maxScore) * 100 : 0
-      })
-      
-      const averageProgress = moduleProgress.length > 0 
-        ? moduleProgress.reduce((sum, prog) => sum + prog, 0) / moduleProgress.length 
-        : 0
+      // Para o módulo 1, buscar pelo gameId: 1
+      const moduleScore = progress.gameScores.find(score => score.gameId === 1)
+      const averageProgress = moduleScore ? (moduleScore.score / moduleScore.maxScore) * 100 : 0
       
       return {
         ...path,
@@ -169,8 +161,8 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
             
             <div className="text-center p-4 bg-white rounded-lg border border-purple-100">
               <Clock className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-purple-600">{progress.gamesCompleted > 0 ? '1' : '0'}</div>
-              <div className="text-sm text-purple-700">Módulo Disponível</div>
+              <div className="text-2xl font-bold text-purple-600">{progress.gamesCompleted}</div>
+              <div className="text-sm text-purple-700">Jogos Realizados</div>
             </div>
             
             <div className="text-center p-4 bg-white rounded-lg border border-orange-100">
@@ -279,7 +271,7 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
           <CardHeader>
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <Target className="w-6 h-6 text-orange-500" />
-              Em Desenvolvimento
+              Competências em Desenvolvimento
             </h3>
           </CardHeader>
           <CardContent>
@@ -298,8 +290,25 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
         </Card>
       )}
 
-      {/* Badges Educacionais */}
-      <EducationalBadges />
+      {/* Seção de Progresso Acadêmico - Unificada */}
+      {mastered.length > 0 && (
+        <Card>
+          <CardHeader>
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Award className="w-6 h-6 text-emerald-600" />
+              🎓 Progresso Acadêmico
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-lg border border-emerald-200">
+              <p className="text-emerald-700 text-sm">
+                Você conquistou <strong>{mastered.length} competência{mastered.length > 1 ? 's' : ''} essencial{mastered.length > 1 ? 'is' : ''}</strong> 
+                para a prática profissional em avaliação nutricional. Continue estudando para dominar todas as habilidades!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
