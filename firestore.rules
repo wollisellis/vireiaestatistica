@@ -37,13 +37,10 @@ service cloud.firestore {
          request.auth.token.get('role', '') == 'student');
     }
 
-    // Função para verificar se é professor com fallback para documento + email institucional (TEMPORÁRIO)
+    // Função para verificar se é professor com fallback SIMPLIFICADO (sem dependência circular)
     function isProfessorWithFallback() {
       return isProfessor() ||
-        (isAuthenticated() &&
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor') ||
-        // 🚨 FALLBACK TEMPORÁRIO: Permitir acesso via email institucional
+        // 🚨 ACESSO DIRETO: Permitir qualquer usuário autenticado com email institucional válido
         (isAuthenticated() &&
          (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
           request.auth.token.email.matches('.*@unicamp\\.br') ||
@@ -113,7 +110,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
 
       // Apenas professores podem criar/editar cursos
-      allow write: if isProfessor();
+      allow write: if isProfessor() || isProfessorWithFallback();
     }
 
     // CLASSES COLLECTION - Sistema principal de turmas (ACESSO COMPARTILHADO)
@@ -133,10 +130,10 @@ service cloud.firestore {
     // DELETED CLASSES COLLECTION - Sistema de lixeira para turmas excluídas (ACESSO COMPARTILHADO)
     match /deleted_classes/{classId} {
       // ✅ TODOS os professores podem ler/escrever/restaurar turmas excluídas (acesso compartilhado)
-      allow read, write, delete: if isProfessor();
+      allow read, write, delete: if isProfessor() || isProfessorWithFallback();
 
       // Qualquer professor pode criar entrada na lixeira
-      allow create: if isProfessor();
+      allow create: if isProfessor() || isProfessorWithFallback();
     }
 
     // COLLABORATIVE SESSIONS COLLECTION - Sessões colaborativas
@@ -146,7 +143,7 @@ service cloud.firestore {
         request.auth.uid in resource.data.participants;
 
       // Professores podem ler/escrever todas as sessões
-      allow read, write: if isProfessor();
+      allow read, write: if isProfessor() || isProfessorWithFallback();
 
       // Permitir criação de sessões por usuários autenticados
       allow create: if isAuthenticated();
@@ -158,7 +155,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
 
       // Apenas professores podem criar/editar questões
-      allow write: if isProfessor();
+      allow write: if isProfessor() || isProfessorWithFallback();
     }
 
     // QUESTION RESPONSES COLLECTION - Respostas dos estudantes
@@ -168,7 +165,7 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
 
       // Professores podem ler todas as respostas
-      allow read: if isProfessor();
+      allow read: if isProfessor() || isProfessorWithFallback();
 
       // Permitir criação apenas para o próprio usuário
       allow create: if isAuthenticated() &&
@@ -181,7 +178,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
 
       // Apenas professores podem criar/editar conquistas
-      allow write: if isProfessor();
+      allow write: if isProfessor() || isProfessorWithFallback();
     }
 
     // USER ACHIEVEMENTS COLLECTION - Conquistas dos usuários
@@ -191,7 +188,7 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
 
       // Professores podem ler todas as conquistas
-      allow read: if isProfessor();
+      allow read: if isProfessor() || isProfessorWithFallback();
 
       // Sistema pode criar conquistas (via Cloud Functions ou backend)
       allow create: if isAuthenticated();
@@ -372,7 +369,7 @@ service cloud.firestore {
     // CLASS ANALYTICS COLLECTION - Analytics por turma (ACESSO COMPARTILHADO)
     match /class_analytics/{analyticsId} {
       // ✅ TODOS os professores podem acessar analytics de TODAS as turmas (acesso compartilhado)
-      allow read, write, create: if isProfessor();
+      allow read, write, create: if isProfessor() || isProfessorWithFallback();
     }
 
     // CLASS INVITES COLLECTION - Sistema de convites para turmas (ACESSO COMPARTILHADO)
@@ -633,7 +630,7 @@ service cloud.firestore {
     // AUDIT LOGS COLLECTION - Logs de auditoria
     match /auditLogs/{logId} {
       // Apenas professores podem ler logs de auditoria
-      allow read: if isProfessor();
+      allow read: if isProfessor() || isProfessorWithFallback();
 
       // Sistema pode criar logs (via Cloud Functions)
       allow create: if isAuthenticated();
@@ -656,6 +653,25 @@ service cloud.firestore {
     // Subcoleção de preferências de usuário
     match /users/{userId}/preferences/{prefId} {
       allow read, write: if isOwner(userId);
+    }
+
+    // ========================================
+    // REGRAS ESPECIAIS PARA PROFESSORES - ACESSO TOTAL A DADOS DE ESTUDANTES
+    // ========================================
+
+    // REGRA GERAL: Professores têm acesso COMPLETO a qualquer coleção relacionada a estudantes
+    // Isso resolve problemas de permissão em coleções não mapeadas especificamente
+    match /{collection}/{docId} {
+      // Permitir acesso completo para professores em coleções de estudantes
+      allow read, write: if (isProfessor() || isProfessorWithFallback()) && 
+        (collection == 'student_data' ||
+         collection == 'enrollments' ||
+         collection == 'class_members' ||
+         collection == 'student_classes' ||
+         collection.matches('.*[Ss]tudent.*') ||
+         collection.matches('.*[Cc]lass.*') ||
+         docId.matches('.*class_.*') ||
+         docId.matches('class_.*'));
     }
 
     // ========================================
