@@ -389,7 +389,7 @@ export default function JogosPage() {
       if (!dependenciesReady) {
         console.log('🚫 [USEEFFECT-MAIN] Dependências não disponíveis após aguarda');
         setModuleLoading(false);
-        return;
+        return null; // Retornar null quando não há cleanup
       }
 
       console.log('✅ [USEEFFECT-MAIN] Dependências prontas, iniciando busca de progresso...');
@@ -398,95 +398,95 @@ export default function JogosPage() {
 
       // 🎯 IMPLEMENTAÇÃO ROBUSTA: Buscar progresso com logs detalhados e múltiplas tentativas
       const fetchProgress = async () => {
-      try {
-        console.log('🔍 [DEBUG] Iniciando busca de progresso para usuário:', user.uid);
-        console.log('🔍 [DEBUG] Database disponível:', !!db);
-        
-        // 🎯 CORREÇÃO: Buscar da mesma fonte que o RandomizedQuizComponent usa
-        let progressData: any = {};
-        const modules = ['module-1']; // Lista de módulos disponíveis
-        
-        for (const moduleId of modules) {
-          console.log(`\n📚 [${moduleId}] Iniciando busca de tentativas...`);
+        try {
+          console.log('🔍 [DEBUG] Iniciando busca de progresso para usuário:', user.uid);
+          console.log('🔍 [DEBUG] Database disponível:', !!db);
           
-          try {
-            // Buscar última tentativa da coleção quiz_attempts (mesma lógica do RandomizedQuizService)
-            console.log(`🔍 [${moduleId}] Construindo query para quiz_attempts...`);
-            const attemptsQuery = query(
-              collection(db!, 'quiz_attempts'),
-              where('studentId', '==', user.uid),
-              where('moduleId', '==', moduleId),
-              orderBy('startedAt', 'desc'),
-              limit(1)
-            );
-
-            console.log(`🔍 [${moduleId}] Executando query...`);
-            const attemptsSnapshot = await getDocs(attemptsQuery);
-            console.log(`🔍 [${moduleId}] Query executada. Documentos encontrados: ${attemptsSnapshot.size}`);
+          // 🎯 CORREÇÃO: Buscar da mesma fonte que o RandomizedQuizComponent usa
+          let progressData: any = {};
+          const modules = ['module-1']; // Lista de módulos disponíveis
+          
+          for (const moduleId of modules) {
+            console.log(`\n📚 [${moduleId}] Iniciando busca de tentativas...`);
             
-            if (!attemptsSnapshot.empty) {
-              const attemptDoc = attemptsSnapshot.docs[0];
-              const attemptData = attemptDoc.data();
-              console.log(`✅ [${moduleId}] Tentativa encontrada! ID: ${attemptDoc.id}`);
-              console.log(`✅ [${moduleId}] Dados brutos:`, attemptData);
+            try {
+              // Buscar última tentativa da coleção quiz_attempts (mesma lógica do RandomizedQuizService)
+              console.log(`🔍 [${moduleId}] Construindo query para quiz_attempts...`);
+              const attemptsQuery = query(
+                collection(db!, 'quiz_attempts'),
+                where('studentId', '==', user.uid),
+                where('moduleId', '==', moduleId),
+                orderBy('startedAt', 'desc'),
+                limit(1)
+              );
+
+              console.log(`🔍 [${moduleId}] Executando query...`);
+              const attemptsSnapshot = await getDocs(attemptsQuery);
+              console.log(`🔍 [${moduleId}] Query executada. Documentos encontrados: ${attemptsSnapshot.size}`);
               
-              // 🎯 CONVERSÃO ROBUSTA com validação
-              const percentage = attemptData.percentage || attemptData.score || 0;
-              const passed = attemptData.passed || false;
-              
-              progressData[moduleId] = {
-                totalScore: percentage,
-                score: percentage,
-                percentage: percentage,
-                completed: passed,
-                lastAccessed: attemptData.completedAt || attemptData.startedAt,
-                maxScore: 100,
-                attempts: 1,
-                bestScore: percentage,
-                passed: passed,
-                // 🎯 CAMPOS EXTRAS PARA DEBUG
-                _source: 'quiz_attempts',
-                _attemptId: attemptDoc.id,
-                _rawData: attemptData
-              };
-              
-              console.log(`📊 [${moduleId}] Progresso convertido:`, progressData[moduleId]);
-              
-              // 🎯 VALIDAÇÃO DO STATUS
-              let status = 'never_attempted';
-              if (passed) {
-                status = 'completed';
-              } else if (percentage > 0) {
-                status = 'attempted_failed';
-              }
-              console.log(`🎯 [${moduleId}] Status calculado: ${status} (${percentage}%, passou: ${passed})`);
-              
-            } else {
-              console.log(`⚠️ [${moduleId}] Nenhuma tentativa encontrada em quiz_attempts`);
-              
-              // 🔄 FALLBACK 1: student_module_progress
-              console.log(`🔄 [${moduleId}] Tentando fallback para student_module_progress...`);
-              try {
-                const moduleProgressDoc = await getDoc(doc(db!, 'student_module_progress', `${user.uid}_${moduleId}`));
-                if (moduleProgressDoc.exists()) {
-                  const data = moduleProgressDoc.data();
-                  console.log(`🔄 [${moduleId}] Dados encontrados em student_module_progress:`, data);
-                  
-                  progressData[moduleId] = {
-                    totalScore: data.progress || data.score || 0,
-                    score: data.progress || data.score || 0,
-                    percentage: data.progress || data.score || 0,
-                    completed: data.isCompleted || false,
-                    lastAccessed: data.updatedAt || data.lastAttempt,
-                    maxScore: data.maxScore || 100,
-                    attempts: data.attempts || 1,
-                    bestScore: data.bestScore || data.score || 0,
-                    passed: data.isCompleted || false,
-                    _source: 'student_module_progress'
-                  };
-                  console.log(`✅ [${moduleId}] Fallback bem-sucedido:`, progressData[moduleId]);
-                } else {
-                  console.log(`❌ [${moduleId}] Nenhum dado encontrado em student_module_progress`);
+              if (!attemptsSnapshot.empty) {
+                const attemptDoc = attemptsSnapshot.docs[0];
+                const attemptData = attemptDoc.data();
+                console.log(`✅ [${moduleId}] Tentativa encontrada! ID: ${attemptDoc.id}`);
+                console.log(`✅ [${moduleId}] Dados brutos:`, attemptData);
+                
+                // 🎯 CONVERSÃO ROBUSTA com validação
+                const percentage = attemptData.percentage || attemptData.score || 0;
+                const passed = attemptData.passed || false;
+                
+                progressData[moduleId] = {
+                  totalScore: percentage,
+                  score: percentage,
+                  percentage: percentage,
+                  completed: passed,
+                  lastAccessed: attemptData.completedAt || attemptData.startedAt,
+                  maxScore: 100,
+                  attempts: 1,
+                  bestScore: percentage,
+                  passed: passed,
+                  // 🎯 CAMPOS EXTRAS PARA DEBUG
+                  _source: 'quiz_attempts',
+                  _attemptId: attemptDoc.id,
+                  _rawData: attemptData
+                };
+                
+                console.log(`📊 [${moduleId}] Progresso convertido:`, progressData[moduleId]);
+                
+                // 🎯 VALIDAÇÃO DO STATUS
+                let status = 'never_attempted';
+                if (passed) {
+                  status = 'completed';
+                } else if (percentage > 0) {
+                  status = 'attempted_failed';
+                }
+                console.log(`🎯 [${moduleId}] Status calculado: ${status} (${percentage}%, passou: ${passed})`);
+                
+              } else {
+                console.log(`⚠️ [${moduleId}] Nenhuma tentativa encontrada em quiz_attempts`);
+                
+                // 🔄 FALLBACK 1: student_module_progress
+                console.log(`🔄 [${moduleId}] Tentando fallback para student_module_progress...`);
+                try {
+                  const moduleProgressDoc = await getDoc(doc(db!, 'student_module_progress', `${user.uid}_${moduleId}`));
+                  if (moduleProgressDoc.exists()) {
+                    const data = moduleProgressDoc.data();
+                    console.log(`🔄 [${moduleId}] Dados encontrados em student_module_progress:`, data);
+                    
+                    progressData[moduleId] = {
+                      totalScore: data.progress || data.score || 0,
+                      score: data.progress || data.score || 0,
+                      percentage: data.progress || data.score || 0,
+                      completed: data.isCompleted || false,
+                      lastAccessed: data.updatedAt || data.lastAttempt,
+                      maxScore: data.maxScore || 100,
+                      attempts: data.attempts || 1,
+                      bestScore: data.bestScore || data.score || 0,
+                      passed: data.isCompleted || false,
+                      _source: 'student_module_progress'
+                    };
+                    console.log(`✅ [${moduleId}] Fallback bem-sucedido:`, progressData[moduleId]);
+                  } else {
+                    console.log(`❌ [${moduleId}] Nenhum dado encontrado em student_module_progress`);
                 }
               } catch (fallbackError) {
                 console.error(`❌ [${moduleId}] Erro no fallback student_module_progress:`, fallbackError);
@@ -570,7 +570,7 @@ export default function JogosPage() {
         fetchProgress();
       }, 3000);
       
-      // 🎯 RETORNAR FUNÇÃO DE CLEANUP
+      // 🎯 RETORNAR FUNÇÃO DE CLEANUP (agora retorna diretamente)
       return () => {
         unsubscribe();
         window.removeEventListener('moduleCompleted', handleModuleCompleted as EventListener);
@@ -579,10 +579,12 @@ export default function JogosPage() {
     };
     
     // 🎯 EXECUTAR INICIALIZAÇÃO COM AGUARDA (não pode usar await diretamente no useEffect)
-    let cleanupFunction: (() => void) | undefined;
+    let cleanupFunction: (() => void) | null = null;
     
     initializeWithWait().then((cleanup) => {
-      cleanupFunction = cleanup;
+      if (cleanup) {
+        cleanupFunction = cleanup;
+      }
     }).catch((error) => {
       console.error('❌ [USEEFFECT-MAIN] Erro na inicialização:', error);
       setModuleLoading(false);
