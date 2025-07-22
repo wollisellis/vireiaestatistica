@@ -36,6 +36,7 @@ import { StudentClassInfo } from '@/components/student/StudentClassInfo';
 import { ClassRankingPanel } from '@/components/ranking/ClassRankingPanel';
 import unifiedScoringService from '@/services/unifiedScoringService';
 import { debounce, devLog } from '@/utils/debounce';
+import FirebaseConnectionTest from '@/components/debug/FirebaseConnectionTest';
 
 // 🎯 TIPOS FORTES
 interface ModuleData {
@@ -435,6 +436,13 @@ export default function JogosPage() {
               <div className="mt-12">
                 <PersonalLearningDashboard />
               </div>
+
+              {/* 🔧 DEBUG COMPONENT (ONLY IN DEVELOPMENT) */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-12">
+                  <FirebaseConnectionTest />
+                </div>
+              )}
             </div>
 
             {/* 🎯 SIDEBAR DIREITO */}

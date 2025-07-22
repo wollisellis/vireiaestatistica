@@ -97,18 +97,20 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
     router
   ])
 
-  return {
-    user: rbacUser,
-    loading: authLoading || rbacLoading,
-    hasAccess: () => {
-      // Check authenticated user access
-      if (rbacUser) {
-        if (!requiredRole) return true
-        return rbacUser.role === requiredRole
-      }
-
-      return false
+  const hasAccessValue = () => {
+    // Check authenticated user access
+    if (rbacUser) {
+      if (!requiredRole) return true
+      return rbacUser.role === requiredRole
     }
+    return allowGuests // Allow guests if explicitly allowed
+  }
+
+  return {
+    user: rbacUser || firebaseUser, // Fallback para firebaseUser se rbacUser não estiver disponível
+    loading: authLoading || rbacLoading,
+    hasAccess: hasAccessValue(),
+    isProfessor: rbacUser?.role === 'professor' || firebaseUser?.uid === 'professor-guest-user'
   }
 }
 
@@ -143,6 +145,6 @@ export function useAuthRedirect() {
 export function useFlexibleAccess() {
   return useRoleRedirect({
     // Sem requiredRole = permite qualquer usuário autenticado acessar
-    allowGuests: false
+    allowGuests: true // Permitir convidados também
   })
 }
