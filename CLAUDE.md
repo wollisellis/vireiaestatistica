@@ -72,21 +72,15 @@ rm -rf .next
 ```
 
 ### Instruções para Claude Code
-1. **Ao iniciar uma sessão**:
-   - Consultar `./memories/index.md` para contexto
-   - Verificar sessões recentes relacionadas ao problema
-   - Revisar padrões identificados anteriormente
+1. **Modo Passivo**: Sistema de memória é **consultado apenas quando solicitado explicitamente** pelo usuário para economizar tokens.
 
-2. **Durante o desenvolvimento**:
-   - Documentar descobertas importantes
-   - Registrar soluções eficazes
-   - Anotar problemas recorrentes
+2. **Durante o desenvolvimento**: Documentar descobertas importantes quando relevante.
 
 3. **Ao finalizar uma sessão significativa**:
-   - Criar arquivo `./memories/sessions/YYYY-MM-DD-session-XXX.md`
-   - Atualizar categoria relevante (`./memories/categories/`)
-   - Atualizar índice principal (`./memories/index.md`)
-   - Incrementar estatísticas
+   - Criar arquivo `./memories/YYYY-MM-DD-HHMM-titulo-principal.md`
+   - Formato: data-hora-titulo (ex: `2025-01-22-2200-fix-user-display-module-info.md`)
+   - Atualizar categoria relevante apenas se necessário
+   - **NÃO** consultar automaticamente memórias anteriores
 
 ### Template de Sessão
 ```markdown

@@ -1,5 +1,9 @@
 'use client';
 
+// Force dynamic rendering to avoid stale cache issues
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import React, { useEffect, useState, useCallback, useRef, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modules } from '@/data/modules';
@@ -84,6 +88,7 @@ export default function JogosPage() {
   const { signOut } = useFirebaseAuth();
   
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
+  const [ready, setReady] = useState(false);
   const [showCompletedModal, setShowCompletedModal] = useState(false);
   const [selectedModuleForModal, setSelectedModuleForModal] = useState<{
     title: string;
@@ -130,35 +135,30 @@ export default function JogosPage() {
         await unifiedScoringService.updateStudentRanking(user.uid);
       } catch (error) {
         console.error('Error updating scoring:', error);
+        // NÃO setar estado vazio - manter estado anterior
       }
     };
     
     updateScoring();
   }, [user?.uid]);
   
-  // 🎯 UNLOCKED MODULES LISTENER
+  // 🎯 UNLOCKED MODULES - HARDCODED FOR NOW (avoiding Firebase rules issues)
   useEffect(() => {
-    if (!user?.uid || !db) return;
+    if (!user?.uid) return;
     
-    const unsubscribe = onSnapshot(
-      doc(db, 'userAccess', user.uid),
-      (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const data = docSnapshot.data();
-          const unlocked = data.unlockedModules || ['module-1'];
-          startTransition(() => {
-            setUnlockedModules(unlocked);
-          });
-          devLog('Unlocked modules updated:', unlocked);
-        }
-      },
-      (error) => {
-        console.error('Error listening to unlocked modules:', error);
-      }
-    );
+    // Por enquanto, deixar todos os módulos desbloqueados para professores
+    // e apenas module-1 para estudantes
+    const defaultUnlocked = isProfessor ? ['module-1', 'module-2', 'module-3', 'module-4'] : ['module-1'];
     
-    return unsubscribe;
-  }, [user?.uid]);
+    startTransition(() => {
+      setUnlockedModules(defaultUnlocked);
+    });
+    
+    devLog('Unlocked modules set to default:', defaultUnlocked);
+    
+    // Marcar como ready após carregar módulos desbloqueados
+    setReady(true);
+  }, [user?.uid, isProfessor]);
   
   // 🎯 MODULE COMPLETED EVENT LISTENER
   useEffect(() => {
@@ -304,14 +304,16 @@ export default function JogosPage() {
     }
   }, [rankingCollapsed]);
   
-  // 🎯 LOADING STATE
-  if (loading) {
+  // 🎯 LOADING STATE & READY CHECK
+  if (loading || !ready) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-600 mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-700">Carregando AvaliaNutri...</h2>
-          <p className="text-gray-500 mt-2">Preparando seus módulos...</p>
+          <p className="text-gray-500 mt-2">
+            {loading ? 'Preparando seus módulos...' : 'Configurando dados...'}
+          </p>
         </div>
       </div>
     );
