@@ -360,10 +360,17 @@ async function fetchRemoteProgress(userId: string, moduleId: string): Promise<Mo
           bestAttempt = attempt;
         }
 
-        // Pegar a atividade mais recente
-        const activityDate = attempt.completedAt?.toDate?.() || attempt.startedAt?.toDate?.();
-        if (activityDate && (!lastActivity || activityDate > lastActivity)) {
-          lastActivity = activityDate;
+        // Pegar a atividade mais recente - com verificação de segurança
+        let activityDate = null;
+        try {
+          activityDate = attempt.completedAt?.toDate?.() || attempt.startedAt?.toDate?.();
+          if (activityDate && activityDate instanceof Date && !isNaN(activityDate.getTime())) {
+            if (!lastActivity || activityDate > lastActivity) {
+              lastActivity = activityDate;
+            }
+          }
+        } catch (error) {
+          console.warn('Erro ao processar data de atividade:', error);
         }
       });
 
@@ -382,7 +389,7 @@ async function fetchRemoteProgress(userId: string, moduleId: string): Promise<Mo
         bestScore: bestScore,
         completed: bestAttempt.passed || bestScore >= 70,
         passed: bestAttempt.passed || bestScore >= 70,
-        lastAccessed: lastActivity,
+        lastAccessed: lastActivity || new Date(), // 🎯 FIX: Garantir que sempre há uma data válida
         attempts: totalAttempts,
         source: 'quiz_attempts',
         rawData: { bestAttempt, allAttempts: attempts }

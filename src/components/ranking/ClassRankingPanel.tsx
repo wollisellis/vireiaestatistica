@@ -463,9 +463,21 @@ export function ClassRankingPanel({
                       {student.lastActivity && (
                         <div className={`
                           w-2 h-2 rounded-full
-                          ${Date.now() - new Date(student.lastActivity).getTime() < 24 * 60 * 60 * 1000
-                            ? 'bg-green-400' : 'bg-gray-300'
-                          }
+                          ${(() => {
+                            try {
+                              const activityDate = student.lastActivity instanceof Date
+                                ? student.lastActivity
+                                : new Date(student.lastActivity);
+
+                              if (isNaN(activityDate.getTime())) return 'bg-gray-300';
+
+                              return Date.now() - activityDate.getTime() < 24 * 60 * 60 * 1000
+                                ? 'bg-green-400' : 'bg-gray-300';
+                            } catch (error) {
+                              console.warn('Erro ao processar lastActivity:', error);
+                              return 'bg-gray-300';
+                            }
+                          })()}
                         `} />
                       )}
                     </div>

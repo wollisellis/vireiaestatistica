@@ -729,7 +729,7 @@ export class EnhancedClassService {
             studentName: studentData.studentName || studentData.name || 'Usuário Anônimo',
             email: studentData.email || studentData.studentEmail || '',
             status: studentData.status || 'active',
-            lastActivity: { getTime: () => lastActivityTimestamp },
+            lastActivity: new Date(lastActivityTimestamp), // 🎯 FIX: Criar objeto Date válido
             overallProgress: 0,
             totalNormalizedScore: 0,
             completedModules: 0

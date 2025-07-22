@@ -575,19 +575,27 @@ class UnifiedScoringService {
   // 🚀 UTILITÁRIO: Sincronizar dados manualmente (para migração)
   async updateStudentRanking(studentId: string): Promise<void> {
     if (!db || !studentId) return;
-    
+
     try {
       // Buscar score atual do estudante
       const score = await this.getUnifiedScore(studentId);
-      if (!score) return;
+      if (!score) {
+        console.log(`[UnifiedScoring] Nenhum score encontrado para ${studentId}`);
+        return;
+      }
 
-      // Atualizar score no sistema unificado (isso já mantém o ranking atualizado)
-      await this.updateModuleScore(
-        studentId, 
-        'overall', 
-        score.totalScore, 
-        score.normalizedScore
-      );
+      // 🎯 FIX: Não tentar atualizar módulo "overall" - apenas sincronizar dados existentes
+      // Sincronizar dados dos módulos reais que o estudante completou
+      const batch = writeBatch(db);
+
+      // Atualizar documento principal do estudante
+      const studentRef = doc(db, 'unified_scores', studentId);
+      batch.set(studentRef, {
+        ...score,
+        lastUpdated: serverTimestamp()
+      }, { merge: true });
+
+      await batch.commit();
 
       console.log(`[UnifiedScoring] Ranking atualizado para estudante ${studentId}`);
     } catch (error) {

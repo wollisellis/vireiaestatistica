@@ -237,14 +237,28 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                       {state.lastActivity && (
                         <div className="text-center text-xs text-gray-500 bg-gray-50 rounded px-2 py-1">
                           {(() => {
-                            const minutesAgo = Math.floor((Date.now() - state.lastActivity.getTime()) / (1000 * 60));
-                            const hoursAgo = Math.floor(minutesAgo / 60);
-                            const daysAgo = Math.floor(hoursAgo / 24);
-                            
-                            if (daysAgo > 0) return `Há ${daysAgo} dia${daysAgo !== 1 ? 's' : ''}`;
-                            if (hoursAgo > 0) return `Há ${hoursAgo} hora${hoursAgo !== 1 ? 's' : ''}`;
-                            if (minutesAgo > 0) return `Há ${minutesAgo} minuto${minutesAgo !== 1 ? 's' : ''}`;
-                            return 'Agora mesmo';
+                            try {
+                              // 🎯 FIX: Verificação de segurança para lastActivity
+                              const activityDate = state.lastActivity instanceof Date
+                                ? state.lastActivity
+                                : new Date(state.lastActivity);
+
+                              if (isNaN(activityDate.getTime())) {
+                                return 'Data inválida';
+                              }
+
+                              const minutesAgo = Math.floor((Date.now() - activityDate.getTime()) / (1000 * 60));
+                              const hoursAgo = Math.floor(minutesAgo / 60);
+                              const daysAgo = Math.floor(hoursAgo / 24);
+
+                              if (daysAgo > 0) return `Há ${daysAgo} dia${daysAgo !== 1 ? 's' : ''}`;
+                              if (hoursAgo > 0) return `Há ${hoursAgo} hora${hoursAgo !== 1 ? 's' : ''}`;
+                              if (minutesAgo > 0) return `Há ${minutesAgo} minuto${minutesAgo !== 1 ? 's' : ''}`;
+                              return 'Agora mesmo';
+                            } catch (error) {
+                              console.warn('Erro ao processar lastActivity:', error);
+                              return 'Data inválida';
+                            }
                           })()}
                         </div>
                       )}
