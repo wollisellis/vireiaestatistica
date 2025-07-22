@@ -105,28 +105,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
     }
   }, [module.isLocked, state.status]);
 
-  const buttonClass = useMemo(() => {
-    const base = "w-full h-14 text-lg font-bold flex items-center justify-center space-x-3 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 rounded-xl";
 
-    if (module.isLocked) {
-      return `${base} bg-gray-400 cursor-not-allowed text-white`;
-    }
-
-    if (error) {
-      return `${base} bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-700 hover:via-red-800 hover:to-red-900 text-white`;
-    }
-
-    switch (state.status) {
-      case 'completed':
-        return `${base} bg-gradient-to-r from-green-600 via-green-700 to-emerald-700 hover:from-green-700 hover:via-green-800 hover:to-emerald-800 text-white`;
-      case 'in_progress':
-        return `${base} bg-gradient-to-r from-orange-600 via-orange-700 to-amber-700 hover:from-orange-700 hover:via-orange-800 hover:to-amber-800 text-white`;
-      case 'loading':
-        return `${base} bg-gray-400 cursor-wait animate-pulse text-white`;
-      default:
-        return `${base} bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 text-white`;
-    }
-  }, [module.isLocked, error, state.status]);
 
   // 🎯 RENDER COM CARREGAMENTO MAIS SUTIL
   // Não mostrar skeleton completo, apenas indicador de carregamento no badge
@@ -140,223 +119,215 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
       className="group"
     >
       <Card className={`
-        h-full border-2 transition-all duration-300 cursor-pointer shadow-md hover:shadow-xl
+        h-full border transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.02]
         ${module.isLocked
-          ? 'border-gray-300 bg-gray-50/80 backdrop-blur-sm'
+          ? 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'
           : error
-            ? 'border-red-300 hover:border-red-400 hover:shadow-red-100 bg-white/90 backdrop-blur-sm'
-            : state.status === 'completed'
-              ? 'border-green-300 hover:border-green-400 hover:shadow-green-100 bg-gradient-to-br from-green-50/80 to-white backdrop-blur-sm'
-              : 'border-blue-300 hover:border-blue-400 hover:shadow-blue-100 bg-gradient-to-br from-blue-50/80 to-white backdrop-blur-sm'
+            ? 'border-red-200 hover:border-red-300 bg-white dark:border-red-800 dark:bg-gray-900'
+            : 'border-gray-200 hover:border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900'
         }
         ${className}
       `} onClick={handleClick}>
-        <div className="p-7 flex flex-col h-full">
-          {/* 🎯 HEADER MELHORADO */}
-          <div className="flex items-start space-x-5 mb-6">
-            <div className={`
-              w-18 h-18 rounded-3xl flex items-center justify-center text-3xl font-bold shadow-xl text-white ring-4 ring-white/50
-              ${iconBgClass}
-            `}>
-              {module.isLocked ? '🔒' : module.icon}
+        <div className="relative p-8 flex flex-col h-full">
+          {/* 🎯 SELO "CONCLUÍDO" NO CANTO SUPERIOR DIREITO */}
+          {state.status === 'completed' && (
+            <div className="absolute top-4 right-4">
+              <Badge
+                variant="success"
+                className="flex items-center space-x-1 text-xs px-2 py-1 bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-100 dark:border-green-700"
+              >
+                <CheckCircle className="w-3 h-3" />
+                <span>Concluído</span>
+              </Badge>
             </div>
+          )}
 
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-2xl text-gray-900 leading-tight mb-2">
-                {module.title}
-              </h3>
-              <p className="text-base text-gray-600 flex items-center font-medium">
-                <Clock className="w-5 h-5 mr-2 text-blue-500" />
-                10-15 minutos
-              </p>
-            </div>
+          {/* 🎯 HEADER REDESENHADO */}
+          <div className="flex items-start space-x-6 mb-6">
+            {/* Ícone com progresso radial */}
+            <div className="relative">
+              <div className={`
+                w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm text-white
+                ${iconBgClass}
+              `}>
+                {module.isLocked ? '🔒' : module.icon}
+              </div>
 
-            {/* 🎯 STATUS BADGE APRIMORADO */}
-            <div className="flex flex-col items-end space-y-2">
-              {error ? (
-                <Badge variant="destructive" className="flex items-center space-x-1">
-                  <AlertCircle className="w-3 h-3" />
-                  <span>Erro</span>
-                </Badge>
-              ) : (
-                <>
-                  {/* Badge de Status */}
-                  <Badge 
-                    variant={
-                      state.status === 'completed' ? 'success' :
-                      state.status === 'in_progress' ? 'warning' :
-                      state.status === 'loading' ? 'secondary' :
-                      'default'
-                    }
-                    className="flex items-center space-x-1"
-                  >
-                    {state.status === 'completed' && <CheckCircle className="w-3 h-3" />}
-                    {state.status === 'in_progress' && <TrendingUp className="w-3 h-3" />}
-                    {state.status === 'loading' && <RefreshCw className="w-3 h-3 animate-spin" />}
-                    {state.status === 'new' && <PlayCircle className="w-3 h-3" />}
-                    <span>{state.badge}</span>
-                  </Badge>
-                  
-                  {/* 🎯 NOTA E INFORMAÇÕES DINÂMICAS */}
-                  {state.status === 'completed' && (
-                    <div className="text-right space-y-3">
-                      {/* Performance Level */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-xl p-3 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-semibold text-green-800">
-                            {state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'}
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            <Award className="w-4 h-4 text-green-600" />
-                            <span className="text-lg font-bold text-green-700">{state.score}%</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center text-yellow-500">
-                            {Array.from({ length: state.stars }, (_, i) => (
-                              <Star key={i} className="w-3 h-3 fill-current" />
-                            ))}
-                          </div>
-                          {state.passed && (
-                            <span className="text-sm text-green-700 font-semibold bg-green-100 px-2 py-1 rounded-full">
-                              ✅ Aprovado
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Métricas Detalhadas - Removido número de tentativas */}
-                      <div className="text-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-300 shadow-sm">
-                        <div className="font-bold text-2xl text-blue-800 mb-1">{state.score}%</div>
-                        <div className="text-blue-700 text-sm font-semibold">Melhor Nota</div>
-                      </div>
-
-                      {/* Última Atividade */}
-                      {state.lastActivity && (
-                        <div className="text-center text-xs text-gray-500 bg-gray-50 rounded px-2 py-1">
-                          {(() => {
-                            try {
-                              // 🎯 FIX: Verificação de segurança para lastActivity
-                              const activityDate = state.lastActivity instanceof Date
-                                ? state.lastActivity
-                                : new Date(state.lastActivity);
-
-                              if (isNaN(activityDate.getTime())) {
-                                return 'Data inválida';
-                              }
-
-                              const minutesAgo = Math.floor((Date.now() - activityDate.getTime()) / (1000 * 60));
-                              const hoursAgo = Math.floor(minutesAgo / 60);
-                              const daysAgo = Math.floor(hoursAgo / 24);
-
-                              if (daysAgo > 0) return `Há ${daysAgo} dia${daysAgo !== 1 ? 's' : ''}`;
-                              if (hoursAgo > 0) return `Há ${hoursAgo} hora${hoursAgo !== 1 ? 's' : ''}`;
-                              if (minutesAgo > 0) return `Há ${minutesAgo} minuto${minutesAgo !== 1 ? 's' : ''}`;
-                              return 'Agora mesmo';
-                            } catch (error) {
-                              console.warn('Erro ao processar lastActivity:', error);
-                              return 'Data inválida';
-                            }
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {state.status === 'in_progress' && state.score > 0 && (
-                    <div className="text-right space-y-1">
-                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-orange-800">Em Progresso</span>
-                          <div className="flex items-center space-x-1">
-                            <TrendingUp className="w-3 h-3 text-orange-600" />
-                            <span className="text-sm font-bold text-orange-600">{state.score}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {state.status === 'new' && (
-                    <div className="text-right">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-                        <span className="text-xs font-medium text-blue-800">10-15 min</span>
-                        <div className="text-xs text-blue-600">Não iniciado</div>
-                      </div>
-                    </div>
-                  )}
-                </>
+              {/* Progresso radial ao redor do ícone */}
+              {state.status === 'completed' && state.score > 0 && (
+                <div className="absolute inset-0 rounded-2xl">
+                  <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      className="text-gray-200 dark:text-gray-700"
+                    />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeDasharray={`${(state.score / 100) * 175.93} 175.93`}
+                      className="text-green-500 transition-all duration-500"
+                    />
+                  </svg>
+                </div>
               )}
-              
-              {/* 🎯 REFRESH BUTTON PARA DEBUGS/ERROS */}
+            </div>
+
+            <div className="flex-1 min-w-0 space-y-2">
+              {/* Título com quebra controlada */}
+              <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100 leading-tight max-w-[200px]">
+                Introdução à Avaliação Nutricional
+              </h3>
+
+              {/* Microcopy com tempo estimado */}
+              <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-4 h-4" />
+                  <span>10-15 min</span>
+                </div>
+
+                {/* Última atividade como microcopy */}
+                {state.status === 'completed' && state.lastActivity && (
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {(() => {
+                      try {
+                        const activityDate = state.lastActivity instanceof Date
+                          ? state.lastActivity
+                          : new Date(state.lastActivity);
+
+                        if (isNaN(activityDate.getTime())) return '';
+
+                        const minutesAgo = Math.floor((Date.now() - activityDate.getTime()) / (1000 * 60));
+                        const hoursAgo = Math.floor(minutesAgo / 60);
+                        const daysAgo = Math.floor(hoursAgo / 24);
+
+                        if (daysAgo > 0) return `Há ${daysAgo} dia${daysAgo !== 1 ? 's' : ''}`;
+                        if (hoursAgo > 0) return `Há ${hoursAgo} hora${hoursAgo !== 1 ? 's' : ''}`;
+                        if (minutesAgo > 0) return `Há ${minutesAgo} minuto${minutesAgo !== 1 ? 's' : ''}`;
+                        return 'Agora mesmo';
+                      } catch (error) {
+                        return '';
+                      }
+                    })()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 🎯 BADGE UNIFICADO DE PERFORMANCE */}
+          {state.status === 'completed' && (
+            <div className="mb-6">
+              <div
+                className="inline-flex items-center space-x-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800 cursor-help"
+                title={`Detalhes: ${state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • ${state.score}% • ${state.passed ? 'Aprovado' : 'Reprovado'} • ${state.stars} estrela${state.stars !== 1 ? 's' : ''}`}
+              >
+                <Award className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <span className="font-semibold text-sm">
+                  {state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • {state.score}% • Aprovado
+                </span>
+                <div className="flex items-center text-yellow-500 dark:text-yellow-400">
+                  {Array.from({ length: state.stars }, (_, i) => (
+                    <Star key={i} className="w-3 h-3 fill-current" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 🎯 DESCRIÇÃO DO MÓDULO */}
+          <div className="flex-1 mb-6">
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+              {module.description || "Aprenda os conceitos fundamentais da avaliação nutricional com dados brasileiros e exercícios práticos."}
+            </p>
+          </div>
+
+          {/* 🎯 ETIQUETA FLUTUANTE DA MELHOR NOTA (RODAPÉ) */}
+          {state.status === 'completed' && (
+            <div className="absolute bottom-4 right-4">
+              <div className="bg-blue-50 text-blue-800 px-2 py-1 rounded-md text-xs font-medium border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+                Melhor Nota: {state.score}%
+              </div>
+            </div>
+          )}
+
+          {/* 🎯 ESTADOS PARA OUTROS STATUS */}
+          {state.status === 'in_progress' && state.score > 0 && (
+            <div className="mb-6">
+              <div className="inline-flex items-center space-x-2 bg-orange-50 text-orange-800 px-3 py-2 rounded-lg border border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800">
+                <TrendingUp className="w-4 h-4" />
+                <span className="font-semibold text-sm">Em Progresso • {state.score}%</span>
+              </div>
+            </div>
+          )}
+
+          {state.status === 'new' && (
+            <div className="mb-6">
+              <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-800 px-3 py-2 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+                <PlayCircle className="w-4 h-4" />
+                <span className="font-semibold text-sm">Pronto para Começar</span>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-6">
+              <div className="inline-flex items-center space-x-2 bg-red-50 text-red-800 px-3 py-2 rounded-lg border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800">
+                <AlertCircle className="w-4 h-4" />
+                <span className="font-semibold text-sm">Erro ao Carregar</span>
+              </div>
+            </div>
+          )}
+
+          {/* 🎯 DEBUG INFO (DEV ONLY) */}
+          {showDebugInfo && process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs space-y-1">
+              <div><strong>Status:</strong> {state.status}</div>
+              <div><strong>Source:</strong> {state.source}</div>
+              <div><strong>User ID:</strong> {userId?.slice(-6) || 'null'}</div>
+              {error && <div className="text-red-600 dark:text-red-400"><strong>Error:</strong> {error}</div>}
               {(error || showDebugInfo) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleRefresh}
-                  className="p-1 h-6 w-6"
+                  className="p-1 h-6 w-6 mt-2"
                   title="Atualizar progresso"
                 >
                   <RefreshCw className="w-3 h-3" />
                 </Button>
               )}
             </div>
-          </div>
-
-          {/* 🎯 PROGRESS BAR MELHORADA */}
-          {!module.isLocked && state.score > 0 && !error && (
-            <div className="mb-4">
-              <Progress 
-                value={state.progress} 
-                className="h-3 bg-gray-200"
-                indicatorClassName={
-                  state.status === 'completed' ? 'bg-gradient-to-r from-green-500 to-green-600' :
-                  state.status === 'in_progress' ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
-                  'bg-gradient-to-r from-blue-500 to-blue-600'
-                }
-              />
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span className="font-medium">Melhor Nota: {state.score}%</span>
-                <span className="font-medium">{state.passed ? '✅ Aprovado' : 'Precisa ≥70%'}</span>
-              </div>
-            </div>
           )}
 
-          {/* 🎯 DESCRIPTION */}
-          <div className="flex-1 mb-6">
-            <p className="text-gray-600 text-sm leading-relaxed">
-              {module.description}
-            </p>
-            
-            {/* Informação adicional para módulos não iniciados */}
-            {state.status === 'new' && !module.isLocked && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-start space-x-2">
-                  <Star className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-xs text-blue-700">
-                    <p className="font-medium mb-1">Pronto para começar!</p>
-                    <p>Complete este módulo para ganhar pontos e subir no ranking da turma.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 🎯 DEBUG INFO (DEV ONLY) */}
-          {showDebugInfo && process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-3 bg-gray-100 rounded-lg text-xs space-y-1">
-              <div><strong>Status:</strong> {state.status}</div>
-              <div><strong>Source:</strong> {state.source}</div>
-              <div><strong>User ID:</strong> {userId?.slice(-6) || 'null'}</div>
-              {error && <div className="text-red-600"><strong>Error:</strong> {error}</div>}
-            </div>
-          )}
-
-          {/* 🎯 ACTION BUTTON OTIMIZADO */}
-          <Button 
+          {/* 🎯 ACTION BUTTON REDESENHADO */}
+          <Button
             onClick={handleClick}
             disabled={module.isLocked || (isLoading && state.status === 'loading')}
-            className={buttonClass}
+            className={`
+              w-full h-12 text-base font-semibold flex items-center justify-center space-x-2
+              transition-all duration-200 rounded-lg
+              hover:scale-105 hover:shadow-md
+              ${module.isLocked
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+                : error
+                  ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                  : state.status === 'completed'
+                    ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
+                    : state.status === 'in_progress'
+                      ? 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800'
+                      : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800'
+              }
+            `}
           >
             <AnimatePresence mode="wait">
               {module.isLocked ? (
@@ -377,7 +348,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="flex items-center space-x-2"
                 >
-                  <RefreshCw className="w-5 h-5" />
+                  <RefreshCw className="w-4 h-4" />
                   <span>Tentar Novamente</span>
                 </motion.div>
               ) : state.status === 'loading' ? (
@@ -388,7 +359,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="flex items-center space-x-2"
                 >
-                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Carregando...</span>
                 </motion.div>
               ) : state.status === 'completed' ? (
@@ -399,8 +370,8 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="flex items-center space-x-2"
                 >
-                  <Award className="w-5 h-5" />
-                  <span>{state.buttonText}</span>
+                  <Award className="w-4 h-4" />
+                  <span>Ver Resultados</span>
                 </motion.div>
               ) : state.status === 'in_progress' ? (
                 <motion.div
@@ -410,8 +381,8 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="flex items-center space-x-2"
                 >
-                  <TrendingUp className="w-5 h-5" />
-                  <span>{state.buttonText}</span>
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Continuar</span>
                 </motion.div>
               ) : (
                 <motion.div
@@ -421,9 +392,9 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="flex items-center space-x-2"
                 >
-                  <Zap className="w-5 h-5" />
-                  <span>{state.buttonText}</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <PlayCircle className="w-4 h-4" />
+                  <span>Começar Módulo</span>
+                  <ArrowRight className="w-4 h-4" />
                 </motion.div>
               )}
             </AnimatePresence>
