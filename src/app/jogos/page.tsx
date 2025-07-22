@@ -229,7 +229,13 @@ export default function JogosPage() {
   // Use direct Firebase auth hook for logout functionality only
   const { signOut } = useFirebaseAuth();
   
-  const [moduleProgress, setModuleProgress] = useState<ModuleProgress | null>(null); // 🎯 FIX: Start with null for proper loading state
+  const [moduleProgress, setModuleProgress] = useState<ModuleProgress | null>(() => {
+    // 🎯 FIX: Safe initialization for SSR/build compatibility
+    if (typeof window === 'undefined') {
+      return {}; // During build/SSR, return empty object to prevent null access errors
+    }
+    return null; // Client-side starts with null for proper loading state
+  });
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
   const [moduleLoading, setModuleLoading] = useState(true);
   const [rankingCollapsed, setRankingCollapsed] = useState(() => {
@@ -274,7 +280,7 @@ export default function JogosPage() {
         } catch (error) {
           console.error('Erro ao buscar módulos concluídos:', error);
           // Fallback para o sistema legacy com verificação de segurança
-          if (Array.isArray(modules) && moduleProgress) {
+          if (Array.isArray(modules) && moduleProgress && typeof moduleProgress === 'object') {
             const legacyCompleted = modules.filter(module => {
               const progress = moduleProgress[module.id];
               if (!progress) return false;
@@ -672,7 +678,7 @@ export default function JogosPage() {
     let completedExercises = 0;
 
     modules.forEach(module => {
-      const progress = moduleProgress[module.id];
+      const progress = moduleProgress && typeof moduleProgress === 'object' ? moduleProgress[module.id] : null;
       if (progress) {
         totalScore += progress.totalScore;
         totalExercises += module.exercises?.length || 0;
@@ -709,7 +715,7 @@ export default function JogosPage() {
   const nutritionalGames = (Array.isArray(baseNutritionalGames) ? baseNutritionalGames : []).map(game => {
     const moduleId = game.id;
     const locked = !unlockedModules.includes(moduleId) && !isProfessor;
-    let progress = moduleProgress[moduleId];
+    let progress = moduleProgress && typeof moduleProgress === 'object' ? moduleProgress[moduleId] : null;
     
     // 🎯 FORÇA BUSCA DE PROGRESSO SE NÃO ENCONTRADO - MAIS REALISTA
     if (!progress && user?.uid && !moduleLoading) {
@@ -840,7 +846,7 @@ export default function JogosPage() {
   };
 
   // Show loading state while checking authentication
-  if (loading || moduleLoading) {
+  if (loading || (moduleLoading && moduleProgress === null)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
         <div className="text-center">
