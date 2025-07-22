@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modules } from '@/data/modules';
 import EnhancedModuleCard from '@/components/games/EnhancedModuleCard';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
-import { doc, onSnapshot, startTransition } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
   BookOpen, 
@@ -336,7 +336,7 @@ export default function JogosPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-4">
               <div className="flex items-center space-x-4">
-                <Link href="/dashboard" className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700">
+                <Link href="/dashboard-avancado" className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700">
                   <Home className="w-5 h-5" />
                   <span className="font-medium">Dashboard</span>
                 </Link>

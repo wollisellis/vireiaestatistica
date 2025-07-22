@@ -50,9 +50,13 @@ export function useFirebaseAuth() {
       return
     }
 
+    // Prevenir múltiplos listeners em desenvolvimento (React Strict Mode)
+    let isMounted = true
     console.log('🔥 Configurando listener de autenticação...')
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!isMounted) return // Prevenir updates se componente foi desmontado
+      
       console.log('🔄 Estado de autenticação mudou:', firebaseUser ? 'Logado' : 'Deslogado')
 
       if (firebaseUser) {
@@ -92,6 +96,7 @@ export function useFirebaseAuth() {
     })
 
     return () => {
+      isMounted = false // Marcar como desmontado para prevenir updates
       console.log('🔄 Removendo listener de autenticação')
       unsubscribe()
     }

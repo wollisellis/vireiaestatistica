@@ -7,7 +7,9 @@ import {
   enableNetwork, 
   disableNetwork, 
   onSnapshotsInSync,
-  connectFirestoreEmulator
+  connectFirestoreEmulator,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
@@ -182,8 +184,9 @@ export class ConnectionMonitorService {
     
     try {
       if (db) {
-        // Teste simples de conectividade
-        await db._delegate._databaseId;
+        // Teste simples de conectividade usando API pública do Firebase
+        const healthCheckDoc = doc(db, '_health', 'check');
+        await getDoc(healthCheckDoc);
         
         // Calcular latência
         const latency = Date.now() - startTime;
