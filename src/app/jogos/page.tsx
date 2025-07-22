@@ -40,6 +40,7 @@ import { ClassRankingPanel } from '@/components/ranking/ClassRankingPanel';
 import unifiedScoringService from '@/services/unifiedScoringService';
 import { debounce, devLog } from '@/utils/debounce';
 import FirebaseConnectionTest from '@/components/debug/FirebaseConnectionTest';
+import { JogosPageSkeleton, JogosPageMinimalSkeleton } from '@/components/ui/JogosPageSkeleton';
 
 // 🎯 TIPOS FORTES
 interface ModuleData {
@@ -85,6 +86,12 @@ export default function JogosPage() {
   // 🎯 ESTADOS MÍNIMOS NECESSÁRIOS
   const { user, loading, hasAccess, isProfessor } = useFlexibleAccess();
   const { signOut } = useFirebaseAuth();
+
+  // 🎯 HELPER: Obter ID do usuário (compatível com RBACUser e FirebaseUser)
+  const getUserId = () => {
+    if (!user) return null;
+    return (user as any).uid || (user as any).id || null;
+  };
   
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
   
@@ -108,13 +115,9 @@ export default function JogosPage() {
     attempts?: number;
     lastCompleted?: Date;
   } | null>(null);
-  const [rankingCollapsed, setRankingCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ranking-collapsed');
-      return saved ? JSON.parse(saved) : true;
-    }
-    return true;
-  });
+  // 🎯 HYDRATION-SAFE RANKING COLLAPSED STATE
+  const [rankingCollapsed, setRankingCollapsed] = useState(true); // Default fixo para evitar mismatch
+  const [isHydrated, setIsHydrated] = useState(false);
   
   // 🎯 REFS PARA DEBOUNCE
   const refreshTimeoutRef = useRef<NodeJS.Timeout>();
@@ -129,7 +132,7 @@ export default function JogosPage() {
       try {
         // 🛡️ SAFE GUARD: Verificar se o método existe antes de chamar
         if (unifiedScoringService && typeof unifiedScoringService.updateStudentRanking === 'function') {
-          await unifiedScoringService.updateStudentRanking(user?.uid || '');
+          await unifiedScoringService.updateStudentRanking(getUserId() || '');
         } else {
           console.warn('updateStudentRanking method not available');
         }
@@ -138,76 +141,65 @@ export default function JogosPage() {
         // Não resetar estado - preservar dados anteriores
       }
     }, 800),
-    [user?.uid]
+    [getUserId()]
   );
   
-  // 🎯 UNIFIED SCORING UPDATE WITH STATE TRACKING
+  // 🎯 HYDRATION EFFECT - Carrega localStorage após hidratação
   useEffect(() => {
-    const updateScoring = async () => {
-      if (!user?.uid) {
-        // 🎯 Marcar ranking como "handled" se não há usuário
-        setDataLoadingState(prev => ({ ...prev, ranking: true }));
-        return;
+    setIsHydrated(true);
+    const saved = localStorage.getItem('ranking-collapsed');
+    if (saved) {
+      setRankingCollapsed(JSON.parse(saved));
+    }
+  }, []);
+
+  // 🎯 UNIFIED DATA LOADING EFFECT - Reduz re-renders
+  useEffect(() => {
+    const updateDataStates = async () => {
+      const newState = { ...dataLoadingState };
+      const userId = getUserId();
+
+      // Auth state
+      if (!loading) {
+        newState.auth = true;
       }
-      
-      try {
-        devLog('Updating unified scoring...');
-        // 🛡️ SAFE GUARD: Verificar se o método existe antes de chamar
-        if (unifiedScoringService && typeof unifiedScoringService.updateStudentRanking === 'function') {
-          await unifiedScoringService.updateStudentRanking(user.uid);
-        } else {
-          console.warn('updateStudentRanking method not available');
+
+      // Modules and class info state
+      if (!userId) {
+        newState.modules = true;
+        newState.classInfo = true;
+        newState.ranking = true;
+      } else {
+        // Set modules
+        const defaultUnlocked = isProfessor ? ['module-1', 'module-2', 'module-3', 'module-4'] : ['module-1'];
+        startTransition(() => {
+          setUnlockedModules(defaultUnlocked);
+        });
+        devLog('Unlocked modules set to default:', defaultUnlocked);
+        newState.modules = true;
+        newState.classInfo = true;
+
+        // Handle ranking update
+        try {
+          devLog('Updating unified scoring...');
+          if (unifiedScoringService && typeof unifiedScoringService.updateStudentRanking === 'function') {
+            await unifiedScoringService.updateStudentRanking(userId);
+          } else {
+            console.warn('updateStudentRanking method not available');
+          }
+          newState.ranking = true;
+        } catch (error) {
+          console.error('Error updating scoring:', error);
+          newState.ranking = true; // Não bloquear UI
         }
-        
-        // 🎯 Marcar ranking como carregado (sucesso ou warning)
-        setDataLoadingState(prev => ({ ...prev, ranking: true }));
-        
-      } catch (error) {
-        console.error('Error updating scoring:', error);
-        // 🎯 Marcar ranking como handled mesmo com erro (não bloquear UI)
-        setDataLoadingState(prev => ({ ...prev, ranking: true }));
       }
+
+      // Single state update to prevent multiple re-renders
+      setDataLoadingState(newState);
     };
-    
-    updateScoring();
-  }, [user?.uid]);
-  
-  // 🎯 AUTH STATE TRACKING
-  useEffect(() => {
-    // 🎯 Marcar autenticação como completa quando não está mais carregando
-    if (!loading) {
-      setDataLoadingState(prev => ({ ...prev, auth: true }));
-    }
-  }, [loading]);
 
-  // 🎯 UNLOCKED MODULES WITH STATE TRACKING
-  useEffect(() => {
-    if (!user?.uid) {
-      // 🎯 Marcar módulos como handled se não há usuário
-      setDataLoadingState(prev => ({ ...prev, modules: true }));
-      return;
-    }
-    
-    // Por enquanto, deixar todos os módulos desbloqueados para professores
-    // e apenas module-1 para estudantes
-    const defaultUnlocked = isProfessor ? ['module-1', 'module-2', 'module-3', 'module-4'] : ['module-1'];
-    
-    startTransition(() => {
-      setUnlockedModules(defaultUnlocked);
-    });
-    
-    devLog('Unlocked modules set to default:', defaultUnlocked);
-    
-    // 🎯 Marcar módulos como carregados
-    setDataLoadingState(prev => ({ ...prev, modules: true }));
-  }, [user?.uid, isProfessor]);
-
-  // 🎯 CLASS INFO STATE TRACKING
-  useEffect(() => {
-    // 🎯 Por enquanto marcar como handled - componente StudentClassInfo gerencia isso internamente
-    // Em futuras iterações podemos adicionar callback para notificar quando carrega
-    setDataLoadingState(prev => ({ ...prev, classInfo: true }));
-  }, [user?.uid]);
+    updateDataStates();
+  }, [loading, getUserId(), isProfessor]);
   
   // 🎯 MODULE COMPLETED EVENT LISTENER
   useEffect(() => {
@@ -276,9 +268,10 @@ export default function JogosPage() {
   const handleModuleStart = useCallback(async (moduleId: string) => {
     try {
       // Se o usuário está logado, verificar se o módulo já foi concluído
-      if (user?.uid) {
-        const progress = await getModuleProgress(user.uid, moduleId);
-        
+      const userId = getUserId();
+      if (userId) {
+        const progress = await getModuleProgress(userId, moduleId);
+
         if (progress && progress.completed) {
           // Módulo já concluído - abrir modal
           const moduleData = modules.find(m => m.id === moduleId);
@@ -294,7 +287,7 @@ export default function JogosPage() {
           return;
         }
       }
-      
+
       // Módulo não concluído - navegar normalmente
       if (moduleId === 'module-1') {
         window.location.href = '/jogos/modulo-1/quiz';
@@ -306,7 +299,7 @@ export default function JogosPage() {
         window.location.href = '/jogos/modulo-1/quiz';
       }
     }
-  }, [user?.uid, getModuleProgress]);
+  }, [getUserId(), getModuleProgress]);
   
   const handleRetryModule = useCallback(() => {
     setShowCompletedModal(false);
@@ -332,7 +325,8 @@ export default function JogosPage() {
         sessionStorage.clear();
       }
       
-      if (user && !user.uid?.includes('guest')) {
+      const userId = getUserId();
+      if (user && userId && !userId.includes('guest')) {
         await signOut();
       }
       
@@ -353,23 +347,19 @@ export default function JogosPage() {
     }
   }, [rankingCollapsed]);
   
-  // 🎯 LOADING STATE & READY CHECK
-  if (loading || !ready) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-700">Carregando AvaliaNutri...</h2>
-          <p className="text-gray-500 mt-2">
-            {loading ? 'Preparando seus módulos...' : 'Configurando dados...'}
-          </p>
-        </div>
-      </div>
-    );
+  // 🎯 LOADING STATE & READY CHECK - Usando skeleton UI
+  if (loading || !ready || !isHydrated) {
+    // Se ainda está carregando dados principais, mostrar skeleton completo
+    if (loading || !isHydrated) {
+      return <JogosPageSkeleton />;
+    }
+    // Se só está aguardando dados secundários, mostrar skeleton mínimo
+    return <JogosPageMinimalSkeleton />;
   }
   
   // 🎯 ACCESS CHECK
-  if (!hasAccess && user?.uid !== 'guest-user' && user?.uid !== 'professor-guest-user') {
+  const userId = getUserId();
+  if (!hasAccess && userId !== 'guest-user' && userId !== 'professor-guest-user') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -411,19 +401,23 @@ export default function JogosPage() {
                   <span className="font-medium">
                     {(() => {
                       // Extrair primeiro nome do aluno
-                      const fullName = user?.displayName || user?.name;
+                      const fullName = (user as any)?.displayName || (user as any)?.name || (user as any)?.fullName;
                       const firstName = fullName ? fullName.split(' ')[0] : null;
-                      const isGuest = user?.uid?.includes('guest');
-                      
+                      const userId = getUserId();
+                      const isGuest = userId?.includes('guest');
+
                       if (isGuest) return 'Visitante';
                       if (firstName) return firstName;
                       return 'Aluno';
                     })()}
-                    {user?.uid && !user.uid.includes('guest') && (
-                      <span className="ml-2 text-xs text-gray-500 font-mono">
-                        (ID:{user.uid.slice(-6).toUpperCase()})
-                      </span>
-                    )}
+                    {(() => {
+                      const userId = getUserId();
+                      return userId && !userId.includes('guest') && (
+                        <span className="ml-2 text-xs text-gray-500 font-mono">
+                          (ID:{userId.slice(-6).toUpperCase()})
+                        </span>
+                      );
+                    })()}
                   </span>
                   {isProfessor && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -473,7 +467,7 @@ export default function JogosPage() {
                           ...module,
                           isLocked: !unlockedModules.includes(module.id) && !isProfessor
                         }}
-                        userId={user?.uid || null}
+                        userId={getUserId() || null}
                         onStart={handleModuleStart}
                         onRetry={handleModuleStart}
                         showDebugInfo={process.env.NODE_ENV === 'development'}
@@ -499,7 +493,7 @@ export default function JogosPage() {
             {/* 🎯 SIDEBAR DIREITO */}
             <div className="xl:col-span-1 space-y-6">
               {/* 🎯 INFORMAÇÕES DA TURMA */}
-              {user && <StudentClassInfo studentId={user.uid} />}
+              {user && <StudentClassInfo studentId={getUserId() || ''} />}
               
               {/* 🎯 RANKING COLAPSÍVEL */}
               <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">

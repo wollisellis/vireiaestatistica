@@ -598,18 +598,6 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
-    // USER ACCESS COLLECTION - Controle de acesso e módulos desbloqueados
-    match /userAccess/{uid} {
-      // Usuários podem ler/escrever apenas seu próprio acesso
-      allow read, write: if isAuthenticated() && isOwner(uid);
-      
-      // Professores podem ler acesso de todos os usuários
-      allow read: if isProfessor();
-      
-      // Permitir criação para o próprio usuário
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-    }
-
     // AUDIT LOGS COLLECTION - Logs de auditoria
     match /auditLogs/{logId} {
       // Apenas professores podem ler logs de auditoria

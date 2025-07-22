@@ -61,16 +61,21 @@ export function ClassRankingPanel({
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ranking-panel-expanded');
-      return saved ? JSON.parse(saved) : !compact;
-    }
-    return !compact;
-  });
+  // 🎯 HYDRATION-SAFE EXPANDED STATE
+  const [expanded, setExpanded] = useState(!compact); // Default fixo para evitar mismatch
+  const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const displayLimit = compact ? 5 : 8;
+
+  // 🎯 HYDRATION EFFECT - Carrega localStorage após hidratação
+  useEffect(() => {
+    setIsHydrated(true);
+    const saved = localStorage.getItem('ranking-panel-expanded');
+    if (saved) {
+      setExpanded(JSON.parse(saved));
+    }
+  }, []);
 
   useEffect(() => {
     if (user?.id && user.role === 'student') {
@@ -234,7 +239,7 @@ export function ClassRankingPanel({
     return Math.round(score).toLocaleString('pt-BR');
   };
 
-  if (loading) {
+  if (loading || !isHydrated) {
     return (
       <Card className={className}>
         <CardHeader className="pb-3">
