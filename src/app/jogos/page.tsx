@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useRef, startTransition } from
 import { motion, AnimatePresence } from 'framer-motion';
 import { modules } from '@/data/modules';
 import EnhancedModuleCard from '@/components/games/EnhancedModuleCard';
+import CompletedModuleModal from '@/components/games/CompletedModuleModal';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -73,66 +74,7 @@ const convertModulesToGames = (modules: any[] | null | undefined): ModuleData[] 
   }));
 };
 
-// 🎯 MODAL DE CONCLUSÃO SIMPLES
-const CompletedModuleModal = ({ 
-  isOpen, 
-  onClose, 
-  onRetry,
-  moduleTitle,
-  score 
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onRetry: () => void;
-  moduleTitle: string;
-  score: number;
-}) => {
-  if (!isOpen) return null;
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-xl p-6 max-w-md w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="text-center space-y-4">
-          <div className="text-6xl">🎉</div>
-          <h3 className="text-xl font-bold text-gray-900">
-            Módulo já concluído!
-          </h3>
-          <p className="text-gray-600">
-            Você já completou <strong>{moduleTitle}</strong> com {score}%.
-            Deseja tentar novamente para melhorar sua pontuação?
-          </p>
-          <div className="flex space-x-3 pt-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={onRetry}
-              className="flex-1 bg-green-600 hover:bg-green-700"
-            >
-              Tentar Novamente
-            </Button>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
+// Modal foi movido para componente separado em /components/games/CompletedModuleModal.tsx
 
 // 🎯 COMPONENTE PRINCIPAL SIMPLIFICADO
 export default function JogosPage() {
@@ -142,7 +84,14 @@ export default function JogosPage() {
   
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
   const [showCompletedModal, setShowCompletedModal] = useState(false);
-  const [selectedModuleForModal, setSelectedModuleForModal] = useState<{title: string, score: number} | null>(null);
+  const [selectedModuleForModal, setSelectedModuleForModal] = useState<{
+    title: string;
+    score: number;
+    bestScore?: number;
+    timeSpent?: string;
+    attempts?: number;
+    lastCompleted?: Date;
+  } | null>(null);
   const [rankingCollapsed, setRankingCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('ranking-collapsed');
@@ -236,21 +185,78 @@ export default function JogosPage() {
     };
   }, [debouncedRefresh]);
   
+  // 🎯 FUNÇÃO AUXILIAR PARA BUSCAR PROGRESSO DO MÓDULO
+  const getModuleProgress = useCallback(async (userId: string, moduleId: string) => {
+    if (!db) return null;
+    
+    try {
+      // Buscar dados do quiz_attempts (fonte primária)
+      const { getDocs, collection, query, where, orderBy, limit } = await import('firebase/firestore');
+      const attemptsQuery = query(
+        collection(db, 'quiz_attempts'),
+        where('studentId', '==', userId),
+        where('moduleId', '==', moduleId),
+        orderBy('startedAt', 'desc'),
+        limit(1)
+      );
+      
+      const attemptsSnapshot = await getDocs(attemptsQuery);
+      
+      if (!attemptsSnapshot.empty) {
+        const attemptDoc = attemptsSnapshot.docs[0];
+        const attemptData = attemptDoc.data();
+        
+        return {
+          score: attemptData.percentage || 0,
+          passed: attemptData.passed || false,
+          completed: attemptData.passed || false,
+          lastCompleted: attemptData.completedAt?.toDate?.() || attemptData.startedAt?.toDate?.() || new Date(),
+          attempts: 1,
+          timeSpent: '~15min' // Mock data por enquanto
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching module progress:', error);
+    }
+    
+    return null;
+  }, []);
+
   // 🎯 HANDLERS OTIMIZADOS
   const handleModuleStart = useCallback(async (moduleId: string) => {
     try {
-      // Navigate to module
+      // Se o usuário está logado, verificar se o módulo já foi concluído
+      if (user?.uid) {
+        const progress = await getModuleProgress(user.uid, moduleId);
+        
+        if (progress && progress.completed) {
+          // Módulo já concluído - abrir modal
+          const moduleData = modules.find(m => m.id === moduleId);
+          setSelectedModuleForModal({
+            title: moduleData?.title || 'Módulo',
+            score: progress.score,
+            bestScore: progress.score, // Por enquanto são iguais
+            timeSpent: progress.timeSpent,
+            attempts: progress.attempts,
+            lastCompleted: progress.lastCompleted
+          });
+          setShowCompletedModal(true);
+          return;
+        }
+      }
+      
+      // Módulo não concluído - navegar normalmente
       if (moduleId === 'module-1') {
         window.location.href = '/jogos/modulo-1/quiz';
       }
     } catch (error) {
       console.error('Error starting module:', error);
-      // Navigate anyway
+      // Navegar mesmo com erro
       if (moduleId === 'module-1') {
         window.location.href = '/jogos/modulo-1/quiz';
       }
     }
-  }, []);
+  }, [user?.uid, getModuleProgress]);
   
   const handleRetryModule = useCallback(() => {
     setShowCompletedModal(false);
@@ -463,7 +469,7 @@ export default function JogosPage() {
           </div>
         </div>
 
-        {/* 🎯 MODAL DE CONCLUSÃO */}
+        {/* 🎯 MODAL DE CONCLUSÃO APRIMORADO */}
         <AnimatePresence>
           {showCompletedModal && selectedModuleForModal && (
             <CompletedModuleModal
@@ -472,6 +478,10 @@ export default function JogosPage() {
               onRetry={handleRetryModule}
               moduleTitle={selectedModuleForModal.title}
               score={selectedModuleForModal.score}
+              bestScore={selectedModuleForModal.bestScore}
+              timeSpent={selectedModuleForModal.timeSpent}
+              attempts={selectedModuleForModal.attempts}
+              lastCompleted={selectedModuleForModal.lastCompleted}
             />
           )}
         </AnimatePresence>

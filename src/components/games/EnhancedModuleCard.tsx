@@ -197,50 +197,80 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                   
                   {/* 🎯 NOTA E INFORMAÇÕES DINÂMICAS */}
                   {state.status === 'completed' && (
-                    <div className="text-right space-y-1">
-                      <div className="flex items-center justify-end space-x-2">
-                        <Award className="w-4 h-4 text-green-600" />
-                        <span className="text-lg font-bold text-green-600">{state.score}%</span>
+                    <div className="text-right space-y-2">
+                      {/* Performance Level */}
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-green-800">
+                            {state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'}
+                          </span>
+                          <div className="flex items-center space-x-1">
+                            <Award className="w-3 h-3 text-green-600" />
+                            <span className="text-sm font-bold text-green-600">{state.score}%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-yellow-500">
+                            {Array.from({ length: state.stars }, (_, i) => (
+                              <Star key={i} className="w-2.5 h-2.5 fill-current" />
+                            ))}
+                          </div>
+                          {state.passed && (
+                            <span className="text-xs text-green-600 font-medium">✅ Aprovado</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center justify-end text-yellow-500">
-                        {Array.from({ length: state.stars }, (_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-current" />
-                        ))}
+
+                      {/* Métricas Detalhadas */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="text-center p-1.5 bg-blue-50 rounded border border-blue-200">
+                          <div className="font-medium text-blue-800">{state.score}%</div>
+                          <div className="text-blue-600">Melhor Nota</div>
+                        </div>
+                        <div className="text-center p-1.5 bg-purple-50 rounded border border-purple-200">
+                          <div className="font-medium text-purple-800">~15min</div>
+                          <div className="text-purple-600">Tempo Gasto</div>
+                        </div>
                       </div>
-                      {state.passed && (
-                        <span className="text-xs text-green-600 font-medium">✅ Aprovado</span>
+
+                      {/* Última Atividade */}
+                      {state.lastActivity && (
+                        <div className="text-center text-xs text-gray-500 bg-gray-50 rounded px-2 py-1">
+                          {(() => {
+                            const minutesAgo = Math.floor((Date.now() - state.lastActivity.getTime()) / (1000 * 60));
+                            const hoursAgo = Math.floor(minutesAgo / 60);
+                            const daysAgo = Math.floor(hoursAgo / 24);
+                            
+                            if (daysAgo > 0) return `Há ${daysAgo} dia${daysAgo !== 1 ? 's' : ''}`;
+                            if (hoursAgo > 0) return `Há ${hoursAgo} hora${hoursAgo !== 1 ? 's' : ''}`;
+                            if (minutesAgo > 0) return `Há ${minutesAgo} minuto${minutesAgo !== 1 ? 's' : ''}`;
+                            return 'Agora mesmo';
+                          })()}
+                        </div>
                       )}
                     </div>
                   )}
                   
                   {state.status === 'in_progress' && state.score > 0 && (
                     <div className="text-right space-y-1">
-                      <div className="flex items-center justify-end space-x-2">
-                        <TrendingUp className="w-4 h-4 text-orange-600" />
-                        <span className="text-lg font-bold text-orange-600">{state.score}%</span>
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-orange-800">Em Progresso</span>
+                          <div className="flex items-center space-x-1">
+                            <TrendingUp className="w-3 h-3 text-orange-600" />
+                            <span className="text-sm font-bold text-orange-600">{state.score}%</span>
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-xs text-gray-600">Em progresso</span>
                     </div>
                   )}
                   
                   {state.status === 'new' && (
                     <div className="text-right">
-                      <span className="text-xs text-gray-500">Não iniciado</span>
-                    </div>
-                  )}
-                  
-                  {/* Última atividade para módulos com progresso */}
-                  {state.lastActivity && state.score > 0 && (
-                    <div className="flex items-center text-xs text-gray-400">
-                      <Activity className="w-3 h-3 mr-1" />
-                      <span>
-                        {(() => {
-                          const daysAgo = Math.floor((Date.now() - state.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
-                          if (daysAgo === 0) return 'Hoje';
-                          if (daysAgo === 1) return 'Ontem';
-                          return `${daysAgo} dias atrás`;
-                        })()}
-                      </span>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                        <span className="text-xs font-medium text-blue-800">10-15 min</span>
+                        <div className="text-xs text-blue-600">Não iniciado</div>
+                      </div>
                     </div>
                   )}
                 </>
