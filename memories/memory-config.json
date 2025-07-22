@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "project": "bioestat-platform",
+  "created": "2025-01-22T00:00:00Z",
+  "description": "Sistema de memória persistente para desenvolvimento do bioestat-platform",
+  "structure": {
+    "sessions": "Arquivos de sessão por data",
+    "categories": "Memórias organizadas por tipo",
+    "components": "Histórico por componente",
+    "index": "Índices de busca e navegação"
+  },
+  "templates": {
+    "session": "Template padrão para documentar sessões",
+    "component": "Template para histórico de componentes",
+    "feature": "Template para novas funcionalidades"
+  },
+  "auto_categorization": {
+    "fixes": ["fix", "bug", "erro", "problema", "corrigir"],
+    "features": ["feature", "novo", "implementar", "adicionar"],
+    "debugging": ["debug", "investigar", "diagnosticar"],
+    "refactoring": ["refactor", "melhorar", "otimizar"],
+    "documentation": ["doc", "documentar", "readme"]
+  },
+  "maintenance": {
+    "update_frequency": "a cada sessão significativa",
+    "cleanup_schedule": "mensal",
+    "backup_enabled": true
+  }
+}

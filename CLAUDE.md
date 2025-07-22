@@ -58,6 +58,82 @@ rm -rf .next
   - Modificar a estrutura de acesso aos dados ou permissões
   - Implementar novas funcionalidades que usem o banco de dados
 
+## 🧠 Sistema de Memória Persistente
+
+**Sistema inspirado no OpenMemory MCP** para manter contexto entre sessões de desenvolvimento.
+
+### Localização e Estrutura
+```
+./memories/
+├── sessions/          # Sessões de desenvolvimento por data
+├── categories/        # Organizadas por tipo (fixes, features, debugging)
+├── index.md          # Ponto de entrada e navegação
+└── memory-config.json # Configurações do sistema
+```
+
+### Instruções para Claude Code
+1. **Ao iniciar uma sessão**:
+   - Consultar `./memories/index.md` para contexto
+   - Verificar sessões recentes relacionadas ao problema
+   - Revisar padrões identificados anteriormente
+
+2. **Durante o desenvolvimento**:
+   - Documentar descobertas importantes
+   - Registrar soluções eficazes
+   - Anotar problemas recorrentes
+
+3. **Ao finalizar uma sessão significativa**:
+   - Criar arquivo `./memories/sessions/YYYY-MM-DD-session-XXX.md`
+   - Atualizar categoria relevante (`./memories/categories/`)
+   - Atualizar índice principal (`./memories/index.md`)
+   - Incrementar estatísticas
+
+### Template de Sessão
+```markdown
+# Sessão YYYY-MM-DD-XXX
+
+**Categoria**: [Bug Fix | Feature | Debugging | Refactoring]
+**Status**: [✅ Concluído | ⏳ Pendente | 🔄 Em Andamento]
+
+## 🎯 Contexto
+- **Problema**: [descrição]
+- **Objetivo**: [o que precisava ser resolvido]
+
+## 🔍 Diagnóstico
+- **Root cause**: [causa identificada]
+- **Arquivos envolvidos**: [lista]
+
+## 💡 Solução
+- **Abordagem**: [estratégia]
+- **Implementação**: [passos]
+
+## 📝 Mudanças
+- **Arquivos modificados**: [lista com links]
+- **Commits**: [hash e mensagem]
+
+## ✅ Resultados
+- **Verificação**: [como validar]
+- **Próximos passos**: [ações pendentes]
+```
+
+### Comandos Úteis
+```bash
+# Consultar última sessão
+ls memories/sessions/ | sort -r | head -1
+
+# Buscar por componente específico
+grep -r "useRoleRedirect" memories/
+
+# Ver estatísticas gerais
+cat memories/index.md | grep "Total de"
+```
+
+### Benefícios
+- 📚 **Conhecimento cumulativo** preservado entre sessões
+- 🔍 **Padrões identificados** para evitar problemas recorrentes  
+- ⏰ **Contexto imediato** sobre o que foi feito anteriormente
+- 🎯 **Soluções consultáveis** para problemas similares
+
 ## Contexto do Projeto
 **bioestat-platform** (anteriormente AvaliaNutri) - Plataforma educacional para avaliação nutricional e estatística em saúde
 
