@@ -189,8 +189,11 @@ export function useModuleProgress(userId: string | null, moduleId: string): UseM
   // 🎯 FUNÇÃO DE BUSCA OTIMIZADA
   const fetchProgress = useCallback(async (): Promise<ModuleProgressData | null> => {
     if (!userId || !moduleId || !db) {
+      devLog('❌ Parâmetros inválidos:', { userId, moduleId, db: !!db });
       return null;
     }
+
+    devLog('🚀 Iniciando fetchProgress:', { userId, moduleId });
 
     const cacheKey = getCacheKey(userId, moduleId);
     const localStorageKey = getLocalStorageKey(userId, moduleId);
@@ -330,7 +333,7 @@ async function fetchRemoteProgress(userId: string, moduleId: string): Promise<Mo
 
   // Estratégia 1: quiz_attempts (fonte primária)
   try {
-    devLog(`Tentando quiz_attempts para ${moduleId}`);
+    devLog(`🔍 Tentando quiz_attempts para userId: ${userId}, moduleId: ${moduleId}`);
     const attemptsQuery = query(
       collection(db, 'quiz_attempts'),
       where('studentId', '==', userId),
@@ -340,10 +343,22 @@ async function fetchRemoteProgress(userId: string, moduleId: string): Promise<Mo
     );
     
     const attemptsSnapshot = await getDocs(attemptsQuery);
+    devLog(`📊 quiz_attempts resultados: ${attemptsSnapshot.size} documentos encontrados`);
     
     if (!attemptsSnapshot.empty) {
       const attemptDoc = attemptsSnapshot.docs[0];
       const attemptData = attemptDoc.data();
+      
+      devLog('🎯 Dados encontrados em quiz_attempts:', {
+        id: attemptDoc.id,
+        studentId: attemptData.studentId,
+        moduleId: attemptData.moduleId,
+        percentage: attemptData.percentage,
+        score: attemptData.score,
+        passed: attemptData.passed,
+        completedAt: attemptData.completedAt,
+        startedAt: attemptData.startedAt
+      });
       
       return {
         percentage: attemptData.percentage || 0,
@@ -357,8 +372,11 @@ async function fetchRemoteProgress(userId: string, moduleId: string): Promise<Mo
         source: 'quiz_attempts',
         rawData: attemptData
       };
+    } else {
+      devLog(`❌ Nenhum documento encontrado em quiz_attempts para userId: ${userId}, moduleId: ${moduleId}`);
     }
   } catch (error) {
+    console.error('❌ Erro em quiz_attempts:', error);
     devLog('quiz_attempts falhou:', error);
   }
   
