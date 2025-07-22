@@ -16,6 +16,8 @@ import {
   ClassInfo, 
   StudentOverview 
 } from '@/services/professorClassService'
+import { EnhancedClassService } from '@/services/enhancedClassService'
+import { EnhancedClass, EnhancedStudentOverview } from '@/types/classes'
 import { 
   Users, 
   Plus, 
@@ -61,17 +63,17 @@ interface ImprovedClassManagementProps {
 
 export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr. Dennys Esper', className = '' }: ImprovedClassManagementProps) {
   const router = useRouter()
-  const [classes, setClasses] = useState<ClassInfo[]>([])
-  const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null)
-  const [students, setStudents] = useState<StudentOverview[]>([])
+  const [classes, setClasses] = useState<EnhancedClass[]>([])
+  const [selectedClass, setSelectedClass] = useState<EnhancedClass | null>(null)
+  const [students, setStudents] = useState<EnhancedStudentOverview[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreatingClass, setIsCreatingClass] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showInviteModal, setShowInviteModal] = useState(false)
-  const [inviteClass, setInviteClass] = useState<ClassInfo | null>(null)
+  const [inviteClass, setInviteClass] = useState<EnhancedClass | null>(null)
   
   // Estados para visualização de detalhes do estudante
-  const [selectedStudent, setSelectedStudent] = useState<StudentOverview | null>(null)
+  const [selectedStudent, setSelectedStudent] = useState<EnhancedStudentOverview | null>(null)
   const [showStudentDetails, setShowStudentDetails] = useState(false)
   const [studentModule1Data, setStudentModule1Data] = useState<any>(null)
   const [loadingStudentData, setLoadingStudentData] = useState(false)
@@ -172,8 +174,8 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
         originalConsoleLog(...args)
       }
       
-      // Carregar todas as turmas com sistema de recovery automático
-      const classesData = await ProfessorClassService.getProfessorClasses(professorId)
+      // Carregar todas as turmas com sistema unificado fidedigno
+      const classesData = await EnhancedClassService.getProfessorClasses(professorId)
       
       // Restaurar console.log
       console.log = originalConsoleLog
@@ -215,10 +217,12 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
     if (!selectedClass) return
     
     try {
-      const studentsData = await ProfessorClassService.getClassStudents(selectedClass.id)
+      console.log(`[ImprovedClassManagement] 🔄 Carregando estudantes com sistema unificado para turma: ${selectedClass.id}`)
+      const studentsData = await EnhancedClassService.getEnhancedClassStudents(selectedClass.id)
+      console.log(`[ImprovedClassManagement] ✅ ${studentsData.length} estudantes carregados com dados fidedignos`)
       setStudents(studentsData)
     } catch (error) {
-      console.error('Erro ao carregar estudantes:', error)
+      console.error('[ImprovedClassManagement] ❌ Erro ao carregar estudantes:', error)
     }
   }
 

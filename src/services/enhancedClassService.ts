@@ -971,6 +971,71 @@ export class EnhancedClassService {
     }
   }
   
+  // Obter todas as turmas de um professor específico
+  static async getProfessorClasses(professorId: string): Promise<EnhancedClass[]> {
+    try {
+      console.log(`[EnhancedClassService] 🔍 Buscando turmas do professor: ${professorId}`)
+      
+      // Query otimizada para buscar turmas do professor
+      const classesQuery = query(
+        collection(db, 'classes'),
+        where('professorId', '==', professorId),
+        where('status', '!=', 'deleted'),
+        orderBy('status'),
+        orderBy('createdAt', 'desc')
+      )
+      
+      const classesSnapshot = await getDocs(classesQuery)
+      const professorClasses: EnhancedClass[] = []
+      
+      console.log(`[EnhancedClassService] 📊 ${classesSnapshot.docs.length} turmas encontradas`)
+      
+      // Processar cada turma
+      for (const classDoc of classesSnapshot.docs) {
+        const classData = classDoc.data()
+        
+        // Calcular estatísticas básicas da turma
+        const students = await this.getClassStudentsBasic(classDoc.id)
+        const analytics = await this.calculateClassAnalytics(classDoc.id)
+        
+        const enhancedClass: EnhancedClass = {
+          id: classDoc.id,
+          name: classData.name,
+          description: classData.description,
+          semester: classData.semester,
+          year: classData.year,
+          inviteCode: classData.inviteCode,
+          professorId: classData.professorId,
+          professorName: classData.professorName,
+          status: classData.status || 'open',
+          maxStudents: classData.maxStudents,
+          acceptingNewStudents: classData.acceptingNewStudents ?? true,
+          createdAt: classData.createdAt?.toDate() || new Date(),
+          updatedAt: classData.updatedAt?.toDate() || new Date(),
+          settings: classData.settings || this.getDefaultClassSettings(),
+          
+          // Estatísticas calculadas
+          studentsCount: students.length,
+          activeStudents: students.filter(s => s.status === 'active' && 
+            (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
+          totalModules: modules.length,
+          avgProgress: analytics?.averageProgress || 0,
+          avgScore: analytics?.averageScore || 0,
+          lastActivity: analytics?.date
+        }
+        
+        professorClasses.push(enhancedClass)
+      }
+      
+      console.log(`[EnhancedClassService] ✅ ${professorClasses.length} turmas processadas com sucesso`)
+      return professorClasses
+      
+    } catch (error) {
+      console.error('[EnhancedClassService] ❌ Erro ao buscar turmas do professor:', error)
+      return []
+    }
+  }
+
   // Métodos alias para compatibilidade com as páginas
   static async getClassById(classId: string) {
     return this.getEnhancedClassInfo(classId)
