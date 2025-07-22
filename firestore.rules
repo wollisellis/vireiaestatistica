@@ -518,6 +518,14 @@ service cloud.firestore {
       allow update: if isProfessor() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
     }
+    
+    // HEALTH CHECK COLLECTION - Para testes de conectividade
+    match /_health/{docId} {
+      // Permitir leitura para qualquer usuário autenticado (health checks)
+      allow read: if isAuthenticated();
+      // Não permitir escrita (apenas leitura para verificar conectividade)
+      allow write: if false;
+    }
 
     // SYSTEM LOGS COLLECTION - Logs do sistema para debug e auditoria (ACESSO COMPARTILHADO)
     match /system_logs/{logId} {

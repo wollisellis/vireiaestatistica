@@ -128,53 +128,8 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
     }
   }, [module.isLocked, error, state.status]);
 
-  // 🎯 RENDER SKELETON OTIMIZADO
-  if (isLoading && state.status === 'loading') {
-    return (
-      <motion.div
-        variants={cardVariants}
-        initial="hidden"
-        animate="visible"
-        className="group"
-      >
-        <Card className={`h-full border-2 border-gray-200 ${className}`}>
-          <div className="p-6 space-y-4 animate-pulse">
-            {/* Header Skeleton */}
-            <div className="flex items-start space-x-4">
-              <div className="w-16 h-16 bg-gray-300 rounded-2xl flex items-center justify-center">
-                <div className="w-8 h-8 bg-gray-400 rounded animate-spin">
-                  <RefreshCw className="w-8 h-8 text-white animate-spin" />
-                </div>
-              </div>
-              <div className="flex-1 space-y-2">
-                <div className="h-6 bg-gray-300 rounded animate-pulse"></div>
-                <div className="h-4 bg-gray-300 rounded w-2/3 animate-pulse"></div>
-              </div>
-              <div className="w-20 h-6 bg-gray-300 rounded-full animate-pulse"></div>
-            </div>
-            
-            {/* Progress Skeleton */}
-            <div className="space-y-2">
-              <div className="h-3 bg-gray-300 rounded animate-pulse"></div>
-              <div className="flex justify-between">
-                <div className="h-4 bg-gray-300 rounded w-16 animate-pulse"></div>
-                <div className="h-4 bg-gray-300 rounded w-12 animate-pulse"></div>
-              </div>
-            </div>
-            
-            {/* Description Skeleton */}
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-300 rounded animate-pulse"></div>
-              <div className="h-4 bg-gray-300 rounded w-4/5 animate-pulse"></div>
-            </div>
-            
-            {/* Button Skeleton */}
-            <div className="h-12 bg-gray-300 rounded animate-pulse"></div>
-          </div>
-        </Card>
-      </motion.div>
-    );
-  }
+  // 🎯 RENDER COM CARREGAMENTO MAIS SUTIL
+  // Não mostrar skeleton completo, apenas indicador de carregamento no badge
 
   return (
     <motion.div
@@ -210,58 +165,85 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
               </h3>
               <p className="text-sm text-gray-600 flex items-center">
                 <Clock className="w-4 h-4 mr-1.5" />
-                {module.estimatedTime}
+                10-15 minutos
               </p>
             </div>
 
             {/* 🎯 STATUS BADGE APRIMORADO */}
-            <div className="flex flex-col items-end space-y-1">
+            <div className="flex flex-col items-end space-y-2">
               {error ? (
                 <Badge variant="destructive" className="flex items-center space-x-1">
                   <AlertCircle className="w-3 h-3" />
                   <span>Erro</span>
                 </Badge>
               ) : (
-                <Badge 
-                  variant={
-                    state.status === 'completed' ? 'success' :
-                    state.status === 'in_progress' ? 'warning' :
-                    state.status === 'loading' ? 'secondary' :
-                    'default'
-                  }
-                  className="flex items-center space-x-1"
-                >
-                  {state.status === 'completed' && <CheckCircle className="w-3 h-3" />}
-                  {state.status === 'in_progress' && <TrendingUp className="w-3 h-3" />}
-                  {state.status === 'loading' && <RefreshCw className="w-3 h-3 animate-spin" />}
-                  {state.status === 'new' && <PlayCircle className="w-3 h-3" />}
-                  <span>{state.badge}</span>
-                </Badge>
-              )}
-              
-              {/* 🎯 SCORE E ESTRELAS */}
-              {state.score > 0 && !error && (
-                <div className="text-xs text-center space-y-1">
-                  <div className="font-medium text-gray-700">{state.score}%</div>
-                  {state.stars > 0 && (
-                    <div className="flex items-center text-yellow-500">
-                      {Array.from({ length: state.stars }, (_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-current" />
-                      ))}
+                <>
+                  {/* Badge de Status */}
+                  <Badge 
+                    variant={
+                      state.status === 'completed' ? 'success' :
+                      state.status === 'in_progress' ? 'warning' :
+                      state.status === 'loading' ? 'secondary' :
+                      'default'
+                    }
+                    className="flex items-center space-x-1"
+                  >
+                    {state.status === 'completed' && <CheckCircle className="w-3 h-3" />}
+                    {state.status === 'in_progress' && <TrendingUp className="w-3 h-3" />}
+                    {state.status === 'loading' && <RefreshCw className="w-3 h-3 animate-spin" />}
+                    {state.status === 'new' && <PlayCircle className="w-3 h-3" />}
+                    <span>{state.badge}</span>
+                  </Badge>
+                  
+                  {/* 🎯 NOTA E INFORMAÇÕES DINÂMICAS */}
+                  {state.status === 'completed' && (
+                    <div className="text-right space-y-1">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Award className="w-4 h-4 text-green-600" />
+                        <span className="text-lg font-bold text-green-600">{state.score}%</span>
+                      </div>
+                      <div className="flex items-center justify-end text-yellow-500">
+                        {Array.from({ length: state.stars }, (_, i) => (
+                          <Star key={i} className="w-3 h-3 fill-current" />
+                        ))}
+                      </div>
+                      {state.passed && (
+                        <span className="text-xs text-green-600 font-medium">✅ Aprovado</span>
+                      )}
                     </div>
                   )}
-                  {state.lastActivity && (
-                    <div className="flex items-center justify-center text-gray-400">
+                  
+                  {state.status === 'in_progress' && state.score > 0 && (
+                    <div className="text-right space-y-1">
+                      <div className="flex items-center justify-end space-x-2">
+                        <TrendingUp className="w-4 h-4 text-orange-600" />
+                        <span className="text-lg font-bold text-orange-600">{state.score}%</span>
+                      </div>
+                      <span className="text-xs text-gray-600">Em progresso</span>
+                    </div>
+                  )}
+                  
+                  {state.status === 'new' && (
+                    <div className="text-right">
+                      <span className="text-xs text-gray-500">Não iniciado</span>
+                    </div>
+                  )}
+                  
+                  {/* Última atividade para módulos com progresso */}
+                  {state.lastActivity && state.score > 0 && (
+                    <div className="flex items-center text-xs text-gray-400">
                       <Activity className="w-3 h-3 mr-1" />
-                      <span className="text-xs">
-                        {new Intl.RelativeTimeFormat('pt', { numeric: 'auto' }).format(
-                          Math.floor((state.lastActivity.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-                          'day'
-                        )}
+                      <span>
+                        {(() => {
+                          const daysAgo = Math.floor((Date.now() - state.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+                          if (daysAgo === 0) return 'Hoje';
+                          if (daysAgo === 1) return 'Ontem';
+                          return `${daysAgo} dias atrás`;
+                        })()}
                       </span>
                     </div>
                   )}
-                </div>
+                </>
               )}
               
               {/* 🎯 REFRESH BUTTON PARA DEBUGS/ERROS */}
@@ -286,14 +268,14 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                 value={state.progress} 
                 className="h-3 bg-gray-200"
                 indicatorClassName={
-                  state.status === 'completed' ? 'bg-green-500' :
-                  state.status === 'in_progress' ? 'bg-orange-500' :
-                  'bg-blue-500'
+                  state.status === 'completed' ? 'bg-gradient-to-r from-green-500 to-green-600' :
+                  state.status === 'in_progress' ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
+                  'bg-gradient-to-r from-blue-500 to-blue-600'
                 }
               />
               <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span>Progresso</span>
-                <span>{state.progress}% • {state.attempts} tentativa{state.attempts !== 1 ? 's' : ''}</span>
+                <span className="font-medium">Progresso do Módulo</span>
+                <span className="font-medium">{state.progress}% concluído • {state.attempts} tentativa{state.attempts !== 1 ? 's' : ''}</span>
               </div>
             </div>
           )}
@@ -303,6 +285,19 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             <p className="text-gray-600 text-sm leading-relaxed">
               {module.description}
             </p>
+            
+            {/* Informação adicional para módulos não iniciados */}
+            {state.status === 'new' && !module.isLocked && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start space-x-2">
+                  <Star className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-blue-700">
+                    <p className="font-medium mb-1">Pronto para começar!</p>
+                    <p>Complete este módulo para ganhar pontos e subir no ranking da turma.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 🎯 DEBUG INFO (DEV ONLY) */}
