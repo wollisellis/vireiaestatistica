@@ -39,6 +39,93 @@ const deleteCookie = (name: string) => {
   document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`
 }
 
+// 🚀 PROFESSOR AUTO-SETUP: Garantir que professores tenham documento correto
+const ensureProfessorSetup = async (firebaseUser: FirebaseUser): Promise<void> => {
+  if (!db || !firebaseUser?.email) return
+
+  try {
+    console.log(`🔧 [ProfessorAutoSetup] Verificando setup para: ${firebaseUser.email}`)
+    
+    // 1. Verificar se documento do usuário existe
+    const userDocRef = doc(db, 'users', firebaseUser.uid)
+    const userDoc = await getDoc(userDocRef)
+    
+    const isInstitutionalEmail = (
+      firebaseUser.email.includes('@dac.unicamp.br') ||
+      firebaseUser.email.includes('@unicamp.br') ||
+      firebaseUser.email.includes('@gmail.com') // Temporário para desenvolvimento
+    )
+    
+    if (!userDoc.exists()) {
+      // 2. Criar documento completo para professor
+      if (isInstitutionalEmail) {
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || extractFirstNameFromEmail(firebaseUser.email),
+          role: 'professor', // ⭐ CRUCIAL: Definir role como professor
+          emailDomain: firebaseUser.email.split('@')[1],
+          createdAt: serverTimestamp(),
+          setupBy: 'ProfessorAutoSetup_v1.0',
+          autoSetup: true,
+          permissions: {
+            canCreateClasses: true,
+            canManageStudents: true,
+            canViewAnalytics: true
+          }
+        }
+        
+        await setDoc(userDocRef, userData)
+        console.log(`✅ [ProfessorAutoSetup] Documento criado para professor: ${firebaseUser.email}`)
+      } else {
+        // Criar como estudante se não for email institucional
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || extractFirstNameFromEmail(firebaseUser.email),
+          role: 'student',
+          emailDomain: firebaseUser.email.split('@')[1],
+          createdAt: serverTimestamp(),
+          setupBy: 'ProfessorAutoSetup_v1.0',
+          autoSetup: true
+        }
+        
+        await setDoc(userDocRef, userData)
+        console.log(`✅ [ProfessorAutoSetup] Documento criado para estudante: ${firebaseUser.email}`)
+      }
+    } else {
+      // 3. Verificar e corrigir role se necessário
+      const userData = userDoc.data()
+      if (!userData?.role || (isInstitutionalEmail && userData.role !== 'professor')) {
+        const roleToSet = isInstitutionalEmail ? 'professor' : 'student'
+        
+        await setDoc(userDocRef, {
+          ...userData,
+          role: roleToSet,
+          correctedAt: serverTimestamp(),
+          correctedBy: 'ProfessorAutoSetup_v1.0',
+          emailDomain: firebaseUser.email.split('@')[1],
+          permissions: isInstitutionalEmail ? {
+            canCreateClasses: true,
+            canManageStudents: true,
+            canViewAnalytics: true
+          } : userData.permissions
+        }, { merge: true })
+        
+        console.log(`🔧 [ProfessorAutoSetup] Role corrigido para: ${roleToSet} (${firebaseUser.email})`)
+      }
+    }
+    
+    // 4. Forçar refresh do token JWT para incluir custom claims
+    await firebaseUser.getIdToken(true)
+    console.log(`🔄 [ProfessorAutoSetup] Token JWT refreshed para: ${firebaseUser.email}`)
+    
+  } catch (error) {
+    console.error(`❌ [ProfessorAutoSetup] Erro ao configurar usuário:`, error)
+    // Não falhar o login por causa do auto-setup
+  }
+}
+
 // Global state to prevent multiple auth listeners
 let globalAuthListener: (() => void) | null = null
 let globalUser: FirebaseUser | null = null
@@ -63,6 +150,9 @@ const initializeGlobalAuthListener = () => {
         // Set authentication cookie when user is authenticated
         const token = await firebaseUser.getIdToken()
         setCookie('auth-token', token, 7) // 7 days
+
+        // 🚀 AUTO-SETUP PROFESSOR: Garantir que o documento do usuário existe com role correto
+        await ensureProfessorSetup(firebaseUser)
 
         // Save last login time
         if (typeof window !== 'undefined') {

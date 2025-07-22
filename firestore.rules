@@ -37,12 +37,17 @@ service cloud.firestore {
          request.auth.token.get('role', '') == 'student');
     }
 
-    // Função para verificar se é professor com fallback para documento
+    // Função para verificar se é professor com fallback para documento + email institucional (TEMPORÁRIO)
     function isProfessorWithFallback() {
       return isProfessor() ||
         (isAuthenticated() &&
          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor');
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor') ||
+        // 🚨 FALLBACK TEMPORÁRIO: Permitir acesso via email institucional
+        (isAuthenticated() &&
+         (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
+          request.auth.token.email.matches('.*@unicamp\\.br') ||
+          request.auth.token.email.matches('.*@gmail\\.com'))); // Para desenvolvimento
     }
 
     // Função para verificar se é estudante com fallback para documento  
@@ -113,12 +118,12 @@ service cloud.firestore {
 
     // CLASSES COLLECTION - Sistema principal de turmas (ACESSO COMPARTILHADO)
     match /classes/{classId} {
-      // Professores podem criar turmas
-      allow create: if isProfessor() &&
+      // Professores podem criar turmas (com fallback para email institucional)
+      allow create: if (isProfessor() || isProfessorWithFallback()) &&
         request.resource.data.professorId == request.auth.uid;
 
-      // ✅ TODOS os professores podem ler/escrever/excluir TODAS as turmas (acesso compartilhado)
-      allow read, update, delete: if isProfessor();
+      // ✅ TODOS os professores podem ler/escrever/excluir TODAS as turmas (acesso compartilhado + fallback)
+      allow read, update, delete: if isProfessor() || isProfessorWithFallback();
 
       // Estudantes podem ler turmas onde estão matriculados
       allow read: if isStudent() &&
@@ -549,6 +554,18 @@ service cloud.firestore {
 
       // Sistema pode criar logs
       allow create: if isProfessor();
+    }
+
+    // CLASS LOGS COLLECTION - Logs específicos de operações de turma (ACESSO COMPARTILHADO)
+    match /class_logs/{logId} {
+      // ✅ TODOS os professores podem ler logs de turmas (acesso compartilhado)
+      allow read: if isProfessor() || isProfessorWithFallback();
+
+      // Sistema pode criar logs de operações
+      allow create: if isProfessor() || isProfessorWithFallback();
+
+      // Professores podem atualizar logs próprios
+      allow update: if isProfessor() && resource.data.professorId == request.auth.uid;
     }
 
     // STUDY CASES COLLECTION - Casos de estudo colaborativos
