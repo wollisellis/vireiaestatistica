@@ -703,23 +703,40 @@ export default function JogosPage() {
     Array.isArray(modules) ? modules.filter(module => module.id === 'module-1') : []
   );
 
-  // 🎯 COMBINE GAMES WITH PROGRESS - COM LOGS DETALHADOS
+  // 🎯 COMBINE GAMES WITH PROGRESS - VERSÃO MAIS REALISTA E ROBUSTA
   const nutritionalGames = (Array.isArray(baseNutritionalGames) ? baseNutritionalGames : []).map(game => {
     const moduleId = game.id;
     const locked = !unlockedModules.includes(moduleId) && !isProfessor;
-    const progress = moduleProgress[moduleId];
+    let progress = moduleProgress[moduleId];
+    
+    // 🎯 FORÇA BUSCA DE PROGRESSO SE NÃO ENCONTRADO - MAIS REALISTA
+    if (!progress && user?.uid && !moduleLoading) {
+      console.log(`🔍 [${moduleId}] Progresso não encontrado no state, tentando localStorage...`);
+      
+      // Tentar localStorage como fallback
+      try {
+        const localProgress = localStorage.getItem(`module-progress-${moduleId}-${user.uid}`);
+        if (localProgress) {
+          progress = JSON.parse(localProgress);
+          console.log(`💾 [${moduleId}] Progresso recuperado do localStorage:`, progress);
+        }
+      } catch (error) {
+        console.error(`❌ [${moduleId}] Erro ao ler localStorage:`, error);
+      }
+    }
     
     // 🎯 DEBUG: Log do processamento de cada módulo
     console.log(`\n🎯 [PROCESSING] Processando módulo: ${moduleId}`);
     console.log(`🎯 [PROCESSING] Módulo bloqueado: ${locked}`);
+    console.log(`🎯 [PROCESSING] moduleLoading: ${moduleLoading}`);
     console.log(`🎯 [PROCESSING] Dados de progresso encontrados:`, progress);
-    console.log(`🎯 [PROCESSING] moduleProgress completo:`, moduleProgress);
     
     // Determinar o estado do módulo baseado no progresso
     let moduleStatus = 'never_attempted'; // nunca tentado
     let hasPassed = false;
     let hasAttempted = false;
     let bestScore = 0;
+    let isLoadingProgress = moduleLoading && !progress;
     
     if (progress) {
       console.log(`✅ [${moduleId}] Progresso encontrado, processando...`);
@@ -729,14 +746,6 @@ export default function JogosPage() {
       let rawScore = progress.percentage || progress.score || progress.totalScore || progress.bestScore || 0;
       
       console.log(`📊 [${moduleId}] Score bruto extraído: ${rawScore}`);
-      console.log(`📊 [${moduleId}] Fontes disponíveis:`, {
-        percentage: progress.percentage,
-        score: progress.score,
-        totalScore: progress.totalScore,
-        bestScore: progress.bestScore,
-        completed: progress.completed,
-        passed: progress.passed
-      });
       
       // Se o score for muito baixo (< 20), assumir que está em escala 0-10 e multiplicar por 10
       if (rawScore > 0 && rawScore <= 10) {
@@ -754,7 +763,7 @@ export default function JogosPage() {
       
       console.log(`✅ [${moduleId}] Verificação de aprovação:`);
       console.log(`   - Por score (≥70): ${passedByScore} (score: ${bestScore})`);
-      console.log(`   - Por flag: ${passedByFlag} (passed: ${progress.passed}, completed: ${progress.completed})`);
+      console.log(`   - Por flag: ${passedByFlag}`);
       console.log(`   - RESULTADO FINAL: ${hasPassed}`);
       
       if (hasPassed) {
@@ -768,11 +777,15 @@ export default function JogosPage() {
         hasAttempted = false;
         console.log(`❌ [${moduleId}] Status: NEVER_ATTEMPTED (score = 0)`);
       }
+    } else if (isLoadingProgress) {
+      // 🎯 ESTADO DE CARREGAMENTO MAIS REALISTA
+      moduleStatus = 'loading';
+      console.log(`⏳ [${moduleId}] Status: LOADING (aguardando dados...)`);
     } else {
       console.log(`❌ [${moduleId}] Nenhum progresso encontrado`);
     }
     
-    // 🎯 RESULTADO FINAL COM LOGS
+    // 🎯 RESULTADO FINAL COM MELHORIAS VISUAIS
     const gameResult = {
       ...game,
       isLocked: locked,
@@ -783,12 +796,19 @@ export default function JogosPage() {
       moduleStatus: moduleStatus,
       hasAttempted: hasAttempted,
       hasPassed: hasPassed,
+      isLoadingProgress: isLoadingProgress,
+      // 🎯 INFORMAÇÕES EXTRAS PARA MELHOR UX
+      progressPercentage: bestScore,
+      starsEarned: bestScore >= 90 ? 5 : bestScore >= 75 ? 4 : bestScore >= 60 ? 3 : bestScore >= 40 ? 2 : bestScore >= 20 ? 1 : 0,
+      canRetry: hasAttempted && !hasPassed,
+      nextAction: hasPassed ? 'Revisar' : hasAttempted ? 'Melhorar' : 'Iniciar',
       // 🎯 DEBUG INFO
       _debugInfo: {
         progressFound: !!progress,
         rawProgress: progress,
         calculatedScore: bestScore,
         calculatedStatus: moduleStatus,
+        moduleLoading: moduleLoading,
         timestamp: new Date().toISOString()
       }
     };
@@ -899,80 +919,74 @@ export default function JogosPage() {
                       <div className="flex space-x-2">
                         <Button
                           onClick={() => {
-                            console.log('🔄 [DEBUG] Executando nova lógica de aguarda...');
-                            setModuleProgress({});
+                            console.log('🔄 [DEBUG] Executando busca forçada de progresso...');
                             
-                            // 🎯 EXECUTAR NOVA LÓGICA DE AGUARDA COMO TESTE
-                            const testWaitLogic = async () => {
-                              console.log('⏳ [DEBUG-WAIT] Iniciando teste da lógica de aguarda...');
-                              console.log('⏳ [DEBUG-WAIT] user?.uid:', user?.uid);
-                              console.log('⏳ [DEBUG-WAIT] db:', !!db);
-                              
+                            // 🎯 BUSCA FORÇADA MAIS ROBUSTA
+                            const forceProgressUpdate = async () => {
                               if (!user?.uid || !db) {
-                                console.log('❌ [DEBUG-WAIT] Dependências não disponíveis imediatamente');
-                                
-                                // Aguardar dependências
-                                for (let i = 1; i <= 5; i++) {
-                                  await new Promise(resolve => setTimeout(resolve, 500));
-                                  console.log(`⏳ [DEBUG-WAIT] Tentativa ${i}/5 - user?.uid: ${user?.uid}, db: ${!!db}`);
-                                  
-                                  if (user?.uid && db) {
-                                    console.log(`✅ [DEBUG-WAIT] Dependências OK após ${i} tentativas!`);
-                                    break;
-                                  }
-                                }
+                                console.log('❌ [FORCE] user.uid ou db não disponíveis');
+                                return;
                               }
+
+                              console.log('🚀 [FORCE] Iniciando busca forçada...');
                               
-                              if (user?.uid && db) {
-                                console.log('🔍 [DEBUG-WAIT] Executando busca com dependências válidas...');
+                              try {
+                                // Buscar quiz_attempts
+                                const attemptsQuery = query(
+                                  collection(db!, 'quiz_attempts'),
+                                  where('studentId', '==', user.uid),
+                                  where('moduleId', '==', 'module-1'),
+                                  orderBy('startedAt', 'desc'),
+                                  limit(1)
+                                );
+                                const attemptsSnapshot = await getDocs(attemptsQuery);
+                                console.log('✅ [FORCE] Quiz attempts encontrados:', attemptsSnapshot.size);
                                 
-                                try {
-                                  const attemptsQuery = query(
-                                    collection(db!, 'quiz_attempts'),
-                                    where('studentId', '==', user.uid),
-                                    where('moduleId', '==', 'module-1'),
-                                    orderBy('startedAt', 'desc'),
-                                    limit(1)
-                                  );
-                                  const attemptsSnapshot = await getDocs(attemptsQuery);
-                                  console.log('✅ [DEBUG-WAIT] Query executada. Documentos:', attemptsSnapshot.size);
+                                if (!attemptsSnapshot.empty) {
+                                  const attemptDoc = attemptsSnapshot.docs[0];
+                                  const attemptData = attemptDoc.data();
+                                  console.log('🎉 [FORCE] Dados do quiz:', attemptData);
                                   
-                                  if (!attemptsSnapshot.empty) {
-                                    const attemptDoc = attemptsSnapshot.docs[0];
-                                    const attemptData = attemptDoc.data();
-                                    console.log('🎉 [DEBUG-WAIT] SUCESSO! Dados encontrados:', attemptData);
-                                    
-                                    setModuleProgress({
-                                      'module-1': {
-                                        percentage: attemptData.percentage || 0,
-                                        score: attemptData.percentage || 0,
-                                        totalScore: attemptData.percentage || 0,
-                                        passed: attemptData.passed || false,
-                                        completed: attemptData.passed || false,
-                                        bestScore: attemptData.percentage || 0,
-                                        _source: 'debug_wait_logic',
-                                        _attemptId: attemptDoc.id,
-                                        _timestamp: new Date().toISOString()
-                                      }
-                                    });
-                                  } else {
-                                    console.log('❌ [DEBUG-WAIT] Nenhum documento encontrado');
-                                  }
-                                } catch (error) {
-                                  console.error('❌ [DEBUG-WAIT] Erro na query:', error);
+                                  const newProgress = {
+                                    'module-1': {
+                                      percentage: attemptData.percentage || attemptData.score || 0,
+                                      score: attemptData.percentage || attemptData.score || 0,
+                                      totalScore: attemptData.percentage || attemptData.score || 0,
+                                      passed: attemptData.passed || false,
+                                      completed: attemptData.passed || false,
+                                      bestScore: attemptData.percentage || attemptData.score || 0,
+                                      lastAccessed: attemptData.completedAt || attemptData.startedAt,
+                                      _source: 'forced_update',
+                                      _attemptId: attemptDoc.id,
+                                      _timestamp: new Date().toISOString()
+                                    }
+                                  };
+                                  
+                                  console.log('📊 [FORCE] Definindo novo progresso:', newProgress);
+                                  setModuleProgress(newProgress);
+                                  
+                                  // Também salvar no localStorage como backup
+                                  localStorage.setItem(
+                                    `module-progress-module-1-${user.uid}`, 
+                                    JSON.stringify(newProgress['module-1'])
+                                  );
+                                  
+                                  console.log('✅ [FORCE] Progresso atualizado com sucesso!');
+                                } else {
+                                  console.log('⚠️ [FORCE] Nenhuma tentativa encontrada');
                                 }
-                              } else {
-                                console.log('❌ [DEBUG-WAIT] Dependências ainda não disponíveis após aguarda');
+                              } catch (error) {
+                                console.error('❌ [FORCE] Erro na busca:', error);
                               }
                             };
                             
-                            testWaitLogic();
+                            forceProgressUpdate();
                           }}
                           size="sm"
                           variant="outline"
                           className="border-purple-400 text-purple-700 hover:bg-purple-100"
                         >
-                          ⏳ Teste Aguarda
+                          🚀 Força Atualização
                         </Button>
                         <Button
                           onClick={() => console.log('📊 [DEBUG] Estado atual:', { moduleProgress, user: user?.uid, db: !!db })}

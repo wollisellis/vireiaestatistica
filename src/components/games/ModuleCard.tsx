@@ -118,22 +118,42 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
               </div>
             </div>
 
-            {/* Status Badge */}
+            {/* Status Badge - MAIS REALISTA E DINÂMICO */}
             {!game.isLocked && (
               <div className="flex flex-col items-end space-y-2">
-                {game.moduleStatus === 'completed' && (
-                  <Badge variant="success" className="flex items-center space-x-1">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>Concluído</span>
+                {game.moduleStatus === 'loading' && (
+                  <Badge variant="secondary" className="flex items-center space-x-1 animate-pulse">
+                    <Clock className="w-3 h-3 animate-spin" />
+                    <span>Carregando...</span>
                   </Badge>
+                )}
+                {game.moduleStatus === 'completed' && (
+                  <div className="space-y-1">
+                    <Badge variant="success" className="flex items-center space-x-1">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Concluído</span>
+                    </Badge>
+                    {game.bestScore && (
+                      <div className="text-xs text-green-600 font-medium">
+                        {game.bestScore}% • {game.starsEarned}⭐
+                      </div>
+                    )}
+                  </div>
                 )}
                 {game.moduleStatus === 'attempted_failed' && (
-                  <Badge variant="warning" className="flex items-center space-x-1">
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Tentar Novamente</span>
-                  </Badge>
+                  <div className="space-y-1">
+                    <Badge variant="warning" className="flex items-center space-x-1">
+                      <TrendingUp className="w-3 h-3" />
+                      <span>Em Progresso</span>
+                    </Badge>
+                    {game.bestScore && (
+                      <div className="text-xs text-orange-600 font-medium">
+                        {game.bestScore}% • Faltam {70 - game.bestScore}%
+                      </div>
+                    )}
+                  </div>
                 )}
-                {game.moduleStatus === 'never_attempted' && (
+                {game.moduleStatus === 'never_attempted' && !game.isLoadingProgress && (
                   <Badge variant="default" className="flex items-center space-x-1">
                     <PlayCircle className="w-3 h-3" />
                     <span>Novo</span>
@@ -143,10 +163,12 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
             )}
           </div>
 
-          {/* Content específico por estado */}
+          {/* Content específico por estado - VERSÃO MELHORADA */}
           <div className="flex-1">
             {game.isLocked ? (
               <LockedModuleContent lockMessage={game.lockMessage} />
+            ) : game.moduleStatus === 'loading' ? (
+              <LoadingModuleContent />
             ) : game.moduleStatus === 'completed' ? (
               <CompletedModuleContent game={game} rating={rating} />
             ) : game.moduleStatus === 'attempted_failed' ? (
@@ -156,17 +178,22 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
             )}
           </div>
 
-          {/* Action Button */}
+          {/* Action Button - DINÂMICO E INTELIGENTE */}
           <div className="mt-auto pt-6">
             {game.isLocked ? (
               <Button disabled className="w-full h-12 text-base">
                 🔒 Aguardando Liberação
               </Button>
+            ) : game.moduleStatus === 'loading' ? (
+              <Button disabled className="w-full h-12 text-base animate-pulse">
+                <Clock className="w-4 h-4 mr-2 animate-spin" />
+                Carregando...
+              </Button>
             ) : (
               <Button 
                 onClick={onClick}
                 className={`
-                  w-full h-12 text-base font-semibold flex items-center justify-center space-x-2 transition-all shadow-lg hover:shadow-xl
+                  w-full h-12 text-base font-semibold flex items-center justify-center space-x-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105
                   ${game.moduleStatus === 'completed' 
                     ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800' 
                     : game.moduleStatus === 'attempted_failed'
@@ -178,12 +205,12 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
                 {game.moduleStatus === 'completed' ? (
                   <>
                     <Award className="w-5 h-5" />
-                    <span>Revisar Módulo</span>
+                    <span>Revisar • {game.bestScore}%</span>
                   </>
                 ) : game.moduleStatus === 'attempted_failed' ? (
                   <>
                     <TrendingUp className="w-5 h-5" />
-                    <span>Melhorar Pontuação</span>
+                    <span>Continuar • {game.bestScore}%</span>
                   </>
                 ) : (
                   <>
@@ -208,6 +235,39 @@ const LockedModuleContent = ({ lockMessage }: { lockMessage?: string }) => (
     <p className="text-gray-600 text-sm">
       {lockMessage || 'Módulo bloqueado'}
     </p>
+  </div>
+);
+
+// Componente para módulo carregando - NOVO E REALISTA
+const LoadingModuleContent = () => (
+  <div className="space-y-5 animate-pulse">
+    {/* Skeleton de progresso */}
+    <div className="bg-white/80 rounded-lg p-4 space-y-3">
+      <div className="flex justify-center">
+        <div className="w-32 h-8 bg-gray-200 rounded-full"></div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-gray-100 rounded-lg p-3">
+          <div className="w-16 h-6 bg-gray-200 rounded mx-auto mb-2"></div>
+          <div className="w-20 h-3 bg-gray-200 rounded mx-auto"></div>
+        </div>
+        <div className="bg-gray-100 rounded-lg p-3">
+          <div className="w-16 h-6 bg-gray-200 rounded mx-auto mb-2"></div>
+          <div className="w-20 h-3 bg-gray-200 rounded mx-auto"></div>
+        </div>
+      </div>
+    </div>
+
+    {/* Mensagem de carregamento */}
+    <div className="bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-lg p-4 text-center">
+      <div className="flex items-center justify-center space-x-2 mb-2">
+        <Clock className="w-5 h-5 text-blue-600 animate-spin" />
+        <span className="text-sm font-medium text-blue-800">Buscando seu progresso...</span>
+      </div>
+      <p className="text-xs text-blue-600">
+        Aguarde enquanto carregamos seus dados de aprendizagem
+      </p>
+    </div>
   </div>
 );
 
