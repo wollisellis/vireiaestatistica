@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modules } from '@/data/modules';
 import { ModuleCard } from '@/components/games/ModuleCard';
+import { ModuleProgressCard } from '@/components/games/ModuleProgressCard';
 import { useRoleRedirect } from '@/hooks/useRoleRedirect';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { collection, doc, getDoc, setDoc, onSnapshot, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -45,6 +46,7 @@ import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
 import { ClassRankingPanel } from '@/components/ranking/ClassRankingPanel';
+import { useModuleProgress } from '@/hooks/useModuleProgress';
 import unifiedScoringService from '@/services/unifiedScoringService';
 
 interface ModuleProgress {
@@ -227,7 +229,7 @@ export default function JogosPage() {
   // Use direct Firebase auth hook for logout functionality only
   const { signOut } = useFirebaseAuth();
   
-  const [moduleProgress, setModuleProgress] = useState<ModuleProgress>({});
+  const [moduleProgress, setModuleProgress] = useState<ModuleProgress | null>(null); // 🎯 FIX: Start with null for proper loading state
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
   const [moduleLoading, setModuleLoading] = useState(true);
   const [rankingCollapsed, setRankingCollapsed] = useState(() => {
@@ -1154,17 +1156,18 @@ export default function JogosPage() {
 
               <div className="max-w-6xl mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {nutritionalGames.map((game, index) => (
+                  {/* 🎯 NOVA IMPLEMENTAÇÃO SIMPLIFICADA */}
+                  {Array.isArray(modules) && modules.filter(m => m.id === 'module-1').map((module, index) => (
                     <motion.div
-                      key={game.id}
+                      key={module.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.1 * index }}
                     >
-                      <ModuleCard
-                        game={game}
-                        onClick={() => handleStartQuiz(game)}
-                        isProfessor={isProfessor}
+                      <ModuleProgressCard
+                        module={module}
+                        userId={user?.uid || null}
+                        onClick={() => window.location.href = '/jogos/modulo-1/quiz'}
                       />
                     </motion.div>
                   ))}
