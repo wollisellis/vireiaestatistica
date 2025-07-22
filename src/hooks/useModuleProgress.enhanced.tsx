@@ -92,7 +92,8 @@ const getModuleState = (progress: ModuleProgressData | null, isLoading: boolean,
     };
   }
 
-  if (isLoading || !progress) {
+  // 🔧 FIX: Separar loading real de módulo não iniciado
+  if (isLoading) {
     return {
       status: 'loading',
       progress: 0,
@@ -104,6 +105,22 @@ const getModuleState = (progress: ModuleProgressData | null, isLoading: boolean,
       buttonText: 'Carregando...',
       lastActivity: null,
       source: 'loading'
+    };
+  }
+
+  // 🔧 FIX: Se não está loading e não há progresso, é módulo novo
+  if (!progress) {
+    return {
+      status: 'new',
+      progress: 0,
+      score: 0,
+      passed: false,
+      attempts: 0,
+      stars: 0,
+      badge: 'Novo',
+      buttonText: 'Iniciar Módulo',
+      lastActivity: null,
+      source: 'no_data'
     };
   }
 
