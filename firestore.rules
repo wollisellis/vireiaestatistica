@@ -81,7 +81,7 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && isOwner(userId);
 
       // Professores podem ler dados de todos os usuários (sem dependência circular)
-      allow read: if isProfessor();
+      allow read: if isProfessor() || isProfessorWithFallback();
 
       // Permitir criação de conta com validação de email e estrutura
       allow create: if isAuthenticated() && hasUnicampEmail() &&
@@ -289,7 +289,7 @@ service cloud.firestore {
     // CLASS ENROLLMENTS COLLECTION - Matrículas de estudantes (alternativa)
     match /class_enrollments/{enrollmentId} {
       // Professores podem gerenciar matrículas
-      allow read, write: if isProfessor();
+      allow read, write: if isProfessor() || isProfessorWithFallback();
 
       // Estudantes podem ler apenas suas próprias matrículas
       allow read: if isStudent() &&
@@ -333,7 +333,7 @@ service cloud.firestore {
     // CLASS STUDENTS COLLECTION - Matrículas de estudantes
     match /class_students/{studentClassId} {
       // Professores podem gerenciar matrículas de suas turmas
-      allow read, write: if isProfessor();
+      allow read, write: if isProfessor() || isProfessorWithFallback();
 
       // Estudantes podem ler apenas suas próprias matrículas
       allow read: if isStudent() &&
@@ -346,7 +346,7 @@ service cloud.firestore {
     // CLASSSTUDENTS COLLECTION - Compatibilidade (usado pelo ClassInviteService)
     match /classStudents/{studentClassId} {
       // Professores podem gerenciar matrículas de suas turmas
-      allow read, write: if isProfessor();
+      allow read, write: if isProfessor() || isProfessorWithFallback();
 
       // Estudantes podem ler apenas suas próprias matrículas
       allow read: if isAuthenticated() &&
@@ -378,7 +378,7 @@ service cloud.firestore {
     // CLASS INVITES COLLECTION - Sistema de convites para turmas (ACESSO COMPARTILHADO)
     match /class_invites/{inviteId} {
       // ✅ TODOS os professores podem gerenciar convites de TODAS as turmas (acesso compartilhado)
-      allow read, write, create: if isProfessor();
+      allow read, write, create: if isProfessor() || isProfessorWithFallback();
 
       // Estudantes podem ler convites públicos para matrícula
       allow read: if isStudent();
@@ -387,7 +387,7 @@ service cloud.firestore {
     // CLASSIVITES COLLECTION - Convites de turma (compatibilidade) (ACESSO COMPARTILHADO)
     match /classInvites/{inviteCode} {
       // ✅ TODOS os professores podem gerenciar convites de TODAS as turmas (acesso compartilhado)
-      allow read, write, create: if isProfessor();
+      allow read, write, create: if isProfessor() || isProfessorWithFallback();
 
       // Estudantes podem ler convites públicos para matrícula
       allow read: if isStudent();

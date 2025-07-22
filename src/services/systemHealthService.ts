@@ -852,16 +852,16 @@ export class SystemHealthService {
         const convertedData = {
           ...data,
           timestamp: this.safeToDate(data.timestamp),
-          detectedIssues: (data.detectedIssues || []).map((issue: any) => ({
+          detectedIssues: Array.isArray(data.detectedIssues) ? data.detectedIssues.map((issue: any) => ({
             ...issue,
             detectedAt: this.safeToDate(issue.detectedAt),
             resolvedAt: issue.resolvedAt ? this.safeToDate(issue.resolvedAt) : undefined
-          })),
-          recoveryActions: (data.recoveryActions || []).map((action: any) => ({
+          })) : [],
+          recoveryActions: Array.isArray(data.recoveryActions) ? data.recoveryActions.map((action: any) => ({
             ...action,
             executedAt: this.safeToDate(action.executedAt),
             completedAt: action.completedAt ? this.safeToDate(action.completedAt) : undefined
-          }))
+          })) : []
         } as SystemHealthMetrics;
         
         return convertedData;
