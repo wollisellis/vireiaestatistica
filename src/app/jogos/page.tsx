@@ -402,7 +402,7 @@ export default function JogosPage() {
                   <User className="w-4 h-4" />
                   <span className="font-medium">
                     {(() => {
-                      // Extrair primeiro nome do aluno
+                      // Extrair apenas o primeiro nome do aluno
                       const fullName = (user as any)?.displayName || (user as any)?.name || (user as any)?.fullName;
                       const firstName = fullName ? fullName.split(' ')[0] : null;
                       const userId = getUserId();
@@ -416,10 +416,18 @@ export default function JogosPage() {
                       const userId = getUserId();
                       if (!userId || userId.includes('guest')) return null;
 
-                      // Se o ID é curto (4 caracteres ou menos), mostrar completo
-                      // Senão, mostrar os últimos 8 caracteres para melhor identificação
-                      const displayId = userId.length <= 4 ? userId : userId.slice(-8);
+                      // Priorizar anonymousId (4 dígitos) se disponível
+                      const anonymousId = (user as any)?.anonymousId;
+                      if (anonymousId) {
+                        return (
+                          <span className="ml-2 text-xs text-emerald-600 font-mono font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border">
+                            #{anonymousId}
+                          </span>
+                        );
+                      }
 
+                      // Fallback para userId truncado (como antes)
+                      const displayId = userId.length <= 4 ? userId : userId.slice(-8);
                       return (
                         <span className="ml-2 text-xs text-gray-500 font-mono">
                           (ID:{displayId.toUpperCase()})

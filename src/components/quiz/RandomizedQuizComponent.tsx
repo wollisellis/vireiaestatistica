@@ -28,6 +28,11 @@ import { RandomizedQuizService } from '@/services/randomizedQuizService';
 import { QuizScoringService } from '@/services/quizScoringService';
 import { useAuth } from '@/hooks/useHybridAuth';
 
+// 🎯 Função utilitária para capitalizar categorias de forma consistente
+const capitalizeCategory = (category: string): string => {
+  return category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
 // Componente Progress inline para evitar problemas de import
 const Progress: React.FC<{ value: number; className?: string }> = ({ value, className = '' }) => (
   <div className={`w-full bg-gray-200 rounded-full overflow-hidden ${className}`}>
@@ -409,8 +414,8 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium capitalize">
-                          {category.category.replace(/-/g, ' ')}
+                        <span className="text-sm font-medium">
+                          {capitalizeCategory(category.category)}
                         </span>
                         <span className="text-sm text-gray-600">
                           {category.correct}/{category.total}
@@ -469,7 +474,7 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
                       <span className="font-medium">Questão {index + 1}</span>
                       {feedback.category && (
                         <Badge variant="outline" className="ml-2 text-xs">
-                          {feedback.category.replace(/-/g, ' ')}
+                          {capitalizeCategory(feedback.category)}
                         </Badge>
                       )}
                     </div>
@@ -729,7 +734,7 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
               </Badge>
               {currentQuestionData.category && (
                 <Badge variant="outline">
-                  {currentQuestionData.category.replace(/-/g, ' ')}
+                  {capitalizeCategory(currentQuestionData.category)}
                 </Badge>
               )}
             </div>
