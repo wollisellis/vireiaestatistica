@@ -88,7 +88,18 @@ export default function JogosPage() {
   const { signOut } = useFirebaseAuth();
   
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
-  const [ready, setReady] = useState(false);
+  
+  // 🎯 ESTADO UNIFICADO DE CARREGAMENTO
+  const [dataLoadingState, setDataLoadingState] = useState({
+    auth: false,        // Autenticação completa
+    modules: false,     // Módulos carregados
+    ranking: false,     // Ranking processado (sucesso ou erro handled)
+    classInfo: false    // Informações da classe processadas (sucesso ou erro handled)
+  });
+  
+  // 🎯 COMPUTED READY STATE
+  const ready = dataLoadingState.auth && dataLoadingState.modules && 
+                dataLoadingState.ranking && dataLoadingState.classInfo;
   const [showCompletedModal, setShowCompletedModal] = useState(false);
   const [selectedModuleForModal, setSelectedModuleForModal] = useState<{
     title: string;
@@ -117,34 +128,66 @@ export default function JogosPage() {
     debounce(async () => {
       devLog('Refreshing rankings...');
       try {
-        await unifiedScoringService.updateStudentRanking(user?.uid || '');
+        // 🛡️ SAFE GUARD: Verificar se o método existe antes de chamar
+        if (unifiedScoringService && typeof unifiedScoringService.updateStudentRanking === 'function') {
+          await unifiedScoringService.updateStudentRanking(user?.uid || '');
+        } else {
+          console.warn('updateStudentRanking method not available');
+        }
       } catch (error) {
         console.error('Error refreshing rankings:', error);
+        // Não resetar estado - preservar dados anteriores
       }
     }, 800),
     [user?.uid]
   );
   
-  // 🎯 UNIFIED SCORING UPDATE
+  // 🎯 UNIFIED SCORING UPDATE WITH STATE TRACKING
   useEffect(() => {
     const updateScoring = async () => {
-      if (!user?.uid) return;
+      if (!user?.uid) {
+        // 🎯 Marcar ranking como "handled" se não há usuário
+        setDataLoadingState(prev => ({ ...prev, ranking: true }));
+        return;
+      }
       
       try {
         devLog('Updating unified scoring...');
-        await unifiedScoringService.updateStudentRanking(user.uid);
+        // 🛡️ SAFE GUARD: Verificar se o método existe antes de chamar
+        if (unifiedScoringService && typeof unifiedScoringService.updateStudentRanking === 'function') {
+          await unifiedScoringService.updateStudentRanking(user.uid);
+        } else {
+          console.warn('updateStudentRanking method not available');
+        }
+        
+        // 🎯 Marcar ranking como carregado (sucesso ou warning)
+        setDataLoadingState(prev => ({ ...prev, ranking: true }));
+        
       } catch (error) {
         console.error('Error updating scoring:', error);
-        // NÃO setar estado vazio - manter estado anterior
+        // 🎯 Marcar ranking como handled mesmo com erro (não bloquear UI)
+        setDataLoadingState(prev => ({ ...prev, ranking: true }));
       }
     };
     
     updateScoring();
   }, [user?.uid]);
   
-  // 🎯 UNLOCKED MODULES - HARDCODED FOR NOW (avoiding Firebase rules issues)
+  // 🎯 AUTH STATE TRACKING
   useEffect(() => {
-    if (!user?.uid) return;
+    // 🎯 Marcar autenticação como completa quando não está mais carregando
+    if (!loading) {
+      setDataLoadingState(prev => ({ ...prev, auth: true }));
+    }
+  }, [loading]);
+
+  // 🎯 UNLOCKED MODULES WITH STATE TRACKING
+  useEffect(() => {
+    if (!user?.uid) {
+      // 🎯 Marcar módulos como handled se não há usuário
+      setDataLoadingState(prev => ({ ...prev, modules: true }));
+      return;
+    }
     
     // Por enquanto, deixar todos os módulos desbloqueados para professores
     // e apenas module-1 para estudantes
@@ -156,9 +199,16 @@ export default function JogosPage() {
     
     devLog('Unlocked modules set to default:', defaultUnlocked);
     
-    // Marcar como ready após carregar módulos desbloqueados
-    setReady(true);
+    // 🎯 Marcar módulos como carregados
+    setDataLoadingState(prev => ({ ...prev, modules: true }));
   }, [user?.uid, isProfessor]);
+
+  // 🎯 CLASS INFO STATE TRACKING
+  useEffect(() => {
+    // 🎯 Por enquanto marcar como handled - componente StudentClassInfo gerencia isso internamente
+    // Em futuras iterações podemos adicionar callback para notificar quando carrega
+    setDataLoadingState(prev => ({ ...prev, classInfo: true }));
+  }, [user?.uid]);
   
   // 🎯 MODULE COMPLETED EVENT LISTENER
   useEffect(() => {

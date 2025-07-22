@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useRBAC } from '@/hooks/useRBAC'
@@ -143,8 +143,24 @@ export function useAuthRedirect() {
 
 // Hook flexível que permite navegação livre entre áreas para usuários autenticados
 export function useFlexibleAccess() {
-  return useRoleRedirect({
+  const roleRedirectResult = useRoleRedirect({
     // Sem requiredRole = permite qualquer usuário autenticado acessar
     allowGuests: true // Permitir convidados também
   })
+
+  // 🛡️ MEMOIZAÇÃO: Evitar re-renders desnecessários
+  const memoizedResult = useMemo(() => ({
+    user: roleRedirectResult.user,
+    loading: roleRedirectResult.loading,
+    hasAccess: roleRedirectResult.hasAccess,
+    isProfessor: roleRedirectResult.isProfessor
+  }), [
+    roleRedirectResult.user?.uid,
+    roleRedirectResult.user?.role,
+    roleRedirectResult.loading,
+    roleRedirectResult.hasAccess,
+    roleRedirectResult.isProfessor
+  ])
+
+  return memoizedResult
 }
