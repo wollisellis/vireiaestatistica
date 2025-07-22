@@ -312,9 +312,6 @@ export function AnalyticsDashboard({ professorId, selectedClassId }: AnalyticsDa
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin text-gray-400 mt-1" />
                   ) : (
-                    {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-400 mt-1" />
-                  ) : (
                     <p className="text-2xl font-bold text-gray-900">{analyticsData.overview.totalStudents}</p>
                   )}
                 </div>
