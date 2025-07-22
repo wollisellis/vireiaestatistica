@@ -586,20 +586,26 @@ function JogosPageContent() {
 }
 
 // 🛡️ ERROR BOUNDARY WRAPPER
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: any) {
     console.error('🚨 JogosPage Error Boundary caught an error:', error, errorInfo);
   }
 
