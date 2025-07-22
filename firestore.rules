@@ -202,6 +202,21 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
 
+    // PROFESSOR ANALYTICS COLLECTION - Dados agregados para dashboard do professor
+    match /professor_analytics/{analyticsId} {
+      // Todos os professores podem ler/escrever dados agregados
+      allow read, write, create: if isProfessor();
+    }
+
+    // AGGREGATED STATS COLLECTION - Estatísticas agregadas do sistema
+    match /aggregated_stats/{statId} {
+      // Todos os professores podem ler estatísticas agregadas
+      allow read: if isProfessor();
+      
+      // Sistema pode criar/atualizar estatísticas
+      allow write, create: if isProfessor();
+    }
+
     // LEADERBOARD COLLECTION - Rankings e pontuações
     match /leaderboard/{leaderboardId} {
       // Todos os usuários autenticados podem ler o leaderboard

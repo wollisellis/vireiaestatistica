@@ -355,27 +355,35 @@ export function ClassRankingPanel({
             
             {/* Posição do usuário atual */}
             {classStudents.find(s => s.isCurrentUser) && (
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-blue-800">
-                    <strong>Sua posição: #{classStudents.find(s => s.isCurrentUser)?.position}</strong>
-                  </p>
-                  <div className="text-xs text-blue-700">
-                    <span className={`font-medium ${
-                      (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 90 ? 'text-green-600' :
-                      (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'text-blue-600' :
-                      'text-orange-600'
-                    }`}>
-                      {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)}%
-                    </span>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-3 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">#{classStudents.find(s => s.isCurrentUser)?.position}</span>
+                    </div>
+                    <p className="text-sm font-bold text-blue-900">
+                      Sua Posição
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 90 ? 'bg-green-100 text-green-700' :
+                    (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'bg-blue-100 text-blue-700' :
+                    'bg-orange-100 text-orange-700'
+                  }`}>
+                    {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)}%
                     {(classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 && (
-                      <span className="ml-2 text-green-600">✅ Aprovado</span>
+                      <span className="ml-2">✅</span>
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-blue-600 mt-1">
-                  ID: ...{user?.id?.slice(-6)} • {classStudents.find(s => s.isCurrentUser)?.completedModules || 0} módulo(s) concluído(s)
-                </p>
+                <div className="flex items-center justify-between text-xs text-blue-700">
+                  <span className="font-medium">
+                    ID: ...{user?.id?.slice(-6)}
+                  </span>
+                  <span className="font-medium">
+                    {classStudents.find(s => s.isCurrentUser)?.completedModules || 0} módulo(s) concluído(s)
+                  </span>
+                </div>
               </div>
             )}
           </motion.div>
@@ -399,10 +407,10 @@ export function ClassRankingPanel({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     className={`
-                      flex items-center justify-between p-3 rounded-lg border transition-all
-                      ${student.isCurrentUser 
-                        ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' 
-                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                      flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-300 shadow-sm hover:shadow-md
+                      ${student.isCurrentUser
+                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 ring-2 ring-blue-200'
+                        : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
                       }
                     `}
                   >
@@ -410,7 +418,7 @@ export function ClassRankingPanel({
                     <div className="flex items-center space-x-3">
                       {/* Posição */}
                       <div className={`
-                        w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs
+                        w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md
                         ${getPositionColor(student.position || 0)}
                       `}>
                         {(student.position || 0) <= 3 ? getRankIcon(student.position || 0) : student.position}
@@ -419,32 +427,36 @@ export function ClassRankingPanel({
                       {/* Informações do estudante */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-base font-semibold text-gray-900 truncate">
                             {student.studentName}
                           </p>
                           {student.isCurrentUser && (
-                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 font-semibold">
                               Você
                             </Badge>
                           )}
                           {/* 🏦 Mostrar ID parcial para identificação */}
-                          <span className="text-xs text-gray-400 font-mono">
-                            ID: ...{student.studentId.slice(-6)}
+                          <span className="text-sm text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded">
+                            ...{student.studentId.slice(-6)}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
-                          <div className="flex items-center space-x-1">
-                            <Star className="w-3 h-3 text-yellow-500" />
-                            <span className={`text-xs font-medium ${
-                              student.totalScore >= 90 ? 'text-green-600' :
-                              student.totalScore >= 70 ? 'text-blue-600' :
-                              student.totalScore >= 50 ? 'text-yellow-600' :
-                              'text-gray-600'
+                          <div className="flex items-center space-x-2">
+                            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-bold ${
+                              student.totalScore >= 90 ? 'bg-green-100 text-green-700' :
+                              student.totalScore >= 70 ? 'bg-blue-100 text-blue-700' :
+                              student.totalScore >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-gray-100 text-gray-600'
                             }`}>
-                              {formatScore(student.totalScore)}%
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              ({student.totalScore >= 70 ? '✅ Aprovado' : student.totalScore > 0 ? '📚 Cursando' : '⏳ Aguardando'})
+                              <Star className="w-3 h-3" />
+                              <span>{formatScore(student.totalScore)}%</span>
+                            </div>
+                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                              student.totalScore >= 70 ? 'bg-green-50 text-green-700' :
+                              student.totalScore > 0 ? 'bg-blue-50 text-blue-700' :
+                              'bg-gray-50 text-gray-600'
+                            }`}>
+                              {student.totalScore >= 70 ? '✅ Aprovado' : student.totalScore > 0 ? '📚 Cursando' : '⏳ Aguardando'}
                             </span>
                           </div>
                           <div className="flex items-center space-x-1">

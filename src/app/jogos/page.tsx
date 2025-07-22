@@ -398,20 +398,22 @@ export default function JogosPage() {
               </div>
               
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <User className="w-4 h-4" />
-                  <span className="font-medium">
-                    {(() => {
-                      // Extrair apenas o primeiro nome do aluno
-                      const fullName = (user as any)?.displayName || (user as any)?.name || (user as any)?.fullName;
-                      const firstName = fullName ? fullName.split(' ')[0] : null;
-                      const userId = getUserId();
-                      const isGuest = userId?.includes('guest');
+                <div className="flex items-center space-x-3 text-base text-gray-700">
+                  <User className="w-5 h-5 text-emerald-600" />
+                  <div className="flex items-center space-x-2">
+                    <span className="font-semibold text-lg">
+                      {(() => {
+                        // Extrair apenas o primeiro nome do aluno
+                        const fullName = (user as any)?.displayName || (user as any)?.name || (user as any)?.fullName;
+                        const firstName = fullName ? fullName.split(' ')[0] : null;
+                        const userId = getUserId();
+                        const isGuest = userId?.includes('guest');
 
-                      if (isGuest) return 'Visitante';
-                      if (firstName) return firstName;
-                      return 'Aluno';
-                    })()}
+                        if (isGuest) return 'Visitante';
+                        if (firstName) return firstName;
+                        return 'Aluno';
+                      })()}
+                    </span>
                     {(() => {
                       const userId = getUserId();
                       if (!userId || userId.includes('guest')) return null;
@@ -420,7 +422,7 @@ export default function JogosPage() {
                       const anonymousId = (user as any)?.anonymousId;
                       if (anonymousId) {
                         return (
-                          <span className="ml-2 text-xs text-emerald-600 font-mono font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border">
+                          <span className="text-sm text-emerald-700 font-mono font-bold bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-sm">
                             #{anonymousId}
                           </span>
                         );
@@ -429,15 +431,15 @@ export default function JogosPage() {
                       // Fallback para userId truncado (como antes)
                       const displayId = userId.length <= 4 ? userId : userId.slice(-8);
                       return (
-                        <span className="ml-2 text-xs text-gray-500 font-mono">
-                          (ID:{displayId.toUpperCase()})
+                        <span className="text-sm text-gray-600 font-mono bg-gray-100 px-2 py-1 rounded border">
+                          ID:{displayId.toUpperCase()}
                         </span>
                       );
                     })()}
-                  </span>
+                  </div>
                   {isProfessor && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      <GraduationCap className="w-3 h-3 mr-1" />
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                      <GraduationCap className="w-4 h-4 mr-1.5" />
                       Professor
                     </span>
                   )}

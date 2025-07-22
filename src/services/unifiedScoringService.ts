@@ -325,23 +325,39 @@ class UnifiedScoringService {
 
   // Calcular pontuação total
   private calculateTotalScore(score: UnifiedScore): number {
-    const moduleTotal = Object.values(score.moduleScores).reduce((sum, s) => sum + s, 0)
-    const gameTotal = Object.values(score.gameScores).reduce((sum, s) => sum + s, 0)
-    
-    // Peso: 70% módulos, 30% jogos
-    return Math.round(moduleTotal * 0.7 + gameTotal * 0.3)
+    const moduleScores = Object.values(score.moduleScores)
+    const gameScores = Object.values(score.gameScores)
+
+    // Para sistema educacional, usar média das pontuações dos módulos como base
+    if (moduleScores.length === 0) return 0
+
+    const moduleAverage = moduleScores.reduce((sum, s) => sum + s, 0) / moduleScores.length
+    const gameAverage = gameScores.length > 0 ? gameScores.reduce((sum, s) => sum + s, 0) / gameScores.length : 0
+
+    // Peso: 80% módulos, 20% jogos (priorizar aprendizado)
+    return Math.round(moduleAverage * 0.8 + gameAverage * 0.2)
   }
 
   // Calcular pontuação normalizada (0-100)
   private calculateNormalizedScore(score: UnifiedScore): number {
-    const maxPossibleScore = this.getMaxPossibleScore()
-    return Math.min(100, Math.round((score.totalScore / maxPossibleScore) * 100))
+    // Para sistema educacional, usar diretamente a média das pontuações dos módulos
+    const moduleScores = Object.values(score.moduleScores)
+    if (moduleScores.length === 0) return 0
+
+    // Calcular média das pontuações dos módulos (já estão em escala 0-100)
+    const averageModuleScore = moduleScores.reduce((sum, s) => sum + s, 0) / moduleScores.length
+    return Math.min(100, Math.max(0, Math.round(averageModuleScore)))
   }
 
-  // Calcular nível baseado na pontuação
+  // Calcular nível baseado na pontuação (escala 0-100)
   private calculateLevel(totalScore: number): number {
-    const levelThresholds = [0, 1000, 2500, 5000, 10000, 20000, 50000, 100000]
-    return levelThresholds.findIndex(threshold => totalScore < threshold) || levelThresholds.length
+    // Níveis educacionais baseados na pontuação 0-100
+    if (totalScore >= 95) return 5 // Excelência
+    if (totalScore >= 85) return 4 // Muito Bom
+    if (totalScore >= 75) return 3 // Bom
+    if (totalScore >= 60) return 2 // Regular
+    if (totalScore >= 40) return 1 // Iniciante
+    return 0 // Não iniciado
   }
 
   // Verificar novas conquistas
@@ -396,8 +412,8 @@ class UnifiedScoringService {
 
   // Obter pontuação máxima possível
   private getMaxPossibleScore(): number {
-    // Calcular baseado em todos os módulos e jogos disponíveis
-    return 100000 // Placeholder - calcular dinamicamente
+    // Para sistema educacional, a pontuação máxima é 100 (escala 0-100)
+    return 100
   }
 
   // 🚀 NOVO: Obter módulos concluídos de forma consistente

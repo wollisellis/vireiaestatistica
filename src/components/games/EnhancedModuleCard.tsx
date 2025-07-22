@@ -106,25 +106,25 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
   }, [module.isLocked, state.status]);
 
   const buttonClass = useMemo(() => {
-    const base = "w-full h-12 text-base font-semibold flex items-center justify-center space-x-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105";
-    
+    const base = "w-full h-14 text-lg font-bold flex items-center justify-center space-x-3 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 rounded-xl";
+
     if (module.isLocked) {
-      return `${base} bg-gray-400 cursor-not-allowed`;
+      return `${base} bg-gray-400 cursor-not-allowed text-white`;
     }
-    
+
     if (error) {
-      return `${base} bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800`;
+      return `${base} bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-700 hover:via-red-800 hover:to-red-900 text-white`;
     }
-    
+
     switch (state.status) {
       case 'completed':
-        return `${base} bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800`;
+        return `${base} bg-gradient-to-r from-green-600 via-green-700 to-emerald-700 hover:from-green-700 hover:via-green-800 hover:to-emerald-800 text-white`;
       case 'in_progress':
-        return `${base} bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800`;
+        return `${base} bg-gradient-to-r from-orange-600 via-orange-700 to-amber-700 hover:from-orange-700 hover:via-orange-800 hover:to-amber-800 text-white`;
       case 'loading':
-        return `${base} bg-gray-400 cursor-wait animate-pulse`;
+        return `${base} bg-gray-400 cursor-wait animate-pulse text-white`;
       default:
-        return `${base} bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800`;
+        return `${base} bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 text-white`;
     }
   }, [module.isLocked, error, state.status]);
 
@@ -140,31 +140,33 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
       className="group"
     >
       <Card className={`
-        h-full border-2 transition-all duration-300 cursor-pointer
-        ${module.isLocked 
-          ? 'border-gray-200 bg-gray-50' 
+        h-full border-2 transition-all duration-300 cursor-pointer shadow-md hover:shadow-xl
+        ${module.isLocked
+          ? 'border-gray-300 bg-gray-50/80 backdrop-blur-sm'
           : error
-            ? 'border-red-200 hover:border-red-300 hover:shadow-lg'
-            : 'border-gray-200 hover:border-blue-300 hover:shadow-lg'
+            ? 'border-red-300 hover:border-red-400 hover:shadow-red-100 bg-white/90 backdrop-blur-sm'
+            : state.status === 'completed'
+              ? 'border-green-300 hover:border-green-400 hover:shadow-green-100 bg-gradient-to-br from-green-50/80 to-white backdrop-blur-sm'
+              : 'border-blue-300 hover:border-blue-400 hover:shadow-blue-100 bg-gradient-to-br from-blue-50/80 to-white backdrop-blur-sm'
         }
         ${className}
       `} onClick={handleClick}>
-        <div className="p-6 flex flex-col h-full">
+        <div className="p-7 flex flex-col h-full">
           {/* 🎯 HEADER MELHORADO */}
-          <div className="flex items-start space-x-4 mb-4">
+          <div className="flex items-start space-x-5 mb-6">
             <div className={`
-              w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg text-white
+              w-18 h-18 rounded-3xl flex items-center justify-center text-3xl font-bold shadow-xl text-white ring-4 ring-white/50
               ${iconBgClass}
             `}>
               {module.isLocked ? '🔒' : module.icon}
             </div>
-            
+
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-xl text-gray-900 leading-tight mb-1">
+              <h3 className="font-bold text-2xl text-gray-900 leading-tight mb-2">
                 {module.title}
               </h3>
-              <p className="text-sm text-gray-600 flex items-center">
-                <Clock className="w-4 h-4 mr-1.5" />
+              <p className="text-base text-gray-600 flex items-center font-medium">
+                <Clock className="w-5 h-5 mr-2 text-blue-500" />
                 10-15 minutos
               </p>
             </div>
@@ -197,34 +199,36 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                   
                   {/* 🎯 NOTA E INFORMAÇÕES DINÂMICAS */}
                   {state.status === 'completed' && (
-                    <div className="text-right space-y-2">
+                    <div className="text-right space-y-3">
                       {/* Performance Level */}
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-2">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium text-green-800">
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-xl p-3 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold text-green-800">
                             {state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'}
                           </span>
-                          <div className="flex items-center space-x-1">
-                            <Award className="w-3 h-3 text-green-600" />
-                            <span className="text-sm font-bold text-green-600">{state.score}%</span>
+                          <div className="flex items-center space-x-2">
+                            <Award className="w-4 h-4 text-green-600" />
+                            <span className="text-lg font-bold text-green-700">{state.score}%</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center text-yellow-500">
                             {Array.from({ length: state.stars }, (_, i) => (
-                              <Star key={i} className="w-2.5 h-2.5 fill-current" />
+                              <Star key={i} className="w-3 h-3 fill-current" />
                             ))}
                           </div>
                           {state.passed && (
-                            <span className="text-xs text-green-600 font-medium">✅ Aprovado</span>
+                            <span className="text-sm text-green-700 font-semibold bg-green-100 px-2 py-1 rounded-full">
+                              ✅ Aprovado
+                            </span>
                           )}
                         </div>
                       </div>
 
                       {/* Métricas Detalhadas - Removido número de tentativas */}
-                      <div className="text-center p-2 bg-blue-50 rounded-lg border border-blue-200">
-                        <div className="font-bold text-lg text-blue-800">{state.score}%</div>
-                        <div className="text-blue-600 text-sm font-medium">Melhor Nota</div>
+                      <div className="text-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-300 shadow-sm">
+                        <div className="font-bold text-2xl text-blue-800 mb-1">{state.score}%</div>
+                        <div className="text-blue-700 text-sm font-semibold">Melhor Nota</div>
                       </div>
 
                       {/* Última Atividade */}
@@ -313,7 +317,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
               />
               <div className="flex justify-between mt-2 text-xs text-gray-500">
                 <span className="font-medium">Melhor Nota: {state.score}%</span>
-                <span className="font-medium">{state.attempts} tentativa{state.attempts !== 1 ? 's' : ''} • {state.passed ? '✅ Aprovado' : 'Precisa ≥70%'}</span>
+                <span className="font-medium">{state.passed ? '✅ Aprovado' : 'Precisa ≥70%'}</span>
               </div>
             </div>
           )}

@@ -42,9 +42,16 @@ import {
   Target,
   Star,
   TrendingUp,
-  Eye
+  Eye,
+  BarChart3,
+  Activity,
+  Award,
+  Timer,
+  User
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 interface ImprovedClassManagementProps {
   professorId: string
@@ -62,6 +69,12 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   const [searchTerm, setSearchTerm] = useState('')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteClass, setInviteClass] = useState<ClassInfo | null>(null)
+  
+  // Estados para visualização de detalhes do estudante
+  const [selectedStudent, setSelectedStudent] = useState<StudentOverview | null>(null)
+  const [showStudentDetails, setShowStudentDetails] = useState(false)
+  const [studentModule1Data, setStudentModule1Data] = useState<any>(null)
+  const [loadingStudentData, setLoadingStudentData] = useState(false)
   
   // 🎨 ESTADOS DE UX APRIMORADOS
   const [creationProgress, setCreationProgress] = useState<{
@@ -341,6 +354,86 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
     const link = generateInviteLink(classCode)
     navigator.clipboard.writeText(link)
     alert('Link de convite copiado! Compartilhe com os estudantes.')
+  }
+
+  // Função para carregar dados do módulo 1 do estudante
+  const loadStudentModule1Data = async (student: StudentOverview) => {
+    if (!db) {
+      console.error('Firebase não disponível')
+      return
+    }
+
+    setLoadingStudentData(true)
+    try {
+      // 1. Buscar progresso do módulo 1
+      const progressQuery = query(
+        collection(db, 'student_module_progress'),
+        where('studentId', '==', student.id),
+        where('moduleId', '==', 'module-1')
+      )
+      const progressSnapshot = await getDocs(progressQuery)
+      
+      let moduleProgress = null
+      if (!progressSnapshot.empty) {
+        moduleProgress = progressSnapshot.docs[0].data()
+      }
+
+      // 2. Buscar tentativas de quiz do módulo 1
+      const attemptsQuery = query(
+        collection(db, 'quiz_attempts'),
+        where('studentId', '==', student.id),
+        where('moduleId', '==', 'module-1'),
+        orderBy('timestamp', 'desc'),
+        limit(10)
+      )
+      const attemptsSnapshot = await getDocs(attemptsQuery)
+      
+      const quizAttempts = attemptsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+
+      // 3. Calcular estatísticas
+      let totalAttempts = quizAttempts.length
+      let bestScore = 0
+      let lastActivityDate = null
+      let isCompleted = false
+
+      if (quizAttempts.length > 0) {
+        bestScore = Math.max(...quizAttempts.map(attempt => attempt.score || 0))
+        lastActivityDate = quizAttempts[0].timestamp
+        isCompleted = quizAttempts.some(attempt => attempt.completed)
+      }
+
+      // 4. Combinar dados do progresso se disponível
+      if (moduleProgress) {
+        isCompleted = moduleProgress.completed || isCompleted
+        if (moduleProgress.lastActivityDate) {
+          lastActivityDate = moduleProgress.lastActivityDate
+        }
+      }
+
+      setStudentModule1Data({
+        student,
+        moduleProgress,
+        quizAttempts,
+        stats: {
+          totalAttempts,
+          bestScore,
+          lastActivityDate,
+          isCompleted,
+          progressPercentage: moduleProgress?.progress?.percentage || 0
+        }
+      })
+      
+      setSelectedStudent(student)
+      setShowStudentDetails(true)
+    } catch (error) {
+      console.error('Erro ao carregar dados do estudante:', error)
+      showNotification('error', 'Erro', 'Não foi possível carregar os dados do estudante')
+    } finally {
+      setLoadingStudentData(false)
+    }
   }
 
   const copyClassCode = (code: string) => {
@@ -721,7 +814,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                   >
-                    <EnhancedStudentRow student={student} />
+                    <EnhancedStudentRow student={student} onStudentClick={loadStudentModule1Data} />
                   </motion.div>
                 ))}
                 
@@ -763,6 +856,160 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
           </Card>
         </motion.div>
       )}
+
+      {/* MODAL DE DETALHES DO ESTUDANTE */}
+      <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <User className="w-5 h-5 text-indigo-600" />
+              <span>Detalhes do Estudante - Módulo 1</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {loadingStudentData ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Carregando dados do estudante...</p>
+              </div>
+            </div>
+          ) : studentModule1Data ? (
+            <div className="space-y-6">
+              {/* Informações básicas */}
+              <Card className="border-l-4 border-l-indigo-500">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                      <GraduationCap className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg text-gray-900">
+                        {studentModule1Data.student.studentName}
+                      </h3>
+                      <p className="text-gray-600 text-sm">{studentModule1Data.student.email}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Estatísticas do Módulo 1 */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-center">
+                      <BarChart3 className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-blue-600">
+                        {studentModule1Data.stats.progressPercentage}%
+                      </div>
+                      <div className="text-xs text-gray-600">Progresso</div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-center">
+                      <Award className="w-6 h-6 text-yellow-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-yellow-600">
+                        {studentModule1Data.stats.bestScore}
+                      </div>
+                      <div className="text-xs text-gray-600">Melhor Nota</div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-center">
+                      <Activity className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-green-600">
+                        {studentModule1Data.stats.totalAttempts}
+                      </div>
+                      <div className="text-xs text-gray-600">Tentativas</div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-center">
+                      {studentModule1Data.stats.isCompleted ? (
+                        <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                      ) : (
+                        <Clock className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+                      )}
+                      <div className={`text-lg font-bold ${studentModule1Data.stats.isCompleted ? 'text-green-600' : 'text-orange-600'}`}>
+                        {studentModule1Data.stats.isCompleted ? 'Completo' : 'Em Andamento'}
+                      </div>
+                      <div className="text-xs text-gray-600">Status</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Última atividade */}
+              {studentModule1Data.stats.lastActivityDate && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center space-x-2">
+                      <Timer className="w-4 h-4" />
+                      <span>Última Atividade</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-700">
+                      {new Date(studentModule1Data.stats.lastActivityDate.seconds * 1000).toLocaleDateString('pt-BR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Histórico de tentativas */}
+              {studentModule1Data.quizAttempts?.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center space-x-2">
+                      <BarChart3 className="w-4 h-4" />
+                      <span>Histórico de Tentativas (Últimas {Math.min(5, studentModule1Data.quizAttempts.length)})</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {studentModule1Data.quizAttempts.slice(0, 5).map((attempt: any, index: number) => (
+                        <div key={attempt.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div className="flex items-center space-x-3">
+                            <Badge variant={attempt.completed ? 'default' : 'secondary'}>
+                              Tentativa {index + 1}
+                            </Badge>
+                            <span className="text-sm text-gray-600">
+                              {new Date(attempt.timestamp.seconds * 1000).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium">Nota: {attempt.score || 0}</span>
+                            {attempt.completed && <CheckCircle className="w-4 h-4 text-green-600" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600">Nenhum dado encontrado para este estudante no Módulo 1.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de convites */}
       {showInviteModal && inviteClass && (
@@ -909,11 +1156,15 @@ function EnhancedClassCard({
 
 interface EnhancedStudentRowProps {
   student: StudentOverview
+  onStudentClick?: (student: StudentOverview) => void
 }
 
-function EnhancedStudentRow({ student }: EnhancedStudentRowProps) {
+function EnhancedStudentRow({ student, onStudentClick }: EnhancedStudentRowProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow border-l-4 border-l-indigo-500">
+    <Card 
+      className="hover:shadow-md transition-shadow border-l-4 border-l-indigo-500 cursor-pointer hover:bg-gray-50"
+      onClick={() => onStudentClick?.(student)}
+    >
       <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
