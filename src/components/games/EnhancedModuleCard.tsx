@@ -84,9 +84,14 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
       }
     },
     hover: { 
-      scale: 1.02,
-      y: -5,
-      transition: { duration: 0.2 }
+      scale: 1.04,
+      y: -8,
+      rotateY: 2,
+      transition: { 
+        duration: 0.3,
+        type: "spring",
+        bounce: 0.4
+      }
     }
   }), []);
 
@@ -119,16 +124,23 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
       className="group"
     >
       <Card className={`
-        h-full border transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.02]
+        h-full border-2 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl hover:scale-[1.03] 
+        transform-gpu hover:-translate-y-2 backdrop-blur-sm
         ${module.isLocked
-          ? 'border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'
+          ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800'
           : error
-            ? 'border-red-200 hover:border-red-300 bg-white dark:border-red-700 dark:bg-gray-700'
-            : 'border-gray-200 hover:border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-700'
+            ? 'border-red-300 hover:border-red-400 bg-gradient-to-br from-white to-red-50 hover:from-red-50 hover:to-red-100 dark:border-red-600 dark:bg-gradient-to-br dark:from-gray-700 dark:to-red-900/20'
+            : 'border-blue-200 hover:border-blue-400 bg-gradient-to-br from-white to-blue-50/30 hover:from-blue-50/50 hover:to-blue-100/50 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-100/50 dark:hover:ring-blue-500/20'
         }
         ${className}
       `} onClick={handleClick}>
         <div className="relative p-8 flex flex-col h-full">
+          {/* 🎯 INDICADOR DE INTERATIVIDADE - CANTO SUPERIOR ESQUERDO */}
+          {!module.isLocked && (
+            <div className="absolute top-6 left-6">
+              <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse opacity-75 group-hover:scale-150 transition-transform duration-300"></div>
+            </div>
+          )}
           {/* 🎯 SELO "CONCLUÍDO" NO CANTO SUPERIOR DIREITO */}
           {state.status === 'completed' && (
             <div className="absolute top-4 right-4">
@@ -147,11 +159,21 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             {/* Ícone com progresso radial */}
             <div className="relative">
               <div className={`
-                w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm text-white
+                w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg text-white
+                transform transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl
                 ${iconBgClass}
+                ${!module.isLocked && 'group-hover:shadow-blue-500/25'}
               `}>
                 {module.isLocked ? '🔒' : module.icon}
               </div>
+
+              {/* Indicador de interatividade - Anel pulsante para módulos disponíveis */}
+              {!module.isLocked && state.status === 'new' && (
+                <div className="absolute inset-0 rounded-2xl">
+                  <div className="w-16 h-16 rounded-2xl border-2 border-blue-400 animate-pulse opacity-75"></div>
+                  <div className="absolute inset-0 w-16 h-16 rounded-2xl border border-blue-300 animate-ping"></div>
+                </div>
+              )}
 
               {/* Progresso radial ao redor do ícone */}
               {state.status === 'completed' && state.score > 0 && (
@@ -314,18 +336,19 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             onClick={handleClick}
             disabled={module.isLocked || (isLoading && state.status === 'loading')}
             className={`
-              w-full h-12 text-base font-semibold flex items-center justify-center space-x-2
-              transition-all duration-200 rounded-lg
-              hover:scale-105 hover:shadow-md
+              w-full h-14 text-base font-bold flex items-center justify-center space-x-2
+              transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl
+              hover:scale-105 hover:-translate-y-1 transform-gpu
+              border-2 active:scale-95
               ${module.isLocked
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200 dark:bg-gray-600 dark:text-gray-400 dark:border-gray-500'
                 : error
-                  ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-800/30 dark:text-red-200 dark:border-red-600'
+                  ? 'bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-300 hover:from-red-100 hover:to-red-200 hover:border-red-400 dark:from-red-800/30 dark:to-red-700/30 dark:text-red-200 dark:border-red-600'
                   : state.status === 'completed'
-                    ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-800/30 dark:text-green-200 dark:border-green-600'
+                    ? 'bg-gradient-to-r from-green-50 to-emerald-100 text-green-700 border-green-300 hover:from-green-100 hover:to-emerald-200 hover:border-green-400 dark:from-green-800/30 dark:to-emerald-700/30 dark:text-green-200 dark:border-green-600'
                     : state.status === 'in_progress'
-                      ? 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 dark:bg-orange-800/30 dark:text-orange-200 dark:border-orange-600'
-                      : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-800/30 dark:text-blue-200 dark:border-blue-600'
+                      ? 'bg-gradient-to-r from-orange-50 to-amber-100 text-orange-700 border-orange-300 hover:from-orange-100 hover:to-amber-200 hover:border-orange-400 dark:from-orange-800/30 dark:to-amber-700/30 dark:text-orange-200 dark:border-orange-600'
+                      : 'bg-gradient-to-r from-blue-50 to-indigo-100 text-blue-700 border-blue-300 hover:from-blue-100 hover:to-indigo-200 hover:border-blue-400 dark:from-blue-800/30 dark:to-indigo-700/30 dark:text-blue-200 dark:border-blue-600 hover:ring-4 hover:ring-blue-200/50'
               }
             `}
           >
