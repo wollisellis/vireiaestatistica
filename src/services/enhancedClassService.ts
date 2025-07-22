@@ -668,76 +668,151 @@ export class EnhancedClassService {
 
       console.log(`[getClassStudentsBasic] 🔄 Buscando estudantes básicos para turma: ${classId}`)
 
-      // Tentar múltiplos métodos para garantir que encontramos os dados
+      // 🚀 DIAGNÓSTICO COMPLETO: Vamos verificar todas as coleções e todos os documentos
+      const collectionsToTry = ['classStudents', 'class_students', 'class_enrollments', 'classInvites']
+      let totalDocumentsFound = 0
       let studentsSnapshot
 
-      try {
-        // Método 1: Query otimizada por range de document ID  
-        console.log(`[getClassStudentsBasic] Tentando Método 1: range query`)
-        const rangeQuery = query(
-          collection(db, 'classStudents'),
-          where('__name__', '>=', `${classId}_`),
-          where('__name__', '<', `${classId}_\uf8ff`)
-        )
-        studentsSnapshot = await getDocs(rangeQuery)
-        
-        if (studentsSnapshot.docs.length > 0) {
-          console.log(`[getClassStudentsBasic] ✅ Método 1 bem-sucedido: ${studentsSnapshot.docs.length} documentos`)
-        } else {
-          throw new Error('Nenhum documento encontrado no Método 1')
-        }
-      } catch (error1) {
-        console.log(`[getClassStudentsBasic] ⚠️ Método 1 falhou: ${error1.message}`)
-        
+      console.log(`[DIAGNÓSTICO] 🔍 Iniciando diagnóstico completo da turma ${classId}`)
+
+      for (const collectionName of collectionsToTry) {
         try {
-          // Método 2: Query por status ativo
-          console.log(`[getClassStudentsBasic] Tentando Método 2: status query`)
-          const statusQuery = query(
-            collection(db, 'classStudents'),
-            where('status', '==', 'active')
-          )
-          studentsSnapshot = await getDocs(statusQuery)
-          console.log(`[getClassStudentsBasic] Método 2: ${studentsSnapshot.docs.length} documentos ativos encontrados`)
-        } catch (error2) {
-          console.log(`[getClassStudentsBasic] ⚠️ Método 2 falhou: ${error2.message}`)
+          console.log(`[DIAGNÓSTICO] 📂 Analisando coleção: ${collectionName}`)
           
-          // Método 3: Fallback - buscar todos os documentos
-          console.log(`[getClassStudentsBasic] Tentando Método 3: fallback completo`)
-          const allDocsQuery = query(collection(db, 'classStudents'))
-          studentsSnapshot = await getDocs(allDocsQuery)
-          console.log(`[getClassStudentsBasic] Método 3: ${studentsSnapshot.docs.length} documentos totais encontrados`)
+          // Buscar TODOS os documentos da coleção para diagnóstico
+          const allDocsQuery = query(collection(db, collectionName))
+          const allDocsSnapshot = await getDocs(allDocsQuery)
+          
+          console.log(`[DIAGNÓSTICO] 📊 Total de documentos em ${collectionName}: ${allDocsSnapshot.docs.length}`)
+          totalDocumentsFound += allDocsSnapshot.docs.length
+
+          // Filtrar documentos relacionados à turma
+          const relatedDocs = allDocsSnapshot.docs.filter(doc => {
+            const data = doc.data()
+            const docId = doc.id
+            
+            const isRelated = docId.includes(classId) || 
+                            data.classId === classId || 
+                            data.id === classId ||
+                            docId.startsWith(`${classId}_`)
+            
+            if (isRelated) {
+              console.log(`[DIAGNÓSTICO] ✅ Documento relacionado encontrado em ${collectionName}:`)
+              console.log(`  - ID: ${docId}`)
+              console.log(`  - Dados: ${JSON.stringify(data, null, 2)}`)
+            }
+            
+            return isRelated
+          })
+
+          if (relatedDocs.length > 0) {
+            console.log(`[DIAGNÓSTICO] 🎯 ${relatedDocs.length} documentos relacionados encontrados em ${collectionName}`)
+            
+            // Se é classStudents e tem documentos, usar como resultado
+            if (collectionName === 'classStudents') {
+              studentsSnapshot = { docs: relatedDocs } as any
+              console.log(`[DIAGNÓSTICO] ✅ Usando dados da coleção ${collectionName}`)
+              break
+            }
+          } else {
+            console.log(`[DIAGNÓSTICO] ❌ Nenhum documento relacionado em ${collectionName}`)
+          }
+          
+        } catch (collectionError) {
+          console.log(`[DIAGNÓSTICO] ❌ Erro na coleção ${collectionName}:`, collectionError.message)
         }
+      }
+
+      console.log(`[DIAGNÓSTICO] 📈 Total de documentos encontrados em todas as coleções: ${totalDocumentsFound}`)
+
+      // Se ainda não encontrou estudantes, tentar métodos mais específicos
+      if (!studentsSnapshot || studentsSnapshot.docs.length === 0) {
+        console.log(`[DIAGNÓSTICO] 🔧 Tentando métodos alternativos...`)
+        
+        // Método específico: Buscar por range de ID na coleção principal
+        try {
+          const rangeQuery = query(
+            collection(db, 'classStudents'),
+            where('__name__', '>=', `${classId}_`),
+            where('__name__', '<', `${classId}_\uf8ff`)
+          )
+          studentsSnapshot = await getDocs(rangeQuery)
+          
+          console.log(`[DIAGNÓSTICO] Range query result: ${studentsSnapshot.docs.length} documentos`)
+          
+          if (studentsSnapshot.docs.length > 0) {
+            console.log(`[DIAGNÓSTICO] ✅ Range query bem-sucedida`)
+            studentsSnapshot.docs.forEach(doc => {
+              console.log(`  - Documento: ${doc.id}, Dados:`, doc.data())
+            })
+          }
+        } catch (rangeError) {
+          console.log(`[DIAGNÓSTICO] ❌ Range query falhou:`, rangeError.message)
+        }
+      }
+
+      // Se ainda não há documentos
+      if (!studentsSnapshot || studentsSnapshot.docs.length === 0) {
+        console.log(`[DIAGNÓSTICO] ❌ NENHUM ESTUDANTE ENCONTRADO!`)
+        console.log(`[DIAGNÓSTICO] 💡 Possíveis causas:`)
+        console.log(`  1. Estudantes não foram adicionados à turma ainda`)
+        console.log(`  2. Dados estão em formato/coleção diferente do esperado`)
+        console.log(`  3. Problema de permissão no Firestore`)
+        console.log(`  4. ClassId incorreto: ${classId}`)
+        
+        return []
       }
 
       const students: any[] = []
 
       // Processar documentos encontrados
+      console.log(`[DIAGNÓSTICO] 📝 Processando ${studentsSnapshot.docs.length} documentos...`)
+      
       for (const doc of studentsSnapshot.docs) {
         const studentData = doc.data()
         const docId = doc.id
 
+        console.log(`[DIAGNÓSTICO] 🔍 Processando documento: ${docId}`)
+        console.log(`  - Status: ${studentData.status || 'undefined'}`)
+        console.log(`  - StudentId: ${studentData.studentId || 'undefined'}`)
+        console.log(`  - StudentName: ${studentData.studentName || 'undefined'}`)
+        console.log(`  - Email: ${studentData.email || studentData.studentEmail || 'undefined'}`)
+
         // Verificar se o documento pertence à turma específica e não foi removido
         if (docId.startsWith(`${classId}_`) && studentData && studentData.status !== 'removed') {
-          console.log(`[getClassStudentsBasic] ✅ Adicionando estudante: ${docId} (status: ${studentData.status || 'undefined'})`)
+          console.log(`[DIAGNÓSTICO] ✅ Estudante válido encontrado: ${docId}`)
           
           const lastActivityTimestamp = this.getLastActivityTimestamp(
-            studentData.lastActivity || studentData.enrolledAt
+            studentData.lastActivity || studentData.enrolledAt || studentData.registeredAt
           )
           
-          students.push({
+          const student = {
             studentId: studentData.studentId || '',
             studentName: studentData.studentName || studentData.name || 'Usuário Anônimo',
             email: studentData.email || studentData.studentEmail || '',
             status: studentData.status || 'active',
-            lastActivity: new Date(lastActivityTimestamp), // 🎯 FIX: Criar objeto Date válido
+            lastActivity: new Date(lastActivityTimestamp),
             overallProgress: 0,
             totalNormalizedScore: 0,
             completedModules: 0
-          })
+          }
+          
+          students.push(student)
+          console.log(`[DIAGNÓSTICO] ➕ Estudante adicionado:`, student)
+        } else {
+          console.log(`[DIAGNÓSTICO] ❌ Documento ignorado - não atende critérios`)
+          if (!docId.startsWith(`${classId}_`)) {
+            console.log(`    - Razão: ID não inicia com ${classId}_`)
+          }
+          if (studentData.status === 'removed') {
+            console.log(`    - Razão: Status é 'removed'`)
+          }
         }
       }
 
-      console.log(`[getClassStudentsBasic] 📊 Total de estudantes básicos encontrados: ${students.length}`)
+      console.log(`[DIAGNÓSTICO] 🎯 RESULTADO FINAL: ${students.length} estudantes válidos encontrados`)
+      console.log(`[getClassStudentsBasic] 📊 Retornando ${students.length} estudantes básicos`)
+      
       return students || []
       
     } catch (error) {

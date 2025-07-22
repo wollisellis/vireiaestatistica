@@ -359,11 +359,11 @@ export class ProfessorClassService {
     try {
       console.log('[ProfessorClassService] 🔓 Carregando turmas com sistema de recovery automático')
       
-      // 🎯 TENTATIVA 1: Query otimizada com status filtrado
+      // 🎯 TENTATIVA 1: Query otimizada com status corretos (open, closed - não archived)
       try {
         const optimizedQuery = query(
           collection(db, this.CLASSES_COLLECTION),
-          where('status', '==', 'active'),
+          where('status', 'in', ['open', 'closed']),
           orderBy('createdAt', 'desc')
         )
         
@@ -380,7 +380,7 @@ export class ProfessorClassService {
           console.log(`✅ [ProfessorClassService] ${classes.length} turmas ativas carregadas em ${processingTime}ms`)
           return classes
         } else {
-          console.log('⚠️ [ProfessorClassService] Nenhuma turma com status="active" encontrada, iniciando recovery')
+          console.log('⚠️ [ProfessorClassService] Nenhuma turma com status "open" ou "closed" encontrada, iniciando recovery')
         }
       } catch (queryError) {
         if (queryError.message?.includes('index')) {
@@ -411,15 +411,16 @@ export class ProfessorClassService {
           !currentStatus || 
           currentStatus === 'deleted' || 
           currentStatus === 'undefined' ||
-          currentStatus === null
+          currentStatus === null ||
+          currentStatus === 'active' // Corrigir status "active" obsoleto
         )
         
         if (needsFix && data.name && data.professorId) {
           // Esta turma precisa de correção mas tem dados válidos
           classesToFix.push({ id: doc.id, data })
           console.log(`🔧 [ProfessorClassService] Turma precisa correção: ${data.name} (status: ${currentStatus || 'undefined'})`)
-        } else if (currentStatus === 'active' || (!needsFix && currentStatus !== 'deleted')) {
-          // Turma OK ou status válido não-deletado
+        } else if (['open', 'closed'].includes(currentStatus) && currentStatus !== 'deleted') {
+          // Turma OK com status válido (open/closed) não-deletado
           classes.push({ id: doc.id, ...data } as ClassInfo)
         }
       })
@@ -435,17 +436,17 @@ export class ProfessorClassService {
           try {
             const docRef = doc(db, this.CLASSES_COLLECTION, id)
             batch.update(docRef, {
-              status: 'active',
+              status: 'open', // Status correto: 'open' em vez de 'active'
               statusCorrectedAt: serverTimestamp(),
-              statusCorrectedBy: 'AutoRecovery_v2.1',
-              autoRecoveryReason: `Status was "${data.status || 'undefined'}", corrected to "active"`
+              statusCorrectedBy: 'AutoRecovery_v2.2',
+              autoRecoveryReason: `Status was "${data.status || 'undefined'}", corrected to "open"`
             })
             
             // Adicionar à lista de turmas válidas
             classes.push({ 
               id, 
               ...data, 
-              status: 'active' // Override local para não afetar UI
+              status: 'open' // Override local para não afetar UI
             } as ClassInfo)
             successCount++
           } catch (batchError) {
