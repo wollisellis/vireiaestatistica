@@ -365,7 +365,7 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
               {results.passed ? (
                 <>
                   <CheckCircle className="h-5 w-5 mr-2" />
-                  🎉 Parabéns! Módulo Concluído
+                  Módulo Concluído
                 </>
               ) : (
                 <>
@@ -635,11 +635,11 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
                 )}
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {(bestAttempt?.passed || previousAttempt?.passed) ? '🎉 Parabéns! Módulo Concluído' : 'Tentativa Anterior'}
+                    {(bestAttempt?.passed || previousAttempt?.passed) ? 'Módulo Concluído' : 'Tentativa Anterior'}
                   </h3>
                   <p className="text-sm text-gray-600">
                     {(bestAttempt?.passed || previousAttempt?.passed)
-                      ? `Excelente trabalho! Você dominou este módulo. Que tal tentar superar sua pontuação atual?`
+                      ? `Módulo concluído com aprovação.`
                       : previousAttempt 
                         ? `Última tentativa: ${previousAttempt.percentage}% - Continue tentando!`
                         : 'Continue tentando!'
