@@ -39,25 +39,20 @@ const getStarRating = (score: number) => {
   return { stars: 0, label: 'Não Avaliado', color: 'text-gray-400', bgColor: 'bg-gray-50', textColor: 'text-gray-600' };
 };
 
-// Componente de estrelas
-const StarRating = ({ rating, score }: { rating: any, score?: number }) => {
+// Componente de estrelas - versão simplificada
+const StarRating = ({ rating }: { rating: any }) => {
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${rating.bgColor}`}>
-      <div className="flex items-center">
-        {[...Array(5)].map((_, i) => (
-          <Star
-            key={i}
-            className={`w-4 h-4 ${
-              i < rating.stars
-                ? `${rating.color} fill-current`
-                : 'text-gray-300'
-            }`}
-          />
-        ))}
-      </div>
-      <span className={`text-xs font-medium ${rating.textColor}`}>
-        {rating.label} {score && `(${score}%)`}
-      </span>
+    <div className="flex items-center justify-center gap-1">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          className={`w-5 h-5 ${
+            i < rating.stars
+              ? `${rating.color} fill-current`
+              : 'text-gray-300 dark:text-gray-600'
+          }`}
+        />
+      ))}
     </div>
   );
 };
@@ -73,92 +68,76 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
   
   return (
     <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      whileHover={{ y: -2, scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       <Card className={`
-        cursor-pointer transition-all duration-300 border-2 h-full min-h-[480px] shadow-lg
+        cursor-pointer transition-all duration-300 border h-full min-h-[480px] shadow-md relative overflow-hidden
         ${game.isLocked 
-          ? 'bg-gray-50 border-gray-200 opacity-60' 
+          ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 opacity-60' 
           : game.moduleStatus === 'completed'
-            ? 'bg-gradient-to-br from-green-50 via-green-25 to-emerald-100 border-green-300 hover:border-green-400 hover:shadow-green-200/50' 
+            ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500' 
             : game.moduleStatus === 'attempted_failed'
-              ? 'bg-gradient-to-br from-orange-50 via-orange-25 to-amber-100 border-orange-300 hover:border-orange-400 hover:shadow-orange-200/50'
-              : 'bg-gradient-to-br from-blue-50 via-blue-25 to-indigo-100 border-blue-300 hover:border-blue-400 hover:shadow-blue-200/50'
+              ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
         }
-        hover:shadow-2xl hover:shadow-blue-200/25 hover:-translate-y-1 group
+        hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 group
       `}>
-        <div className="p-8 h-full flex flex-col">
-          {/* Header com Status */}
-          <div className="flex items-start justify-between mb-5">
-            <div className="flex items-start space-x-4">
+        <div className="p-10 h-full flex flex-col relative">
+          {/* Selo de Status no canto superior-direito */}
+          {!game.isLocked && (
+            <div className="absolute -top-2 -right-2 z-10">
+              {game.moduleStatus === 'completed' && (
+                <div className="bg-green-600 dark:bg-green-500 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 text-sm font-medium">
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span>{game.bestScore}%</span>
+                </div>
+              )}
+              {game.moduleStatus === 'attempted_failed' && (
+                <div className="bg-orange-500 dark:bg-orange-400 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 text-sm font-medium">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>{game.bestScore}%</span>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Header simplificado */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-start space-x-5">
               <div className={`
-                w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 shadow-lg transform group-hover:scale-110 transition-all duration-300
+                w-16 h-16 rounded-full flex items-center justify-center text-3xl flex-shrink-0 shadow-sm transform group-hover:scale-105 transition-all duration-300
                 ${game.isLocked 
-                  ? 'bg-gray-200 text-gray-400' 
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500' 
                   : game.moduleStatus === 'completed'
-                    ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-green-200'
+                    ? 'bg-green-50 dark:bg-green-900/50 text-green-600 dark:text-green-400 ring-2 ring-green-100 dark:ring-green-800'
                     : game.moduleStatus === 'attempted_failed'
-                      ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-200'
-                      : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200'
+                      ? 'bg-orange-50 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 ring-2 ring-orange-100 dark:ring-orange-800'
+                      : 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 ring-2 ring-blue-100 dark:ring-blue-800'
                 }
               `}>
                 {game.isLocked ? '🔒' : game.icon}
               </div>
               
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-2xl text-gray-900 group-hover:text-blue-600 transition-colors leading-tight mb-2">
+                <h3 className="font-bold text-2xl text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight mb-3">
                   {game.title}
                 </h3>
-                <p className="text-base text-gray-700 font-semibold flex items-center">
-                  <Clock className="w-4 h-4 mr-1.5" />
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium flex items-center">
+                  <Clock className="w-4 h-4 mr-2 opacity-70" />
                   {game.estimatedTime}
                 </p>
               </div>
             </div>
 
-            {/* Status Badge - MAIS REALISTA E DINÂMICO */}
-            {!game.isLocked && (
-              <div className="flex flex-col items-end space-y-2">
-                {game.moduleStatus === 'loading' && (
-                  <Badge variant="secondary" className="flex items-center space-x-1 animate-pulse">
-                    <Clock className="w-3 h-3 animate-spin" />
-                    <span>Carregando...</span>
-                  </Badge>
-                )}
-                {game.moduleStatus === 'completed' && (
-                  <div className="space-y-1">
-                    <Badge variant="success" className="flex items-center space-x-1">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Concluído</span>
-                    </Badge>
-                    {game.bestScore && (
-                      <div className="text-xs text-green-600 font-medium">
-                        {game.bestScore}% • {game.starsEarned}⭐
-                      </div>
-                    )}
-                  </div>
-                )}
-                {game.moduleStatus === 'attempted_failed' && (
-                  <div className="space-y-1">
-                    <Badge variant="warning" className="flex items-center space-x-1">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>Em Progresso</span>
-                    </Badge>
-                    {game.bestScore && (
-                      <div className="text-xs text-orange-600 font-medium">
-                        {game.bestScore}% • Faltam {70 - game.bestScore}%
-                      </div>
-                    )}
-                  </div>
-                )}
-                {game.moduleStatus === 'never_attempted' && !game.isLoadingProgress && (
-                  <Badge variant="default" className="flex items-center space-x-1">
-                    <PlayCircle className="w-3 h-3" />
-                    <span>Novo</span>
-                  </Badge>
-                )}
+            {/* Loading indicator apenas quando necessário */}
+            {!game.isLocked && game.moduleStatus === 'loading' && (
+              <div className="flex items-center justify-center">
+                <div className="animate-pulse flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                  <Clock className="w-4 h-4 animate-spin" />
+                  <span>Carregando...</span>
+                </div>
               </div>
             )}
           </div>
@@ -178,14 +157,14 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
             )}
           </div>
 
-          {/* Action Button - DINÂMICO E INTELIGENTE */}
+          {/* Action Button - Mais suave e elegante */}
           <div className="mt-auto pt-6">
             {game.isLocked ? (
-              <Button disabled className="w-full h-12 text-base">
+              <Button disabled className="w-full h-12 text-base bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                 🔒 Aguardando Liberação
               </Button>
             ) : game.moduleStatus === 'loading' ? (
-              <Button disabled className="w-full h-12 text-base animate-pulse">
+              <Button disabled className="w-full h-12 text-base bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 animate-pulse">
                 <Clock className="w-4 h-4 mr-2 animate-spin" />
                 Carregando...
               </Button>
@@ -193,30 +172,29 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ game, onClick, isProfess
               <Button 
                 onClick={onClick}
                 className={`
-                  w-full h-12 text-base font-semibold flex items-center justify-center space-x-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105
+                  w-full h-12 text-base font-medium flex items-center justify-center space-x-2 transition-all shadow-sm hover:shadow-md transform hover:scale-[1.02] 
                   ${game.moduleStatus === 'completed' 
-                    ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800' 
+                    ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 hover:bg-gray-900 dark:hover:bg-gray-100' 
                     : game.moduleStatus === 'attempted_failed'
-                      ? 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800'
-                      : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+                      ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 hover:bg-gray-900 dark:hover:bg-gray-100'
+                      : 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 hover:bg-gray-900 dark:hover:bg-gray-100'
                   }
                 `}
               >
                 {game.moduleStatus === 'completed' ? (
                   <>
                     <Award className="w-5 h-5" />
-                    <span>Revisar • {game.bestScore}%</span>
+                    <span>Revisar Módulo</span>
                   </>
                 ) : game.moduleStatus === 'attempted_failed' ? (
                   <>
                     <TrendingUp className="w-5 h-5" />
-                    <span>Continuar • {game.bestScore}%</span>
+                    <span>Continuar Estudos</span>
                   </>
                 ) : (
                   <>
-                    <Zap className="w-5 h-5" />
+                    <PlayCircle className="w-5 h-5" />
                     <span>Iniciar Módulo</span>
-                    <ArrowRight className="w-5 h-5" />
                   </>
                 )}
               </Button>
@@ -273,35 +251,40 @@ const LoadingModuleContent = () => (
 
 // Componente para módulo concluído
 const CompletedModuleContent = ({ game, rating }: { game: any, rating: any }) => (
-  <div className="space-y-4">
-    {/* Rating de estrelas */}
+  <div className="space-y-5">
+    {/* Rating de estrelas mais elegante */}
     <div className="flex justify-center">
-      <StarRating rating={rating} score={game.bestScore} />
-    </div>
-
-    {/* Estatísticas principais */}
-    <div className="grid grid-cols-2 gap-4">
-      <div className="bg-white/70 rounded-lg p-3 text-center">
-        <div className="text-2xl font-bold text-green-600">{game.bestScore}%</div>
-        <div className="text-xs text-gray-600">Melhor Pontuação</div>
-      </div>
-      <div className="bg-white/70 rounded-lg p-3 text-center">
-        <div className="text-2xl font-bold text-blue-600">~15min</div>
-        <div className="text-xs text-gray-600">Tempo Gasto</div>
+      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl px-4 py-3">
+        <StarRating rating={rating} />
+        <div className="text-center mt-2">
+          <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{rating.label}</span>
+        </div>
       </div>
     </div>
 
-    {/* Última atividade */}
-    <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-      <Clock className="w-4 h-4" />
+    {/* Estatísticas principais com melhor contraste */}
+    <div className="grid grid-cols-2 gap-3">
+      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-center">
+        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">~15min</div>
+        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Tempo Gasto</div>
+      </div>
+      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-center">
+        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{rating.stars}/5</div>
+        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">Avaliação</div>
+      </div>
+    </div>
+
+    {/* Última atividade com melhor design */}
+    <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 rounded-lg py-2 px-3">
+      <Clock className="w-4 h-4 opacity-70" />
       <span>{getTimeAgo(game.progress?.lastAccessed)}</span>
     </div>
 
-    {/* Conquistas */}
+    {/* Conquistas com design mais sutil */}
     {game.bestScore >= 95 && (
-      <div className="bg-yellow-100 border border-yellow-200 rounded-lg p-2 text-center">
-        <Trophy className="w-5 h-5 text-yellow-600 mx-auto mb-1" />
-        <span className="text-xs text-yellow-800 font-medium">Pontuação Perfeita!</span>
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-center">
+        <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400 mx-auto mb-1" />
+        <span className="text-sm text-amber-800 dark:text-amber-300 font-medium">Pontuação Perfeita!</span>
       </div>
     )}
   </div>
@@ -310,40 +293,45 @@ const CompletedModuleContent = ({ game, rating }: { game: any, rating: any }) =>
 // Componente para módulo tentado mas não concluído
 const AttemptedModuleContent = ({ game, rating }: { game: any, rating: any }) => (
   <div className="space-y-5">
-    {/* Rating atual - mais destaque */}
+    {/* Rating atual com melhor design */}
     <div className="flex justify-center">
-      <StarRating rating={rating} score={game.bestScore} />
+      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl px-4 py-3">
+        <StarRating rating={rating} />
+        <div className="text-center mt-2">
+          <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{rating.label}</span>
+        </div>
+      </div>
     </div>
 
-    {/* Progresso visual melhorado */}
-    <div className="bg-white/80 rounded-lg p-4 space-y-3">
+    {/* Progresso visual mais suave */}
+    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 space-y-3">
       <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-gray-700">Progresso para Aprovação</span>
-        <span className="text-lg font-bold text-orange-600">{game.bestScore}/70%</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Progresso para Aprovação</span>
+        <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{game.bestScore}/70%</span>
       </div>
       <Progress 
         value={(game.bestScore / 70) * 100} 
-        className="h-3 bg-gray-200" 
-        indicatorClassName="bg-gradient-to-r from-orange-400 to-orange-600"
+        className="h-2 bg-gray-200 dark:bg-gray-600" 
+        indicatorClassName="bg-gradient-to-r from-orange-400 to-orange-500"
       />
       <div className="text-center">
-        <span className="text-sm text-gray-600">
-          Faltam <span className="font-semibold text-orange-700">{Math.max(0, 70 - game.bestScore)}%</span> para aprovação
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          Faltam <span className="font-semibold text-gray-900 dark:text-gray-100">{Math.max(0, 70 - game.bestScore)}%</span> para aprovação
         </span>
       </div>
     </div>
 
-    {/* Motivação visual */}
-    <div className="bg-gradient-to-r from-orange-100 to-orange-50 border border-orange-200 rounded-lg p-4 text-center">
-      <TrendingUp className="w-6 h-6 text-orange-600 mx-auto mb-2" />
-      <p className="text-sm text-orange-800 font-medium">
+    {/* Motivação mais sutil */}
+    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 text-center">
+      <TrendingUp className="w-5 h-5 text-orange-600 dark:text-orange-400 mx-auto mb-2" />
+      <p className="text-sm text-orange-800 dark:text-orange-300 font-medium">
         Continue tentando! Você está no caminho certo 💪
       </p>
     </div>
 
     {/* Última tentativa */}
-    <div className="flex items-center justify-center space-x-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
-      <Clock className="w-4 h-4" />
+    <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 rounded-lg py-2 px-3">
+      <Clock className="w-4 h-4 opacity-70" />
       <span>Última tentativa: {getTimeAgo(game.progress?.lastAccessed)}</span>
     </div>
   </div>
@@ -352,41 +340,41 @@ const AttemptedModuleContent = ({ game, rating }: { game: any, rating: any }) =>
 // Componente para módulo novo
 const NewModuleContent = ({ game }: { game: any }) => (
   <div className="space-y-5">
-    {/* Preview do conteúdo */}
-    <div className="bg-white/80 rounded-lg p-4">
-      <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-        <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
+    {/* Preview do conteúdo com melhor design */}
+    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+        <BookOpen className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
         O que você vai aprender:
       </h4>
-      <ul className="text-sm text-gray-700 space-y-2">
+      <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
         {game.learningObjectives?.slice(0, 3).map((objective: string, index: number) => (
           <li key={index} className="flex items-start space-x-3">
-            <span className="text-blue-500 mt-1 font-bold">•</span>
+            <span className="text-blue-600 dark:text-blue-400 mt-1 font-bold">•</span>
             <span className="leading-relaxed">{objective}</span>
           </li>
         ))}
       </ul>
     </div>
 
-    {/* Info de tempo e dificuldade */}
+    {/* Info de tempo e dificuldade com melhor contraste */}
     <div className="grid grid-cols-2 gap-3">
-      <div className="flex items-center justify-center space-x-2 bg-white/60 rounded-lg p-3">
-        <Clock className="w-5 h-5 text-blue-500" />
-        <span className="text-sm font-medium text-gray-700">{game.estimatedTime}</span>
+      <div className="flex items-center justify-center space-x-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+        <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{game.estimatedTime}</span>
       </div>
-      <div className="flex items-center justify-center space-x-2 bg-white/60 rounded-lg p-3">
-        <Target className="w-5 h-5 text-blue-500" />
-        <span className="text-sm font-medium text-gray-700">{game.difficulty}</span>
+      <div className="flex items-center justify-center space-x-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+        <Target className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{game.difficulty}</span>
       </div>
     </div>
 
-    {/* Call to action melhorado */}
-    <div className="bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-lg p-4 text-center">
+    {/* Call to action mais suave */}
+    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-center">
       <div className="text-3xl mb-2">🚀</div>
-      <p className="text-sm text-blue-900 font-semibold">
+      <p className="text-sm text-blue-900 dark:text-blue-100 font-semibold">
         Comece agora e desbloqueie o próximo módulo!
       </p>
-      <p className="text-xs text-blue-700 mt-1 opacity-80">
+      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 opacity-80">
         Primeiro módulo do seu percurso de aprendizagem
       </p>
     </div>
