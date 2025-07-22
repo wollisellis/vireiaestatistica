@@ -917,37 +917,87 @@ export class ProfessorClassService {
     }
   }
 
-  // Obter turmas onde o estudante está matriculado
+  // Obter turmas onde o estudante está matriculado (com timeout e fallback)
   static async getStudentClasses(studentId: string): Promise<ClassInfo[]> {
+    const startTime = Date.now()
+    
     try {
-      // Buscar onde o estudante está matriculado
-      const q = query(
-        collection(db, this.CLASS_STUDENTS_COLLECTION),
-        where('studentId', '==', studentId)
-      )
+      console.log(`📚 [ProfessorClassService] Carregando turmas do estudante: ${studentId}`)
       
-      const querySnapshot = await getDocs(q)
-      const classIds: string[] = []
-      
-      querySnapshot.forEach((doc) => {
-        const data = doc.data()
-        if (data.isActive) {
-          classIds.push(data.classId)
-        }
-      })
-      
-      // Buscar informações das turmas
-      const classes: ClassInfo[] = []
-      for (const classId of classIds) {
-        const classInfo = await this.getClassInfo(classId)
-        if (classInfo) {
-          classes.push(classInfo)
-        }
+      // Validação inicial
+      if (!studentId) {
+        console.warn('❌ [ProfessorClassService] StudentId não fornecido')
+        return []
       }
       
-      return classes
+      if (!db) {
+        console.warn('❌ [ProfessorClassService] Firestore não configurado')
+        return []
+      }
+
+      // Promise com timeout de 8 segundos
+      const timeoutPromise = new Promise<ClassInfo[]>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Timeout: Operação excedeu 8 segundos'))
+        }, 8000)
+      })
+      
+      const mainPromise = async (): Promise<ClassInfo[]> => {
+        // Buscar onde o estudante está matriculado
+        const q = query(
+          collection(db, this.CLASS_STUDENTS_COLLECTION),
+          where('studentId', '==', studentId)
+        )
+        
+        console.log(`🔍 [ProfessorClassService] Executando query para estudante ${studentId}`)
+        const querySnapshot = await getDocs(q)
+        
+        const classIds: string[] = []
+        querySnapshot.forEach((doc) => {
+          const data = doc.data()
+          if (data.isActive) {
+            classIds.push(data.classId)
+          }
+        })
+        
+        console.log(`📋 [ProfessorClassService] Encontradas ${classIds.length} turmas para estudante`)
+        
+        // Buscar informações das turmas (com timeout por turma)
+        const classes: ClassInfo[] = []
+        for (const classId of classIds) {
+          try {
+            // Timeout menor para cada turma individual (3 segundos)
+            const classPromise = this.getClassInfo(classId)
+            const classTimeout = new Promise<ClassInfo | null>((_, reject) => {
+              setTimeout(() => reject(new Error(`Timeout para turma ${classId}`)), 3000)
+            })
+            
+            const classInfo = await Promise.race([classPromise, classTimeout])
+            if (classInfo) {
+              classes.push(classInfo)
+            }
+          } catch (classError) {
+            console.warn(`⚠️ [ProfessorClassService] Erro ao carregar turma ${classId}:`, classError)
+            // Continue com outras turmas mesmo se uma falhar
+          }
+        }
+        
+        return classes
+      }
+      
+      // Executar com timeout global
+      const result = await Promise.race([mainPromise(), timeoutPromise])
+      
+      const processingTime = Date.now() - startTime
+      console.log(`✅ [ProfessorClassService] ${result.length} turmas carregadas em ${processingTime}ms`)
+      
+      return result
+      
     } catch (error) {
-      console.error('Erro ao obter turmas do estudante:', error)
+      const processingTime = Date.now() - startTime
+      console.error(`❌ [ProfessorClassService] Erro após ${processingTime}ms:`, error)
+      
+      // Retornar array vazio em caso de erro (melhor que travar)
       return []
     }
   }

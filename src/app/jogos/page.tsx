@@ -420,7 +420,7 @@ export default function JogosPage() {
             {/* 🎯 SIDEBAR DIREITO */}
             <div className="xl:col-span-1 space-y-6">
               {/* 🎯 INFORMAÇÕES DA TURMA */}
-              <StudentClassInfo />
+              {user && <StudentClassInfo studentId={user.uid} />}
               
               {/* 🎯 RANKING COLAPSÍVEL */}
               <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">

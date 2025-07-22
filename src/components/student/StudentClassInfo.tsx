@@ -24,20 +24,50 @@ export const StudentClassInfo: React.FC<StudentClassInfoProps> = ({
 }) => {
   const [classes, setClasses] = useState<ClassInfo[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (studentId) {
-      loadStudentClasses()
+    // Se não tem studentId, não é para carregar
+    if (!studentId) {
+      setLoading(false)
+      return
     }
+    
+    loadStudentClasses()
   }, [studentId])
 
   const loadStudentClasses = async () => {
+    // Controle de timeout para evitar loading infinito
+    const timeoutId = setTimeout(() => {
+      console.warn('⏰ StudentClassInfo: Timeout após 10 segundos, finalizando loading')
+      setLoading(false)
+      setError('Timeout ao carregar informações da turma')
+    }, 10000) // 10 segundos de timeout
+
     try {
       setLoading(true)
+      setError(null)
+      
+      // Adicionar validação extra
+      if (!studentId) {
+        throw new Error('ID do estudante não fornecido')
+      }
+
+      console.log('📚 StudentClassInfo: Carregando turmas para estudante:', studentId)
       const studentClasses = await ProfessorClassService.getStudentClasses(studentId)
+      
+      // Limpar timeout se sucesso
+      clearTimeout(timeoutId)
+      
+      console.log('✅ StudentClassInfo: Turmas carregadas:', studentClasses.length)
       setClasses(studentClasses)
     } catch (error) {
-      console.error('Erro ao carregar turmas do estudante:', error)
+      // Limpar timeout se erro
+      clearTimeout(timeoutId)
+      
+      console.error('❌ StudentClassInfo: Erro ao carregar turmas:', error)
+      setError('Não foi possível carregar as informações da turma')
+      setClasses([]) // Reset classes em caso de erro
     } finally {
       setLoading(false)
     }
@@ -56,8 +86,23 @@ export const StudentClassInfo: React.FC<StudentClassInfoProps> = ({
     )
   }
 
-  if (classes.length === 0) {
-    return null // Não mostrar nada se não estiver em nenhuma turma
+  // Mostrar erro se houver
+  if (error) {
+    return (
+      <Card className={`border-red-200 bg-red-50 ${className}`}>
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-3">
+            <div className="text-red-600">⚠️</div>
+            <span className="text-red-800">{error}</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Não mostrar nada se não estiver em nenhuma turma ou não tem studentId
+  if (!studentId || classes.length === 0) {
+    return null
   }
 
   return (
