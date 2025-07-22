@@ -12,7 +12,9 @@ import {
   Scale,
   BookOpen,
   Users,
-  Award
+  Award,
+  HelpCircle,
+  MessageCircle
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 
@@ -144,8 +146,28 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Support Button - Destacado no topo */}
+        <div className="text-center mt-8 mb-6">
+          <motion.a
+            href="mailto:e165905@dac.unicamp.br?subject=Suporte%20AvaliaNutri%20-%20Dúvida&body=Olá%20Ellis,%0D%0A%0D%0ATenho%20uma%20dúvida%20sobre%20a%20plataforma%20AvaliaNutri:%0D%0A%0D%0A[Descreva%20sua%20dúvida%20aqui]%0D%0A%0D%0AObrigado!"
+            className="inline-flex items-center space-x-3 bg-gradient-to-r from-emerald-600 to-teal-600 
+                     hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl 
+                     shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105
+                     font-semibold text-base"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <HelpCircle className="w-5 h-5" />
+            <span>Precisa de Ajuda?</span>
+            <MessageCircle className="w-5 h-5" />
+          </motion.a>
+          <p className="text-sm text-gray-500 mt-2">
+            Entre em contato para tirar dúvidas ou reportar problemas
+          </p>
+        </div>
+
         {/* Bottom Bar */}
-        <div className="border-t border-emerald-200 mt-8 pt-6">
+        <div className="border-t border-emerald-200 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-sm text-gray-600">
               © {currentYear} AvaliaNutri. Desenvolvido por Ellis Wollis para UNICAMP.
