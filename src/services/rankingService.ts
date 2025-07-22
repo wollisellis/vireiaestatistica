@@ -235,6 +235,27 @@ class RankingService {
       return 0
     }
   }
+
+  // 🚀 FIX CRÍTICO: Atualizar ranking do estudante (método estava faltando)
+  async updateStudentRanking(studentId: string): Promise<void> {
+    try {
+      console.log('🔄 Atualizando ranking para estudante:', studentId)
+      
+      // Limpar cache para forçar recálculo na próxima consulta
+      this.clearCache()
+      
+      // Forçar recálculo imediato do ranking geral para popular cache
+      await this.getGeneralRanking(studentId, 50)
+      
+      // Também calcular estatísticas para manter dados atualizados
+      await this.getRankingStats(studentId)
+      
+      console.log('✅ Ranking atualizado com sucesso para:', studentId)
+    } catch (error) {
+      console.error('❌ Erro ao atualizar ranking do estudante:', error)
+      // Não propagar erro para não quebrar fluxo de conclusão de exercícios
+    }
+  }
 }
 
 export default RankingService.getInstance()
