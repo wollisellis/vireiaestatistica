@@ -130,7 +130,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
           ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800'
           : error
             ? 'border-red-300 hover:border-red-400 bg-gradient-to-br from-white to-red-50 hover:from-red-50 hover:to-red-100 dark:border-red-600 dark:bg-gradient-to-br dark:from-gray-700 dark:to-red-900/20'
-            : 'border-blue-200 hover:border-blue-400 bg-gradient-to-br from-white to-blue-50/30 hover:from-blue-50/50 hover:to-blue-100/50 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-100/50 dark:hover:ring-blue-500/20'
+            : 'border-blue-200 hover:border-blue-400 bg-white hover:bg-gradient-to-br hover:from-white hover:to-gray-50 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-200/50 dark:hover:ring-blue-500/20'
         }
         ${className}
       `} onClick={handleClick}>
@@ -273,14 +273,6 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             </p>
           </div>
 
-          {/* 🎯 ETIQUETA FLUTUANTE DA MELHOR NOTA (RODAPÉ) */}
-          {state.status === 'completed' && (
-            <div className="absolute bottom-4 right-4">
-              <div className="bg-blue-50 text-blue-800 px-2 py-1 rounded-md text-xs font-medium border border-blue-200 dark:bg-blue-800/30 dark:text-blue-200 dark:border-blue-600">
-                Melhor Nota: {state.score}%
-              </div>
-            </div>
-          )}
 
           {/* 🎯 ESTADOS PARA OUTROS STATUS */}
           {state.status === 'in_progress' && state.score > 0 && (
