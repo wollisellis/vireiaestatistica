@@ -121,10 +121,10 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
       <Card className={`
         h-full border transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.02]
         ${module.isLocked
-          ? 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'
+          ? 'border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'
           : error
-            ? 'border-red-200 hover:border-red-300 bg-white dark:border-red-800 dark:bg-gray-900'
-            : 'border-gray-200 hover:border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900'
+            ? 'border-red-200 hover:border-red-300 bg-white dark:border-red-700 dark:bg-gray-700'
+            : 'border-gray-200 hover:border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-700'
         }
         ${className}
       `} onClick={handleClick}>
@@ -134,7 +134,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             <div className="absolute top-4 right-4">
               <Badge
                 variant="success"
-                className="flex items-center space-x-1 text-xs px-2 py-1 bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-100 dark:border-green-700"
+                className="flex items-center space-x-1 text-xs px-2 py-1 bg-green-100 text-green-800 border-green-200 dark:bg-green-800 dark:text-green-100 dark:border-green-600"
               >
                 <CheckCircle className="w-3 h-3" />
                 <span>Concluído</span>
@@ -227,7 +227,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
           {state.status === 'completed' && (
             <div className="mb-6">
               <div
-                className="inline-flex items-center space-x-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800 cursor-help"
+                className="inline-flex items-center space-x-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg border border-green-200 dark:bg-green-800/30 dark:text-green-200 dark:border-green-600 cursor-help"
                 title={`Detalhes: ${state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • ${state.score}% • ${state.passed ? 'Aprovado' : 'Reprovado'} • ${state.stars} estrela${state.stars !== 1 ? 's' : ''}`}
               >
                 <Award className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -254,7 +254,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
           {/* 🎯 ETIQUETA FLUTUANTE DA MELHOR NOTA (RODAPÉ) */}
           {state.status === 'completed' && (
             <div className="absolute bottom-4 right-4">
-              <div className="bg-blue-50 text-blue-800 px-2 py-1 rounded-md text-xs font-medium border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+              <div className="bg-blue-50 text-blue-800 px-2 py-1 rounded-md text-xs font-medium border border-blue-200 dark:bg-blue-800/30 dark:text-blue-200 dark:border-blue-600">
                 Melhor Nota: {state.score}%
               </div>
             </div>
@@ -263,7 +263,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
           {/* 🎯 ESTADOS PARA OUTROS STATUS */}
           {state.status === 'in_progress' && state.score > 0 && (
             <div className="mb-6">
-              <div className="inline-flex items-center space-x-2 bg-orange-50 text-orange-800 px-3 py-2 rounded-lg border border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800">
+              <div className="inline-flex items-center space-x-2 bg-orange-50 text-orange-800 px-3 py-2 rounded-lg border border-orange-200 dark:bg-orange-800/30 dark:text-orange-200 dark:border-orange-600">
                 <TrendingUp className="w-4 h-4" />
                 <span className="font-semibold text-sm">Em Progresso • {state.score}%</span>
               </div>
@@ -272,7 +272,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
 
           {state.status === 'new' && (
             <div className="mb-6">
-              <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-800 px-3 py-2 rounded-lg border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+              <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-800 px-3 py-2 rounded-lg border border-blue-200 dark:bg-blue-800/30 dark:text-blue-200 dark:border-blue-600">
                 <PlayCircle className="w-4 h-4" />
                 <span className="font-semibold text-sm">Pronto para Começar</span>
               </div>
@@ -281,7 +281,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
 
           {error && (
             <div className="mb-6">
-              <div className="inline-flex items-center space-x-2 bg-red-50 text-red-800 px-3 py-2 rounded-lg border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800">
+              <div className="inline-flex items-center space-x-2 bg-red-50 text-red-800 px-3 py-2 rounded-lg border border-red-200 dark:bg-red-800/30 dark:text-red-200 dark:border-red-600">
                 <AlertCircle className="w-4 h-4" />
                 <span className="font-semibold text-sm">Erro ao Carregar</span>
               </div>
@@ -290,7 +290,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
 
           {/* 🎯 DEBUG INFO (DEV ONLY) */}
           {showDebugInfo && process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs space-y-1">
+            <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-600 rounded-lg text-xs space-y-1">
               <div><strong>Status:</strong> {state.status}</div>
               <div><strong>Source:</strong> {state.source}</div>
               <div><strong>User ID:</strong> {userId?.slice(-6) || 'null'}</div>
@@ -318,14 +318,14 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
               transition-all duration-200 rounded-lg
               hover:scale-105 hover:shadow-md
               ${module.isLocked
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
                 : error
-                  ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                  ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-800/30 dark:text-red-200 dark:border-red-600'
                   : state.status === 'completed'
-                    ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
+                    ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-800/30 dark:text-green-200 dark:border-green-600'
                     : state.status === 'in_progress'
-                      ? 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800'
-                      : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800'
+                      ? 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 dark:bg-orange-800/30 dark:text-orange-200 dark:border-orange-600'
+                      : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-800/30 dark:text-blue-200 dark:border-blue-600'
               }
             `}
           >

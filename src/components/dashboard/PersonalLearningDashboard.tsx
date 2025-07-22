@@ -123,8 +123,8 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
               <div className="text-sm text-emerald-700">Competências Dominadas</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{inProgress.length}</div>
-              <div className="text-sm text-blue-700">Em Desenvolvimento</div>
+              <div className="text-2xl font-bold text-orange-500">{inProgress.length}</div>
+              <div className="text-sm text-orange-600">Em Desenvolvimento</div>
             </div>
           </div>
         </CardContent>
@@ -144,7 +144,7 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
             </h2>
             <Badge className={`text-white ${
               performance.color === 'green' ? 'bg-emerald-600' :
-              performance.color === 'blue' ? 'bg-blue-600' :
+              performance.color === 'blue' ? 'bg-orange-500 hover:bg-orange-600 transition-colors' :
               performance.color === 'yellow' ? 'bg-yellow-600' :
               'bg-red-600'
             }`}>
@@ -161,10 +161,10 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
               <div className="text-sm text-emerald-700">Competências Dominadas</div>
             </div>
             
-            <div className="text-center p-4 bg-white rounded-lg border border-blue-100">
-              <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-blue-600">{inProgress.length}</div>
-              <div className="text-sm text-blue-700">Em Desenvolvimento</div>
+            <div className="text-center p-4 bg-white rounded-lg border border-orange-100">
+              <BookOpen className="w-8 h-8 text-orange-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-orange-500">{inProgress.length}</div>
+              <div className="text-sm text-orange-600">Em Desenvolvimento</div>
             </div>
             
             <div className="text-center p-4 bg-white rounded-lg border border-purple-100">
@@ -208,7 +208,7 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
               transition={{ delay: index * 0.1 }}
               className={`p-4 rounded-lg border-2 transition-all ${
                 path.isCompleted ? 'border-emerald-200 bg-emerald-50' :
-                path.isInProgress ? 'border-blue-200 bg-blue-50' :
+                path.isInProgress ? 'border-orange-200 bg-orange-50' :
                 'border-gray-200 bg-gray-50'
               }`}
             >
@@ -217,7 +217,7 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
                   {path.isCompleted ? (
                     <CheckCircle className="w-6 h-6 text-emerald-600" />
                   ) : path.isInProgress ? (
-                    <Circle className="w-6 h-6 text-blue-600" />
+                    <Circle className="w-6 h-6 text-orange-500" />
                   ) : (
                     <Circle className="w-6 h-6 text-gray-400" />
                   )}
@@ -278,19 +278,19 @@ export const PersonalLearningDashboard: React.FC<PersonalLearningDashboardProps>
         <Card>
           <CardHeader>
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Target className="w-6 h-6 text-blue-600" />
+              <Target className="w-6 h-6 text-orange-500" />
               Em Desenvolvimento
             </h3>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {inProgress.slice(0, 3).map((competency, index) => (
-                <div key={competency} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div key={competency} className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Circle className="w-5 h-5 text-blue-600" />
-                    <span className="text-blue-800 font-medium text-sm">{competency}</span>
+                    <Circle className="w-5 h-5 text-orange-500" />
+                    <span className="text-orange-700 font-medium text-sm">{competency}</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-blue-600" />
+                  <ChevronRight className="w-4 h-4 text-orange-500" />
                 </div>
               ))}
             </div>
