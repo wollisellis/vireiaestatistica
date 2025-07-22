@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useEffect, useState, useCallback, useRef, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { modules } from '@/data/modules';
 import EnhancedModuleCard from '@/components/games/EnhancedModuleCard';
 import CompletedModuleModal from '@/components/games/CompletedModuleModal';
@@ -84,6 +85,7 @@ const convertModulesToGames = (modules: any[] | null | undefined): ModuleData[] 
 // 🎯 COMPONENTE PRINCIPAL SIMPLIFICADO
 export default function JogosPage() {
   // 🎯 ESTADOS MÍNIMOS NECESSÁRIOS
+  const router = useRouter();
   const { user, loading, hasAccess, isProfessor } = useFlexibleAccess();
   const { signOut } = useFirebaseAuth();
 
@@ -288,23 +290,23 @@ export default function JogosPage() {
         }
       }
 
-      // Módulo não concluído - navegar normalmente
+      // Módulo não concluído - navegar normalmente com Next.js router
       if (moduleId === 'module-1') {
-        window.location.href = '/jogos/modulo-1/quiz';
+        router.push('/jogos/modulo-1/quiz');
       }
     } catch (error) {
       console.error('Error starting module:', error);
-      // Navegar mesmo com erro
+      // Navegar mesmo com erro usando Next.js router
       if (moduleId === 'module-1') {
-        window.location.href = '/jogos/modulo-1/quiz';
+        router.push('/jogos/modulo-1/quiz');
       }
     }
-  }, [getUserId(), getModuleProgress]);
+  }, [router, getUserId(), getModuleProgress]);
   
   const handleRetryModule = useCallback(() => {
     setShowCompletedModal(false);
-    window.location.href = '/jogos/modulo-1/quiz';
-  }, []);
+    router.push('/jogos/modulo-1/quiz');
+  }, [router]);
   
   const handleLogout = useCallback(async () => {
     try {

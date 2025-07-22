@@ -261,15 +261,8 @@ export function useModuleProgress(userId: string | null, moduleId: string): UseM
         setIsLoading(true);
         setError(null);
         
-        // ⏱️ TIMEOUT DE SEGURANÇA: Máximo 10 segundos para evitar loading infinito
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout: Loading muito longo')), 10000);
-        });
-        
-        const data = await Promise.race([
-          fetchProgress(),
-          timeoutPromise
-        ]) as ModuleProgressData | null;
+        // 🎯 CARREGAMENTO NATURAL - Removido timeout agressivo
+        const data = await fetchProgress();
         
         setProgressData(data);
       } catch (err) {
@@ -297,20 +290,11 @@ export function useModuleProgress(userId: string | null, moduleId: string): UseM
     // ✅ FIX: Chamar refresh diretamente, sem incluir nas dependências
     refresh();
 
-    // 🛡️ TIMEOUT DE SEGURANÇA FINAL: Se ainda estiver loading após 15s, forçar false
-    const safetyTimeout = setTimeout(() => {
-      devLog('SAFETY TIMEOUT: Forçando isLoading = false após 15s');
-      setIsLoading(false);
-      setProgressData(null); // Exibir como módulo novo se timeout
-      setError('Timeout ao carregar dados do módulo');
-    }, 15000);
-
-    // Cleanup
+    // 🎯 CLEANUP - Removido timeout de segurança desnecessário
     return () => {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
       }
-      clearTimeout(safetyTimeout);
     };
   }, [userId, moduleId]); // ✅ REMOVIDO: refresh das dependências para quebrar loop infinito
 
