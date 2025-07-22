@@ -412,9 +412,15 @@ export default function JogosPage() {
                     })()}
                     {(() => {
                       const userId = getUserId();
-                      return userId && !userId.includes('guest') && (
+                      if (!userId || userId.includes('guest')) return null;
+
+                      // Se o ID é curto (4 caracteres ou menos), mostrar completo
+                      // Senão, mostrar os últimos 8 caracteres para melhor identificação
+                      const displayId = userId.length <= 4 ? userId : userId.slice(-8);
+
+                      return (
                         <span className="ml-2 text-xs text-gray-500 font-mono">
-                          (ID:{userId.slice(-6).toUpperCase()})
+                          (ID:{displayId.toUpperCase()})
                         </span>
                       );
                     })()}

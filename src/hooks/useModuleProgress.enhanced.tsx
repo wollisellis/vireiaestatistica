@@ -331,46 +331,61 @@ async function fetchRemoteProgress(userId: string, moduleId: string): Promise<Mo
     throw new Error('Firebase não inicializado');
   }
 
-  // Estratégia 1: quiz_attempts (fonte primária)
+  // Estratégia 1: quiz_attempts (fonte primária) - BUSCAR TODAS AS TENTATIVAS PARA CALCULAR MELHOR NOTA
   try {
     devLog(`🔍 Tentando quiz_attempts para userId: ${userId}, moduleId: ${moduleId}`);
     const attemptsQuery = query(
       collection(db, 'quiz_attempts'),
       where('studentId', '==', userId),
       where('moduleId', '==', moduleId),
-      orderBy('startedAt', 'desc'),
-      limit(1)
+      orderBy('startedAt', 'desc')
     );
-    
+
     const attemptsSnapshot = await getDocs(attemptsQuery);
     devLog(`📊 quiz_attempts resultados: ${attemptsSnapshot.size} documentos encontrados`);
-    
+
     if (!attemptsSnapshot.empty) {
-      const attemptDoc = attemptsSnapshot.docs[0];
-      const attemptData = attemptDoc.data();
-      
-      devLog('🎯 Dados encontrados em quiz_attempts:', {
-        id: attemptDoc.id,
-        studentId: attemptData.studentId,
-        moduleId: attemptData.moduleId,
-        percentage: attemptData.percentage,
-        score: attemptData.score,
-        passed: attemptData.passed,
-        completedAt: attemptData.completedAt,
-        startedAt: attemptData.startedAt
+      const attempts = attemptsSnapshot.docs.map(doc => doc.data());
+
+      // Calcular melhor nota entre todas as tentativas
+      let bestScore = 0;
+      let bestAttempt = attempts[0];
+      let totalAttempts = attempts.length;
+      let lastActivity = null;
+
+      attempts.forEach(attempt => {
+        const score = attempt.percentage || attempt.score || 0;
+        if (score > bestScore) {
+          bestScore = score;
+          bestAttempt = attempt;
+        }
+
+        // Pegar a atividade mais recente
+        const activityDate = attempt.completedAt?.toDate?.() || attempt.startedAt?.toDate?.();
+        if (activityDate && (!lastActivity || activityDate > lastActivity)) {
+          lastActivity = activityDate;
+        }
       });
-      
+
+      devLog('🎯 Melhor tentativa encontrada:', {
+        bestScore,
+        totalAttempts,
+        studentId: bestAttempt.studentId,
+        moduleId: bestAttempt.moduleId,
+        passed: bestAttempt.passed || bestScore >= 70
+      });
+
       return {
-        percentage: attemptData.percentage || 0,
-        score: attemptData.percentage || attemptData.score || 0,
-        totalScore: attemptData.percentage || attemptData.score || 0,
-        bestScore: attemptData.percentage || attemptData.score || 0,
-        completed: attemptData.passed || false,
-        passed: attemptData.passed || false,
-        lastAccessed: attemptData.completedAt?.toDate?.() || attemptData.startedAt?.toDate?.() || null,
-        attempts: 1,
+        percentage: bestScore,
+        score: bestScore,
+        totalScore: bestScore,
+        bestScore: bestScore,
+        completed: bestAttempt.passed || bestScore >= 70,
+        passed: bestAttempt.passed || bestScore >= 70,
+        lastAccessed: lastActivity,
+        attempts: totalAttempts,
         source: 'quiz_attempts',
-        rawData: attemptData
+        rawData: { bestAttempt, allAttempts: attempts }
       };
     } else {
       devLog(`❌ Nenhum documento encontrado em quiz_attempts para userId: ${userId}, moduleId: ${moduleId}`);

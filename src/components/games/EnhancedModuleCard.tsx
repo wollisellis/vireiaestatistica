@@ -228,8 +228,8 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                           <div className="text-blue-600">Melhor Nota</div>
                         </div>
                         <div className="text-center p-1.5 bg-purple-50 rounded border border-purple-200">
-                          <div className="font-medium text-purple-800">~15min</div>
-                          <div className="text-purple-600">Tempo Gasto</div>
+                          <div className="font-medium text-purple-800">{state.attempts}</div>
+                          <div className="text-purple-600">Tentativa{state.attempts !== 1 ? 's' : ''}</div>
                         </div>
                       </div>
 
@@ -304,8 +304,8 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                 }
               />
               <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span className="font-medium">Progresso do Módulo</span>
-                <span className="font-medium">{state.progress}% concluído • {state.attempts} tentativa{state.attempts !== 1 ? 's' : ''}</span>
+                <span className="font-medium">Melhor Nota: {state.score}%</span>
+                <span className="font-medium">{state.attempts} tentativa{state.attempts !== 1 ? 's' : ''} • {state.passed ? '✅ Aprovado' : 'Precisa ≥70%'}</span>
               </div>
             </div>
           )}
