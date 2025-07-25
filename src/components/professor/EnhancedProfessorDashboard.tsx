@@ -46,17 +46,37 @@ export function EnhancedProfessorDashboard({
 
     const fetchStats = async () => {
       try {
-        // 1. Buscar total de estudantes únicos em todas as turmas
-        const classesSnapshot = await getDocs(collection(db, 'classes'))
+        // 1. Buscar apenas as turmas do professor atual
+        const professorId = user?.uid || user?.id
+        if (!professorId) {
+          console.warn('Professor ID não disponível')
+          return
+        }
+
+        const classesQuery = query(
+          collection(db, 'classes'),
+          where('professorId', '==', professorId)
+        )
+        const classesSnapshot = await getDocs(classesQuery)
         const allStudentIds = new Set<string>()
+        let totalClasses = classesSnapshot.docs.length
+        
+        console.log(`📊 [EnhancedProfessorDashboard] Encontradas ${totalClasses} turmas para professor ${professorId}`)
         
         for (const classDoc of classesSnapshot.docs) {
-          const studentsSnapshot = await getDocs(
-            collection(db, 'class_students')
+          const classId = classDoc.id
+          console.log(`🔍 [EnhancedProfessorDashboard] Processando turma: ${classId}`)
+          
+          const studentsQuery = query(
+            collection(db, 'classStudents'),
+            where('classId', '==', classId)
           )
+          const studentsSnapshot = await getDocs(studentsQuery)
+          
           studentsSnapshot.docs.forEach(doc => {
-            if (doc.data().classId === classDoc.id) {
-              allStudentIds.add(doc.data().studentId)
+            const studentId = doc.data().studentId
+            if (studentId) {
+              allStudentIds.add(studentId)
             }
           })
         }

@@ -100,11 +100,8 @@ service cloud.firestore {
 
     // CLASSES - Turmas (CONTROLE DE PROFESSOR)
     match /classes/{classId} {
-      // ✅ Professores podem ler as turmas onde são o professor
-      allow read: if isProfessor();
-      
-      // ✅ Professores podem gerenciar (criar, editar, deletar) suas próprias turmas
-      allow write, delete: if isProfessor() && 
+      // ✅ Professores podem gerenciar suas próprias turmas
+      allow read, write, delete: if isProfessor() && 
         resource.data.professorId == request.auth.uid;
         
       // ✅ Professores podem criar turmas
@@ -194,27 +191,6 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
     }
 
-    // RANDOMIZED QUIZZES - Quizzes aleatórios (ACESSO DO ESTUDANTE)
-    match /randomized_quizzes/{quizId} {
-      // ✅ Estudantes podem criar e ler seus próprios quizzes
-      allow read, create: if isStudent() && 
-        request.resource.data.studentId == request.auth.uid;
-        
-      // ✅ Professores podem ler todos os quizzes
-      allow read: if isProfessor();
-    }
-
-    // QUIZ SESSIONS - Sessões ativas de quiz (ACESSO DO ESTUDANTE)
-    match /quiz_sessions/{sessionId} {
-      // ✅ Estudantes podem gerenciar suas próprias sessões
-      allow read, write, create, delete: if isStudent() &&
-        (request.resource.data.studentId == request.auth.uid ||
-         sessionId.split('_')[0] == request.auth.uid);
-         
-      // ✅ Professores podem ler todas as sessões
-      allow read: if isProfessor();
-    }
-
     // HEALTH CHECK - Monitoramento do sistema
     match /_health/{docId} {
       allow read: if isAuthenticated();
@@ -254,4 +230,4 @@ service cloud.firestore {
       allow read, write: if false;
     }
   }
-}
+} 

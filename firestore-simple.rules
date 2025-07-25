@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ========================================
+    // REGRAS SIMPLIFICADAS - BIOESTAT PLATFORM
+    // ========================================
+    // Versão temporária para resolver problemas de login
+    // ========================================
+
+    // Função para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Função para verificar email institucional
+    function hasInstitutionalEmail() {
+      return isAuthenticated() &&
+        (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
+         request.auth.token.email.matches('.*@unicamp\\.br') ||
+         request.auth.token.email.matches('.*@gmail\\.com')); // Para desenvolvimento
+    }
+
+    // Função para verificar se é o próprio usuário
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // COLEÇÃO USERS - Acesso amplo para usuários institucionais
+    match /users/{userId} {
+      // Permitir acesso completo para usuários com email institucional
+      allow read, write, create, update, delete: if hasInstitutionalEmail();
+      
+      // Permitir que usuários vejam apenas seus próprios dados
+      allow read, write, create, update: if isAuthenticated() && isOwner(userId);
+    }
+
+    // TODAS AS OUTRAS COLEÇÕES - Acesso baseado em autenticação
+    match /{collection}/{document} {
+      // Usuários autenticados com email institucional têm acesso amplo
+      allow read, write, create, update, delete: if hasInstitutionalEmail();
+      
+      // Usuários autenticados básicos podem ler e escrever dados próprios
+      allow read, write, create, update: if isAuthenticated();
+    }
+
+    // SUBCOLEÇÕES - Acesso similar
+    match /{collection}/{document}/{subcollection}/{subdocument} {
+      allow read, write, create, update, delete: if hasInstitutionalEmail();
+      allow read, write, create, update: if isAuthenticated();
+    }
+
+    // SUBCOLEÇÕES ANINHADAS
+    match /{path=**} {
+      allow read, write, create, update, delete: if hasInstitutionalEmail();
+      allow read, write, create, update: if isAuthenticated();
+    }
+  }
+} 

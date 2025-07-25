@@ -161,6 +161,22 @@ function JogosPageContent() {
     }
   }, []);
 
+  // 🎯 REDIRECIONAMENTO PARA USUÁRIOS NÃO LOGADOS
+  useEffect(() => {
+    // Se não está carregando e não há usuário autenticado, redirecionar para /
+    if (!loading) {
+      const userId = getUserId();
+      const isGuestUser = userId === 'guest-user' || userId === 'professor-guest-user';
+      
+      // Se não há usuário ou é um guest não autorizado, redirecionar
+      if (!user && !isGuestUser) {
+        console.log('🔐 Usuário não logado detectado, redirecionando para /');
+        router.push('/');
+        return;
+      }
+    }
+  }, [loading, user, router]);
+
   // 🎯 UNIFIED DATA LOADING EFFECT - Reduz re-renders
   useEffect(() => {
     const updateDataStates = async () => {
@@ -367,9 +383,32 @@ function JogosPageContent() {
     return <JogosPageMinimalSkeleton />;
   }
   
-  // 🎯 ACCESS CHECK
+  // 🎯 ACCESS CHECK - Apenas usuários autenticados
   const userId = getUserId();
-  if (!hasAccess && userId !== 'guest-user' && userId !== 'professor-guest-user') {
+  const isGuestUser = userId === 'guest-user' || userId === 'professor-guest-user';
+  
+  // Verificar se o usuário está realmente logado (não é guest e tem usuário válido)
+  if (!user || isGuestUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">🔐</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Login Necessário</h2>
+          <p className="text-gray-600 mb-6">
+            Você precisa estar logado como estudante para acessar os módulos educacionais.
+          </p>
+          <Link href="/">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              Fazer Login
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
+  // Verificação adicional para acesso negado (apenas se chegou até aqui)
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center">
         <div className="text-center max-w-md">
