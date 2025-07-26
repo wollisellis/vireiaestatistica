@@ -51,13 +51,20 @@ export class ClassTrashService {
     reason?: string
   ): Promise<void> {
     try {
-      console.log(`Iniciando exclusão da turma ${classId}`)
+      console.log(`🗑️ [ClassTrashService.deleteClass] Iniciando exclusão da turma`)
+      console.log(`📋 ClassID: ${classId}`)
+      console.log(`👤 DeletedBy: ${deletedBy}`)
+      console.log(`👨‍🏫 DeletedByName: ${deletedByName}`)
+      console.log(`📝 Reason: ${reason || 'Não especificado'}`)
 
       // Buscar dados originais da turma
+      console.log(`🔍 [ClassTrashService.deleteClass] Buscando dados originais da turma...`)
       const classData = await ProfessorClassService.getClassInfo(classId)
       if (!classData) {
+        console.error(`❌ [ClassTrashService.deleteClass] Turma ${classId} não encontrada`)
         throw new Error('Turma não encontrada')
       }
+      console.log(`✅ [ClassTrashService.deleteClass] Dados da turma encontrados:`, classData)
 
       // ✅ CORREÇÃO: Verificar se é um professor válido (acesso compartilhado)
       // Buscar dados do usuário que está tentando excluir
@@ -120,11 +127,14 @@ export class ClassTrashService {
         }
       }
 
+      console.log(`💾 [ClassTrashService.deleteClass] Executando batch.commit()...`)
       await batch.commit()
 
-      console.log(`Turma ${classId} excluída com sucesso`)
+      console.log(`✅ [ClassTrashService.deleteClass] Turma ${classId} excluída com sucesso`)
+      console.log(`📍 [ClassTrashService.deleteClass] Documento criado em: deleted_classes/${classId}`)
+      console.log(`⏰ [ClassTrashService.deleteClass] Expira em: ${expiresAt.toLocaleDateString('pt-BR')} (${this.RETENTION_DAYS} dias)`)
     } catch (error) {
-      console.error('Erro ao excluir turma:', error)
+      console.error(`❌ [ClassTrashService.deleteClass] Erro ao excluir turma ${classId}:`, error)
       throw error
     }
   }
@@ -200,21 +210,32 @@ export class ClassTrashService {
    */
   static async getDeletedClasses(professorId: string): Promise<DeletedClass[]> {
     try {
+      console.log(`🔍 [ClassTrashService.getDeletedClasses] Buscando turmas excluídas`)
+      console.log(`👤 [ClassTrashService.getDeletedClasses] ProfessorID: ${professorId}`)
+      console.log(`📂 [ClassTrashService.getDeletedClasses] Collection: ${this.DELETED_CLASSES_COLLECTION}`)
+
       const q = query(
         collection(db, this.DELETED_CLASSES_COLLECTION),
         where('deletedBy', '==', professorId),
         orderBy('deletedAt', 'desc')
       )
 
+      console.log(`🔎 [ClassTrashService.getDeletedClasses] Executando query...`)
       const querySnapshot = await getDocs(q)
-      const deletedClasses: DeletedClass[] = []
+      console.log(`📊 [ClassTrashService.getDeletedClasses] Query retornou ${querySnapshot.size} documentos`)
 
+      const deletedClasses: DeletedClass[] = []
       const now = new Date()
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach((doc, index) => {
+        console.log(`📄 [ClassTrashService.getDeletedClasses] Processando documento ${index + 1}/${querySnapshot.size}:`, doc.id)
         const data = doc.data()
+        console.log(`📝 [ClassTrashService.getDeletedClasses] Dados do documento:`, data)
+        
         const expiresAt = data.expiresAt.toDate()
         const daysRemaining = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
+        
+        console.log(`⏰ [ClassTrashService.getDeletedClasses] Documento ${doc.id} expira em: ${expiresAt.toLocaleDateString('pt-BR')} (${daysRemaining} dias restantes)`)
         
         deletedClasses.push({
           id: doc.id,
@@ -224,9 +245,10 @@ export class ClassTrashService {
         } as DeletedClass)
       })
 
+      console.log(`✅ [ClassTrashService.getDeletedClasses] Retornando ${deletedClasses.length} turmas excluídas`)
       return deletedClasses
     } catch (error) {
-      console.error('Erro ao listar turmas excluídas:', error)
+      console.error(`❌ [ClassTrashService.getDeletedClasses] Erro ao listar turmas excluídas para professor ${professorId}:`, error)
       return []
     }
   }

@@ -167,7 +167,8 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
 
   // Carregar turmas excluídas quando necessário
   useEffect(() => {
-    if (viewFilter === 'deleted' && deletedClasses.length === 0) {
+    if (viewFilter === 'deleted') {
+      console.log('🔄 [ImprovedClassManagement] Tab "deleted" ativada, carregando turmas excluídas...')
       loadDeletedClasses()
     }
   }, [viewFilter])
@@ -952,9 +953,31 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                     Quando você excluir uma turma, ela ficará aqui por 30 dias 
                     antes de ser removida permanentemente.
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 mb-6">
                     Durante esse período, você pode restaurar a turma a qualquer momento.
                   </p>
+
+                  {/* Debug Info */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
+                    <h4 className="font-semibold text-blue-900 mb-2 text-sm">🔍 Informações de Debug:</h4>
+                    <div className="space-y-1 text-xs text-blue-800">
+                      <p><strong>Professor ID:</strong> <code>{professorId}</code></p>
+                      <p><strong>Collection:</strong> <code>deleted_classes</code></p>
+                      <p><strong>Query:</strong> <code>deletedBy == "{professorId}"</code></p>
+                      <p><strong>Status de carregamento:</strong> {loadingDeleted ? 'Carregando...' : 'Concluído'}</p>
+                    </div>
+                  </div>
+
+                  {/* Botão para forçar recarregamento */}
+                  <Button 
+                    onClick={loadDeletedClasses}
+                    disabled={loadingDeleted}
+                    variant="outline"
+                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loadingDeleted ? 'animate-spin' : ''}`} />
+                    {loadingDeleted ? 'Recarregando...' : 'Forçar Recarregamento'}
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>

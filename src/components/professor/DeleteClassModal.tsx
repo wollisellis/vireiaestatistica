@@ -98,7 +98,7 @@ export function DeleteClassModal({
             </div>
             <p className="text-red-100 mt-3 text-sm leading-relaxed">
               {step === 'warning' 
-                ? 'Esta ação enviará a turma para a lixeira por 20 dias'
+                ? 'Esta ação enviará a turma para a lixeira por 30 dias'
                 : 'Digite o nome da turma para confirmar a exclusão'
               }
             </p>
@@ -158,7 +158,7 @@ export function DeleteClassModal({
                     <div className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-gray-700">
-                        Todos os <strong>dados dos estudantes serão preservados</strong> durante 20 dias
+                        Todos os <strong>dados dos estudantes serão preservados</strong> durante 30 dias
                       </p>
                     </div>
                     
@@ -172,7 +172,7 @@ export function DeleteClassModal({
                     <div className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-gray-700">
-                        Você poderá <strong>restaurar a turma</strong> a qualquer momento nos próximos 20 dias
+                        Você poderá <strong>restaurar a turma</strong> a qualquer momento nos próximos 30 dias
                       </p>
                     </div>
                   </div>
@@ -186,7 +186,7 @@ export function DeleteClassModal({
                       <div>
                         <h4 className="font-medium text-yellow-900">Período de Retenção</h4>
                         <p className="text-sm text-yellow-800 mt-1">
-                          A turma ficará na lixeira por <strong>20 dias</strong>. Após esse período, 
+                          A turma ficará na lixeira por <strong>30 dias</strong>. Após esse período, 
                           todos os dados serão permanentemente removidos.
                         </p>
                       </div>
