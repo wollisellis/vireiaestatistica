@@ -2,17 +2,18 @@
 // Gerencia exclusão temporária e restauração de turmas com prazo de 20 dias
 
 import { 
-  collection, 
   doc, 
+  getDoc, 
   updateDoc, 
-  getDoc,
-  getDocs,
+  deleteDoc, 
+  collection, 
   query, 
   where, 
-  orderBy,
-  serverTimestamp,
-  writeBatch,
-  Timestamp 
+  getDocs, 
+  writeBatch, 
+  serverTimestamp, 
+  Timestamp,
+  orderBy 
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { ProfessorClassService, ClassInfo } from './professorClassService'
@@ -100,13 +101,23 @@ export class ClassTrashService {
 
       batch.set(deletedClassRef, deletedClassData)
 
-      // 3. Desativar convites da turma
+      // 3. Desativar convites da turma (se existir)
       if (classData.code) {
         const inviteRef = doc(db, 'classInvites', classData.code)
-        batch.update(inviteRef, {
-          isActive: false,
-          deletedAt: serverTimestamp()
-        })
+        try {
+          const inviteDoc = await getDoc(inviteRef)
+          if (inviteDoc.exists()) {
+            batch.update(inviteRef, {
+              isActive: false,
+              deletedAt: serverTimestamp()
+            })
+          } else {
+            console.log(`⚠️ Convite ${classData.code} não encontrado, pulando desativação`)
+          }
+        } catch (error) {
+          console.warn(`⚠️ Erro ao verificar convite ${classData.code}:`, error)
+          // Continue sem desativar o convite se houver erro
+        }
       }
 
       await batch.commit()
