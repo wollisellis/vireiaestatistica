@@ -50,7 +50,9 @@ import {
   Activity,
   Award,
   Timer,
-  User
+  User,
+  RotateCcw,
+  XCircle
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
@@ -839,7 +841,11 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                   >
-                    <EnhancedStudentRow student={student} onStudentClick={loadStudentModule1Data} />
+                    <EnhancedStudentRow 
+                      student={student} 
+                      totalModules={selectedClass.totalModules} 
+                      onStudentClick={loadStudentModule1Data} 
+                    />
                   </motion.div>
                 ))}
                 
@@ -1202,12 +1208,11 @@ function EnhancedClassCard({
   )
 }
 
-interface EnhancedStudentRowProps {
-  student: StudentOverview
-  onStudentClick?: (student: StudentOverview) => void
-}
-
-function EnhancedStudentRow({ student, onStudentClick }: EnhancedStudentRowProps) {
+function EnhancedStudentRow({ student, totalModules, onStudentClick }: {
+  student: EnhancedStudentOverview
+  totalModules: number
+  onStudentClick?: (student: EnhancedStudentOverview) => void
+}) {
   return (
     <Card 
       className="hover:shadow-md transition-shadow border-l-4 border-l-indigo-500 cursor-pointer hover:bg-gray-50"
@@ -1216,15 +1221,12 @@ function EnhancedStudentRow({ student, onStudentClick }: EnhancedStudentRowProps
       <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-            {/* Avatar com ranking */}
             <div className={`
               w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-sm flex-shrink-0
               ${student.isActive ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-gray-100 text-gray-600'}
             `}>
               #{student.classRank}
             </div>
-            
-            {/* Info do estudante */}
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">{student.studentName}</div>
               <div className="text-xs sm:text-sm text-gray-600 flex items-center space-x-2 mt-1">
@@ -1233,19 +1235,17 @@ function EnhancedStudentRow({ student, onStudentClick }: EnhancedStudentRowProps
               </div>
             </div>
           </div>
-          
-          {/* Métricas */}
           <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-6">
             <div className="text-center flex-shrink-0">
-              <div className="text-base sm:text-lg font-bold text-indigo-600">{student.overallProgress}%</div>
-              <div className="text-xs text-gray-600">Progresso</div>
+              <div className="text-base sm:text-lg font-bold text-indigo-600">
+                {student.completedModules} / {totalModules}
+              </div>
+              <div className="text-xs text-gray-600">Módulos Concluídos</div>
             </div>
-            
             <div className="text-center flex-shrink-0">
               <div className="text-base sm:text-lg font-bold text-green-600">{student.totalNormalizedScore}</div>
-              <div className="text-xs text-gray-600">Pontuação</div>
+              <div className="text-xs text-gray-600">Pontuação Total</div>
             </div>
-            
             <Badge 
               variant={student.isActive ? 'default' : 'secondary'}
               className={`px-2 sm:px-3 py-1 text-xs flex-shrink-0 ${

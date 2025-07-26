@@ -980,23 +980,27 @@ export class EnhancedClassService {
   // Obter todas as turmas de um professor específico (incluindo excluídas)
   static async getProfessorClasses(professorId: string): Promise<EnhancedClass[]> {
     try {
-      console.log(`[EnhancedClassService] 🔍 Buscando TODAS as turmas do professor: ${professorId}`)
+      console.log(`[EnhancedClassService] 🔍 Buscando TODAS as turmas do sistema (não apenas do professor)`)
       
-      // Query otimizada para buscar TODAS as turmas do professor (incluindo excluídas)
+      // Query otimizada para buscar TODAS as turmas
       const classesQuery = query(
         collection(db, 'classes'),
-        where('professorId', '==', professorId),
         orderBy('createdAt', 'desc')
       )
       
       const classesSnapshot = await getDocs(classesQuery)
-      const professorClasses: EnhancedClass[] = []
+      const allSystemClasses: EnhancedClass[] = []
       
-      console.log(`[EnhancedClassService] 📊 ${classesSnapshot.docs.length} turmas encontradas`)
+      console.log(`[EnhancedClassService] 📊 ${classesSnapshot.docs.length} turmas encontradas no total`)
       
       // Processar cada turma
       for (const classDoc of classesSnapshot.docs) {
         const classData = classDoc.data()
+        
+        // IGNORAR turmas com status 'deleted'
+        if (classData.status === 'deleted') {
+          continue;
+        }
         
         // Calcular estatísticas básicas da turma
         const students = await this.getClassStudentsBasic(classDoc.id)
@@ -1022,17 +1026,17 @@ export class EnhancedClassService {
           studentsCount: students.length,
           activeStudents: students.filter(s => s.status === 'active' && 
             (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
-          totalModules: modules.length,
+          totalModules: (await this.getAvailableModules()).length,
           avgProgress: analytics?.averageProgress || 0,
           avgScore: analytics?.averageScore || 0,
           lastActivity: analytics?.date
         }
         
-        professorClasses.push(enhancedClass)
+        allSystemClasses.push(enhancedClass)
       }
       
-      console.log(`[EnhancedClassService] ✅ ${professorClasses.length} turmas processadas com sucesso`)
-      return professorClasses
+      console.log(`[EnhancedClassService] ✅ ${allSystemClasses.length} turmas ativas processadas com sucesso`)
+      return allSystemClasses
       
     } catch (error) {
       console.error('[EnhancedClassService] ❌ Erro ao buscar turmas do professor:', error)
