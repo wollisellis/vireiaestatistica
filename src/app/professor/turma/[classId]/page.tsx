@@ -500,8 +500,6 @@ export default function EnhancedClassDashboard() {
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Estudante</th>
                     <th className="text-left py-3 px-4 font-medium">Progresso Geral</th>
-                    <th className="text-left py-3 px-4 font-medium">Módulo 1</th>
-                    <th className="text-left py-3 px-4 font-medium">Módulo 2</th>
                     <th className="text-left py-3 px-4 font-medium">Pontuação Total</th>
                     <th className="text-left py-3 px-4 font-medium">Última Atividade</th>
                     <th className="text-left py-3 px-4 font-medium">Status</th>
@@ -547,30 +545,8 @@ export default function EnhancedClassDashboard() {
                             ></div>
                           </div>
                           <span className="text-sm text-gray-600">
-                            {Math.round(progressPercentage)}% ({student.completedModules || 0}/4)
+                            {student.completedModules || 0}/{classData.totalModules || 4} Módulos
                           </span>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <div className="text-center">
-                            <div className="font-semibold text-lg text-green-600">
-                              {getModuleScore(student, 'module-1')}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Avaliação Nutricional
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <div className="text-center">
-                            <div className="font-semibold text-lg text-green-600">
-                              {getModuleScore(student, 'module-2')}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Composição Corporal
-                            </div>
-                          </div>
                         </td>
 
                         <td className="py-4 px-4">
@@ -579,7 +555,7 @@ export default function EnhancedClassDashboard() {
                               {student.normalizedScore || student.totalScore || 0}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {student.normalizedScore ? 'pontos' : 'score'}
+                              pontos
                             </div>
                           </div>
                         </td>
