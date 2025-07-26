@@ -227,34 +227,6 @@ export default function EnhancedClassDashboard() {
   };
   
   const stats = getProgressStats();
-  
-  // Função para extrair número de RA do email
-  const extractRANumber = (email: string): string => {
-    if (!email) return 'N/A';
-    
-    // Para emails da UNICAMP (padrão: ra123456@dac.unicamp.br ou ra123456@unicamp.br)
-    if (email.includes('@dac.unicamp.br') || email.includes('@unicamp.br')) {
-      const raMatch = email.match(/^([a-z]\d+)/i);
-      return raMatch ? raMatch[1].toUpperCase() : email.split('@')[0];
-    }
-    
-    // Para outros emails, retornar parte antes do @
-    return email.split('@')[0];
-  };
-
-  // Função para formatar nome (primeiro nome + sobrenome)
-  const formatStudentName = (student: EnhancedStudent): string => {
-    const fullName = student.name || student.studentName || 'Usuário Anônimo';
-    const nameParts = fullName.trim().split(' ');
-    
-    if (nameParts.length === 1) {
-      return nameParts[0];
-    } else if (nameParts.length >= 2) {
-      return `${nameParts[0]} ${nameParts[nameParts.length - 1]}`;
-    }
-    
-    return fullName;
-  };
 
   if (loading) {
     return (
