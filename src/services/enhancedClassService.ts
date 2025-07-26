@@ -29,7 +29,7 @@ import {
   StudentModuleProgress,
   StudentExerciseProgress
 } from '@/types/classes'
-import { modules } from '@/data/modules'
+import { modules } from '@/lib/gameData'; // Importar módulos
 import unifiedScoringService from './unifiedScoringService'
 import { parseFirebaseDate } from '@/utils/dateUtils'
 
@@ -1039,7 +1039,7 @@ export class EnhancedClassService {
           studentsCount: students.length,
           activeStudents: students.filter(s => s.status === 'active' && 
             (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
-          totalModules: (await this.getAvailableModules()).length,
+          totalModules: modules.length, // Usar o array importado
           avgProgress: analytics?.averageProgress || 0,
           avgScore: analytics?.averageScore || 0,
           lastActivity: analytics?.date

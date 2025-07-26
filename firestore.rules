@@ -223,15 +223,9 @@ service cloud.firestore {
          collection.matches('.*[Ss]ystem.*'));
     }
 
-    // Coleções de estudantes (ACESSO PRÓPRIO)
+    // Coleções de estudantes (ACESSO AMPLO TEMPORÁRIO)
     match /{collection}/{document} {
-      allow read, write: if isAuthenticated() && 
-        (collection.matches('.*[Ss]tudent.*') ||
-         collection.matches('.*[Pp]rogress.*') ||
-         collection.matches('.*[Aa]ttempt.*')) &&
-        (resource.data.studentId == request.auth.uid ||
-         resource.data.userId == request.auth.uid ||
-         document == request.auth.uid);
+      allow read, write, create: if isAuthenticated();
     }
 
     // DELETED CLASSES - Lixeira de turmas (ACESSO DE PROFESSORES)
