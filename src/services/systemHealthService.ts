@@ -798,6 +798,9 @@ export class SystemHealthService {
    */
   static async getAlertsForProfessor(professorId: string): Promise<HealthAlert[]> {
     try {
+      // TEMPORARILY DISABLED TO PREVENT INDEX ERRORS
+      return [];
+      
       const alertsQuery = query(
         collection(db, this.ALERTS_COLLECTION),
         where('recipientId', '==', professorId),

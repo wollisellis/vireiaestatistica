@@ -835,10 +835,10 @@ export class EnhancedClassService {
       allowLateSubmissions: true,
       showRanking: true,
       enableCollaboration: false,
-      modulesAvailable: modules.map(m => m.id),
+      modulesAvailable: ["module-1", "module-2", "module-3", "module-4"],
       autoGrading: true,
       requireApproval: false
-    }
+    };
   }
   
   private static applyFilters(
