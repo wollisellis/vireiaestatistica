@@ -17,6 +17,7 @@ import {
   StudentOverview 
 } from '@/services/professorClassService'
 import { EnhancedClassService } from '@/services/enhancedClassService'
+import { ClassTrashService } from '@/services/classTrashService'
 import { EnhancedClass, EnhancedStudentOverview } from '@/types/classes'
 import { 
   Users, 
@@ -151,6 +152,25 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       loadClassStudents()
     }
   }, [selectedClass])
+
+  // 🎯 FUNÇÃO PARA RESTAURAR TURMA EXCLUÍDA
+  const restoreClass = async (classId: string, className: string) => {
+    try {
+      showNotification('info', 'Restaurando Turma', 'Restaurando turma excluída...')
+      
+      await ClassTrashService.restoreClass(classId, professorId)
+      
+      showNotification('success', 'Turma Restaurada', `${className} foi restaurada com sucesso!`)
+      
+      // Recarregar turmas
+      await loadClasses()
+      
+    } catch (error) {
+      console.error('Erro ao restaurar turma:', error)
+      showNotification('error', 'Erro na Restauração', 
+        error instanceof Error ? error.message : 'Erro ao restaurar turma')
+    }
+  }
 
   const loadClasses = async () => {
     try {
@@ -729,6 +749,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                 onCopyInviteLink={() => copyInviteLink(cls.code)}
                 onViewDetails={() => router.push(`/professor/turma/${cls.id}`)}
                 onShowInvites={() => showClassInvites(cls)}
+                onRestore={() => restoreClass(cls.id, cls.name)}
               />
             </motion.div>
           ))}
@@ -1035,6 +1056,7 @@ interface EnhancedClassCardProps {
   onCopyInviteLink: () => void
   onViewDetails?: () => void
   onShowInvites?: () => void
+  onRestore?: () => void
 }
 
 function EnhancedClassCard({ 
@@ -1044,9 +1066,14 @@ function EnhancedClassCard({
   onCopyCode, 
   onCopyInviteLink,
   onViewDetails,
-  onShowInvites 
+  onShowInvites,
+  onRestore 
 }: EnhancedClassCardProps) {
   const getStatusInfo = () => {
+    // Verificar se a turma está excluída
+    if (classInfo.status === 'deleted') {
+      return { color: 'red', label: 'Turma Excluída', icon: Trash2 }
+    }
     if (classInfo.studentsCount === 0) {
       return { color: 'gray', label: 'Aguardando Matrículas', icon: Clock }
     }
@@ -1065,9 +1092,11 @@ function EnhancedClassCard({
   return (
     <Card 
       className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
-        isSelected 
-          ? 'ring-2 ring-indigo-500 border-indigo-200 shadow-lg' 
-          : 'hover:shadow-md border-gray-200'
+        classInfo.status === 'deleted' 
+          ? 'opacity-75 bg-gray-50 border-red-200 hover:shadow-md' 
+          : isSelected 
+            ? 'ring-2 ring-indigo-500 border-indigo-200 shadow-lg' 
+            : 'hover:shadow-md border-gray-200'
       }`}
       onClick={onSelect}
     >
@@ -1089,12 +1118,14 @@ function EnhancedClassCard({
                 <StatusIcon className={`w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ${
                   status.color === 'green' ? 'text-green-600' :
                   status.color === 'blue' ? 'text-blue-600' :
-                  status.color === 'yellow' ? 'text-yellow-600' : 'text-gray-600'
+                  status.color === 'yellow' ? 'text-yellow-600' :
+                  status.color === 'red' ? 'text-red-600' : 'text-gray-600'
                 }`} />
                 <span className={`text-xs font-medium truncate ${
                   status.color === 'green' ? 'text-green-700' :
                   status.color === 'blue' ? 'text-blue-700' :
-                  status.color === 'yellow' ? 'text-yellow-700' : 'text-gray-700'
+                  status.color === 'yellow' ? 'text-yellow-700' :
+                  status.color === 'red' ? 'text-red-700' : 'text-gray-700'
                 }`}>
                   {status.label}
                 </span>
@@ -1120,26 +1151,39 @@ function EnhancedClassCard({
           
           {/* Ações */}
           <div className="flex flex-col space-y-1.5 sm:space-y-2 pt-2 sm:pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-            <div className="flex space-x-1.5 sm:space-x-2">
+            {/* Se a turma está excluída, mostrar botão de restauração */}
+            {classInfo.status === 'deleted' ? (
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={onCopyCode}
-                className="flex-1 text-xs h-7 sm:h-8 px-2"
+                onClick={onRestore}
+                className="w-full text-xs h-7 sm:h-8 px-2 border-green-200 text-green-700 hover:bg-green-50"
               >
-                <Copy className="w-3 h-3 mr-0.5 sm:mr-1" />
-                Código
+                <RotateCcw className="w-3 h-3 mr-0.5 sm:mr-1" />
+                Restaurar Turma
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onShowInvites || (() => onCopyInviteLink())}
-                className="flex-1 text-xs h-7 sm:h-8 px-2 border-green-200 text-green-700 hover:bg-green-50"
-              >
-                <Share className="w-3 h-3 mr-0.5 sm:mr-1" />
-                Convite
-              </Button>
-            </div>
+            ) : (
+              <div className="flex space-x-1.5 sm:space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onCopyCode}
+                  className="flex-1 text-xs h-7 sm:h-8 px-2"
+                >
+                  <Copy className="w-3 h-3 mr-0.5 sm:mr-1" />
+                  Código
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onShowInvites || (() => onCopyInviteLink())}
+                  className="flex-1 text-xs h-7 sm:h-8 px-2 border-green-200 text-green-700 hover:bg-green-50"
+                >
+                  <Share className="w-3 h-3 mr-0.5 sm:mr-1" />
+                  Convite
+                </Button>
+              </div>
+            )}
             {onViewDetails && (
               <Button 
                 variant="default" 

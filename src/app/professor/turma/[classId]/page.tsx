@@ -25,6 +25,10 @@ interface EnhancedStudent extends ClassEnrollment {
   totalScore: number;
   completedModules: number;
   lastActivity?: Date;
+  // Adicionar campos para melhor exibição
+  moduleScores?: { [moduleId: string]: number };
+  normalizedScore?: number;
+  studentId: string;
 }
 
 export default function EnhancedClassDashboard() {
@@ -134,6 +138,60 @@ export default function EnhancedClassDashboard() {
     return { total, active, avgProgress, avgScore, topPerformers };
   };
   
+  // Função para extrair número de RA do email
+  const extractRANumber = (email: string): string => {
+    if (!email) return 'N/A';
+    
+    // Para emails da UNICAMP (padrão: ra123456@dac.unicamp.br ou ra123456@unicamp.br)
+    if (email.includes('@dac.unicamp.br') || email.includes('@unicamp.br')) {
+      const raMatch = email.match(/^([a-z]\d+)/i);
+      return raMatch ? raMatch[1].toUpperCase() : email.split('@')[0];
+    }
+    
+    // Para outros emails, retornar parte antes do @
+    return email.split('@')[0];
+  };
+
+  // Função para formatar nome (primeiro nome + sobrenome)
+  const formatStudentName = (student: EnhancedStudent): string => {
+    const fullName = student.name || student.studentName || 'Usuário Anônimo';
+    const nameParts = fullName.trim().split(' ');
+    
+    if (nameParts.length === 1) {
+      return nameParts[0];
+    } else if (nameParts.length >= 2) {
+      return `${nameParts[0]} ${nameParts[nameParts.length - 1]}`;
+    }
+    
+    return fullName;
+  };
+
+  // Função para obter nota do módulo específico
+  const getModuleScore = (student: EnhancedStudent, moduleId: string): string => {
+    // Primeiro: tentar usar dados do sistema unificado
+    if (student.moduleScores && student.moduleScores[moduleId]) {
+      return `${Math.round(student.moduleScores[moduleId])}%`;
+    }
+    
+    // Segundo: verificar moduleProgress (dados detalhados)
+    if (student.moduleProgress && Array.isArray(student.moduleProgress)) {
+      const moduleData = student.moduleProgress.find(m => m.moduleId === moduleId);
+      if (moduleData && moduleData.isCompleted && moduleData.maxScore > 0) {
+        return `${Math.round((moduleData.score / moduleData.maxScore) * 100)}%`;
+      }
+    }
+    
+    // Terceiro: fallback para dados legados
+    if (student.progress?.modules && student.progress.modules[moduleId]) {
+      const moduleProgress = student.progress.modules[moduleId];
+      if (moduleProgress.completed && moduleProgress.maxScore > 0) {
+        return `${Math.round((moduleProgress.score / moduleProgress.maxScore) * 100)}%`;
+      }
+    }
+    
+    return '-';
+  };
+
   const handleRemoveStudent = async (studentId: string) => {
     try {
       await enhancedClassService.removeStudentFromClass(classId, studentId);
@@ -170,6 +228,34 @@ export default function EnhancedClassDashboard() {
   
   const stats = getProgressStats();
   
+  // Função para extrair número de RA do email
+  const extractRANumber = (email: string): string => {
+    if (!email) return 'N/A';
+    
+    // Para emails da UNICAMP (padrão: ra123456@dac.unicamp.br ou ra123456@unicamp.br)
+    if (email.includes('@dac.unicamp.br') || email.includes('@unicamp.br')) {
+      const raMatch = email.match(/^([a-z]\d+)/i);
+      return raMatch ? raMatch[1].toUpperCase() : email.split('@')[0];
+    }
+    
+    // Para outros emails, retornar parte antes do @
+    return email.split('@')[0];
+  };
+
+  // Função para formatar nome (primeiro nome + sobrenome)
+  const formatStudentName = (student: EnhancedStudent): string => {
+    const fullName = student.name || student.studentName || 'Usuário Anônimo';
+    const nameParts = fullName.trim().split(' ');
+    
+    if (nameParts.length === 1) {
+      return nameParts[0];
+    } else if (nameParts.length >= 2) {
+      return `${nameParts[0]} ${nameParts[nameParts.length - 1]}`;
+    }
+    
+    return fullName;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -441,8 +527,10 @@ export default function EnhancedClassDashboard() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium">Estudante</th>
-                    <th className="text-left py-3 px-4 font-medium">Progresso</th>
-                    <th className="text-left py-3 px-4 font-medium">Pontuação</th>
+                    <th className="text-left py-3 px-4 font-medium">Progresso Geral</th>
+                    <th className="text-left py-3 px-4 font-medium">Módulo 1</th>
+                    <th className="text-left py-3 px-4 font-medium">Módulo 2</th>
+                    <th className="text-left py-3 px-4 font-medium">Pontuação Total</th>
                     <th className="text-left py-3 px-4 font-medium">Última Atividade</th>
                     <th className="text-left py-3 px-4 font-medium">Status</th>
                     <th className="text-left py-3 px-4 font-medium">Ações</th>
@@ -453,15 +541,29 @@ export default function EnhancedClassDashboard() {
                     if (!student) return null;
 
                     const progressPercentage = ((student.completedModules || 0) / 4) * 100;
+                    const raNumber = extractRANumber(student.email || '');
+                    const displayName = formatStudentName(student);
 
                     return (
                       <tr key={student.studentId || Math.random()} className="border-b hover:bg-gray-50 transition-colors">
                         <td className="py-4 px-4">
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {student.name || student.studentName || 'Usuário Anônimo'}
+                          <div className="space-y-1">
+                            {/* ID primeiro */}
+                            <div className="text-xs text-gray-400 font-mono">
+                              ID: {student.studentId || 'N/A'}
                             </div>
-                            <div className="text-sm text-gray-500">{student.email || 'Email não disponível'}</div>
+                            {/* Nome formatado */}
+                            <div className="font-medium text-gray-900">
+                              {displayName}
+                            </div>
+                            {/* Email */}
+                            <div className="text-sm text-gray-500">
+                              {student.email || 'Email não disponível'}
+                            </div>
+                            {/* Número de RA */}
+                            <div className="text-xs text-blue-600 font-semibold">
+                              RA: {raNumber}
+                            </div>
                           </div>
                         </td>
 
@@ -478,8 +580,36 @@ export default function EnhancedClassDashboard() {
                         </td>
 
                         <td className="py-4 px-4">
-                          <div className="font-semibold text-lg">{student.totalScore || 0}</div>
-                          <div className="text-sm text-gray-500">pontos</div>
+                          <div className="text-center">
+                            <div className="font-semibold text-lg text-green-600">
+                              {getModuleScore(student, 'module-1')}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Avaliação Nutricional
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4">
+                          <div className="text-center">
+                            <div className="font-semibold text-lg text-green-600">
+                              {getModuleScore(student, 'module-2')}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Composição Corporal
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4">
+                          <div className="text-center">
+                            <div className="font-semibold text-lg text-blue-600">
+                              {student.normalizedScore || student.totalScore || 0}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {student.normalizedScore ? 'pontos' : 'score'}
+                            </div>
+                          </div>
                         </td>
 
                         <td className="py-4 px-4">

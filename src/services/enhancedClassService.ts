@@ -396,7 +396,13 @@ export class EnhancedClassService {
         moduleProgress,
         badges: await this.getStudentBadges(studentId),
         achievements: await this.getStudentAchievements(studentId),
-        notes: enrollmentData.notes
+        notes: enrollmentData.notes,
+        
+        // 🎯 ADICIONAR: Dados específicos para melhor exibição na interface
+        moduleScores: unifiedScore?.moduleScores || {}, // Notas por módulo do sistema unificado
+        normalizedScore: finalTotalScore, // Score normalizado para exibição
+        name: userData.fullName || userData.name || enrollmentData.studentName, // Campo name para compatibilidade
+        totalScore: finalTotalScore, // Campo totalScore para compatibilidade
       } as EnhancedStudentOverview
       
     } catch (error) {
@@ -971,17 +977,15 @@ export class EnhancedClassService {
     }
   }
   
-  // Obter todas as turmas de um professor específico
+  // Obter todas as turmas de um professor específico (incluindo excluídas)
   static async getProfessorClasses(professorId: string): Promise<EnhancedClass[]> {
     try {
-      console.log(`[EnhancedClassService] 🔍 Buscando turmas do professor: ${professorId}`)
+      console.log(`[EnhancedClassService] 🔍 Buscando TODAS as turmas do professor: ${professorId}`)
       
-      // Query otimizada para buscar turmas do professor
+      // Query otimizada para buscar TODAS as turmas do professor (incluindo excluídas)
       const classesQuery = query(
         collection(db, 'classes'),
         where('professorId', '==', professorId),
-        where('status', '!=', 'deleted'),
-        orderBy('status'),
         orderBy('createdAt', 'desc')
       )
       

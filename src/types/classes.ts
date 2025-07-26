@@ -73,6 +73,12 @@ export interface EnhancedStudentOverview {
   
   // Notas do professor
   notes?: string
+  
+  // 🎯 CAMPOS ADICIONAIS para melhor exibição na interface
+  moduleScores?: { [moduleId: string]: number } // Notas específicas por módulo (0-100)
+  normalizedScore?: number // Score normalizado para exibição
+  name?: string // Campo name para compatibilidade
+  totalScore?: number // Campo totalScore para compatibilidade
 }
 
 export interface StudentModuleProgress {

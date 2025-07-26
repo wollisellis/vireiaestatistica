@@ -245,6 +245,15 @@ service cloud.firestore {
          document == request.auth.uid);
     }
 
+    // DELETED CLASSES - Lixeira de turmas (ACESSO DE PROFESSORES)
+    match /deleted_classes/{classId} {
+      // ✅ Professores podem ver e gerenciar turmas na lixeira
+      allow read, write: if isProfessor();
+      
+      // ✅ Permitir criação quando turma é excluída
+      allow create: if isProfessor();
+    }
+
     // ========================================
     // REGRA FINAL - BLOQUEIO PADRÃO
     // ========================================
