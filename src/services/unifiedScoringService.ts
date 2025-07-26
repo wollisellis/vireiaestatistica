@@ -672,6 +672,36 @@ class UnifiedScoringService {
     }
   }
 
+  // 🚀 NOVO: Inicializar pontuação do estudante (usado no registro via convite)
+  async initializeStudentScore(studentId: string): Promise<boolean> {
+    try {
+      console.log(`[UnifiedScoringService] 🎯 Inicializando pontuação para estudante: ${studentId}`)
+
+      // Verificar se já existe score para o estudante
+      const existingScore = await this.getUnifiedScore(studentId)
+      if (existingScore) {
+        console.log(`[UnifiedScoringService] ✅ Score já existe para ${studentId}, não é necessário inicializar`)
+        return true
+      }
+
+      // Criar score vazio
+      const emptyScore = this.createEmptyScore(studentId)
+
+      // Salvar no Firebase
+      await setDoc(doc(db, 'unified_scores', studentId), {
+        ...emptyScore,
+        lastActivity: serverTimestamp()
+      })
+
+      console.log(`[UnifiedScoringService] ✅ Score inicializado com sucesso para ${studentId}`)
+      return true
+
+    } catch (error) {
+      console.error(`[UnifiedScoringService] ❌ Erro ao inicializar score para ${studentId}:`, error)
+      return false
+    }
+  }
+
   // Limpar cache
   clearCache() {
     this.cache.clear()

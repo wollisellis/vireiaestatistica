@@ -277,8 +277,18 @@ export class ClassInviteService {
       
       // INICIALIZAR PONTUAÇÃO UNIFICADA
       console.log(`[ClassInviteService] Inicializando pontuação para o novo estudante: ${studentId}`)
-      await unifiedScoringService.initializeStudentScore(studentId)
-      console.log(`[ClassInviteService] Pontuação inicializada com sucesso.`)
+      try {
+        const scoreInitialized = await unifiedScoringService.initializeStudentScore(studentId)
+        if (scoreInitialized) {
+          console.log(`[ClassInviteService] ✅ Pontuação inicializada com sucesso.`)
+        } else {
+          console.warn(`[ClassInviteService] ⚠️ Falha na inicialização da pontuação, mas continuando com o registro.`)
+        }
+      } catch (scoreError) {
+        console.error(`[ClassInviteService] ❌ Erro na inicialização da pontuação:`, scoreError)
+        console.log(`[ClassInviteService] 📝 Continuando com o registro mesmo sem inicializar a pontuação.`)
+        // Não interrompe o processo de registro por erro na pontuação
+      }
 
       // Commit todas as operações
       await batch.commit();
