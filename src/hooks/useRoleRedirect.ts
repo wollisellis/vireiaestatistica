@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useRBAC } from '@/hooks/useRBAC'
@@ -148,18 +148,48 @@ export function useFlexibleAccess() {
     allowGuests: true // Permitir convidados também
   })
 
+  // 🛡️ ACESSO DIRETO PARA DESENVOLVIMENTO
+  const [hasDevAccess, setHasDevAccess] = useState(false)
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const devAccess = localStorage.getItem('dev-professor-access')
+      setHasDevAccess(devAccess === 'true')
+    }
+  }, [])
+
   // 🛡️ MEMOIZAÇÃO: Evitar re-renders desnecessários
-  const memoizedResult = useMemo(() => ({
-    user: roleRedirectResult.user,
-    loading: roleRedirectResult.loading,
-    hasAccess: roleRedirectResult.hasAccess,
-    isProfessor: roleRedirectResult.isProfessor
-  }), [
+  const memoizedResult = useMemo(() => {
+    // Se há acesso de desenvolvimento, criar um usuário fake para professor
+    if (hasDevAccess && !roleRedirectResult.user) {
+      return {
+        user: {
+          uid: 'dev-professor',
+          id: 'dev-professor',
+          email: 'professor@desenvolvimento.com',
+          fullName: 'Professor Desenvolvimento',
+          role: 'professor' as const,
+          anonymousId: 'dev-prof-001'
+        },
+        loading: false,
+        hasAccess: true,
+        isProfessor: true
+      }
+    }
+
+    return {
+      user: roleRedirectResult.user,
+      loading: roleRedirectResult.loading,
+      hasAccess: roleRedirectResult.hasAccess || hasDevAccess,
+      isProfessor: roleRedirectResult.isProfessor || hasDevAccess
+    }
+  }, [
     roleRedirectResult.user?.uid,
     roleRedirectResult.user?.role,
     roleRedirectResult.loading,
     roleRedirectResult.hasAccess,
-    roleRedirectResult.isProfessor
+    roleRedirectResult.isProfessor,
+    hasDevAccess
   ])
 
   return memoizedResult

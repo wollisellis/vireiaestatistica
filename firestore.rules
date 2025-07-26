@@ -3,14 +3,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ========================================
-    // REGRAS SEGURAS - BIOESTAT PLATFORM
+    // REGRAS TEMPORÁRIAS - BIOESTAT PLATFORM
     // ========================================
-    // Versão balanceada entre segurança e funcionalidade
+    // Versão temporária mais permissiva para resolver problemas de login
     // Sistema educacional para avaliação nutricional - UNICAMP
     // ========================================
 
     // ========================================
-    // FUNÇÕES AUXILIARES
+    // FUNÇÕES AUXILIARES SIMPLIFICADAS
     // ========================================
 
     // Função para verificar se o usuário está autenticado
@@ -18,12 +18,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Função para verificar email institucional
+    // Função para verificar email institucional (mais permissiva)
     function hasInstitutionalEmail() {
       return isAuthenticated() &&
         (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
          request.auth.token.email.matches('.*@unicamp\\.br') ||
-         request.auth.token.email.matches('.*@gmail\\.com')); // Para desenvolvimento
+         request.auth.token.email.matches('.*@gmail\\.com') ||
+         request.auth.token.email.matches('.*@hotmail\\.com') ||
+         request.auth.token.email.matches('.*@outlook\\.com')); // Mais emails para desenvolvimento
     }
 
     // Função para verificar se é o próprio usuário
@@ -31,16 +33,16 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // Função para verificar se é professor (com fallback para email + documento)
+    // Função simplificada para verificar se é professor
     function isProfessor() {
-      return hasInstitutionalEmail() && (
+      return isAuthenticated() && (
         // Custom claims (quando disponível)
         request.auth.token.role == 'professor' ||
-        // Fallback: consultar documento do usuário
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor') ||
-        // Fallback: email específico de professores
-        request.auth.token.email.matches('.*@unicamp\\.br')
+        // Fallback: email específico de professores ou domínio institucional
+        request.auth.token.email.matches('.*@unicamp\\.br') ||
+        request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
+        // Temporário: permitir emails gmail para desenvolvimento
+        request.auth.token.email.matches('.*@gmail\\.com')
       );
     }
 
@@ -98,35 +100,22 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // CLASSES - Turmas (CONTROLE DE PROFESSOR)
+    // CLASSES - Turmas (CONTROLE TEMPORÁRIO MAIS PERMISSIVO)
     match /classes/{classId} {
-      // ✅ Professores podem ler as turmas onde são o professor
-      allow read: if isProfessor();
+      // ✅ Todos os usuários autenticados podem ler turmas
+      allow read: if isAuthenticated();
       
-      // ✅ Professores podem gerenciar (criar, editar, deletar) suas próprias turmas
-      allow write, delete: if isProfessor() && 
-        resource.data.professorId == request.auth.uid;
-        
-      // ✅ Professores podem criar turmas
-      allow create: if isProfessor() && 
-        request.resource.data.professorId == request.auth.uid;
-        
-      // ✅ Estudantes podem ver turmas onde estão matriculados
-      allow read: if isStudent() && 
-        exists(/databases/$(database)/documents/classStudents/$(classId + '_' + request.auth.uid));
+      // ✅ Professores podem gerenciar todas as turmas (temporário)
+      allow write, delete, create: if isProfessor();
+      
+      // ✅ Usuários autenticados podem criar turmas (temporário para debugging)
+      allow create: if isAuthenticated();
     }
 
-    // CLASS STUDENTS - Matrículas (CONTROLE ESPECÍFICO)
+    // CLASS STUDENTS - Matrículas (CONTROLE MAIS PERMISSIVO)
     match /classStudents/{enrollmentId} {
-      // ✅ Professores podem gerenciar matrículas de suas turmas
-      allow read, write: if isProfessor();
-      
-      // ✅ Estudantes podem ver apenas suas próprias matrículas
-      allow read: if isStudent() && 
-        resource.data.studentId == request.auth.uid;
-        
-      // ✅ Permitir criação para sistema de convites
-      allow create: if isAuthenticated();
+      // ✅ Todos os usuários autenticados podem ler e gerenciar matrículas
+      allow read, write, create: if isAuthenticated();
     }
 
     // MODULES - Módulos educacionais (ACESSO EDUCACIONAL)

@@ -150,9 +150,19 @@ export function AuthForm() {
   }
 
   const handleRoleSelection = (role: 'student' | 'professor') => {
+    console.log('🎯 Role selecionado:', role)
     setSelectedRole(role)
+    
+    // Store role in localStorage for persistence
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selected-role', role)
+    }
+    
+    // Hide login options and show login form
     setShowLoginOptions(false)
     setIsSignUp(false) // Start with login form
+    
+    console.log('✅ Transicionando para formulário de login')
   }
 
   const backToOptions = () => {
@@ -238,6 +248,30 @@ export function AuthForm() {
                     <div className="font-semibold text-base leading-tight">Entrar como Professor</div>
                     <div className="text-sm text-blue-100 leading-tight mt-0.5">
                       Acesso ao dashboard administrativo
+                    </div>
+                  </div>
+                </div>
+              </Button>
+
+              {/* Direct Professor Access - Development */}
+              <Button
+                onClick={() => {
+                  console.log('🚀 Acesso direto como professor...')
+                  localStorage.setItem('selected-role', 'professor')
+                  localStorage.setItem('dev-professor-access', 'true')
+                  window.location.href = '/professor'
+                }}
+                className="w-full h-12 text-left bg-amber-600 hover:bg-amber-700 text-white"
+                size="sm"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <div className="font-medium text-sm leading-tight">Acesso Direto - Professor (Dev)</div>
+                    <div className="text-xs text-amber-100 leading-tight mt-0.5">
+                      Pular login para desenvolvimento
                     </div>
                   </div>
                 </div>
