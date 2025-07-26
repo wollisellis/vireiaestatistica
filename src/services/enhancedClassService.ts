@@ -275,144 +275,157 @@ export class EnhancedClassService {
     classId: string
   ): Promise<EnhancedStudentOverview | null> {
     try {
-      // Buscar dados básicos do usuário
+      // 1. Buscar dados do usuário (fonte principal de informações)
       const userDoc = await getDoc(doc(db, 'users', studentId))
-      if (!userDoc.exists()) return null
-      
+      if (!userDoc.exists()) {
+        console.warn(`[getStudentDetailedProgress] ❌ Usuário não encontrado: ${studentId}`)
+        return null
+      }
       const userData = userDoc.data()
-      
-      // Buscar dados de matrícula na coleção 'classStudents'
-      const enrollmentDoc = await getDoc(doc(db, 'classStudents', `${classId}_${studentId}`))
-      if (!enrollmentDoc.exists()) return null
-      
-      const enrollmentData = enrollmentDoc.data()
-      
-      // 🚀 CORREÇÃO: Buscar dados do sistema unificado primeiro
-      const unifiedScore = await unifiedScoringService.getUnifiedScore(studentId)
-      
-      // Buscar progresso dos módulos (fallback para dados detalhados)
-      const moduleProgressQuery = query(
-        collection(db, 'student_module_progress'),
-        where('studentId', '==', studentId)
+
+      // 2. Buscar dados de matrícula na turma (confirma a associação)
+      const enrollmentQuery = query(
+        collection(db, 'classStudents'),
+        where('classId', '==', classId),
+        where('studentId', '==', studentId),
+        limit(1)
       )
-      const moduleProgressSnapshot = await getDocs(moduleProgressQuery)
+      const enrollmentSnapshot = await getDocs(enrollmentQuery)
       
-      const moduleProgress: StudentModuleProgress[] = []
-      let totalScore = 0
-      let totalMaxScore = 0
-      let completedModules = 0
-      let totalTimeSpent = 0
-      
-      // Se temos dados unificados, usar como fonte principal
-      if (unifiedScore) {
-        console.log(`[EnhancedClassService] ✅ Usando dados unificados para ${studentId}`)
-        
-        // CORREÇÃO: Calcular pontuação total como SOMA das maiores notas de cada módulo
-        const moduleScores = Object.values(unifiedScore.moduleScores || {})
-        totalScore = moduleScores.reduce((sum, score) => sum + score, 0) // Somar todas as notas dos módulos
-        
-        // Contar módulos concluídos baseado no critério unificado (≥70%)
-        completedModules = moduleScores.filter(score => score >= 70).length
-        
-        console.log(`[EnhancedClassService] 📊 Pontuação total calculada: ${totalScore} (soma de ${moduleScores.length} módulos)`)
+      if (enrollmentSnapshot.empty) {
+        console.warn(`[getStudentDetailedProgress] ❌ Matrícula não encontrada para estudante ${studentId} na turma ${classId}`)
+        return null
       }
-      
-      for (const moduleDoc of moduleProgressSnapshot.docs) {
-        const moduleData = moduleDoc.data()
-        const module = modules.find(m => m.id === moduleData.moduleId)
-        
-        if (module) {
-          const exerciseProgress = await this.getStudentExerciseProgress(
-            studentId, 
-            moduleData.moduleId
-          )
-          
-          const moduleProgressData: StudentModuleProgress = {
-            moduleId: moduleData.moduleId,
-            moduleName: module.title,
-            progress: moduleData.progress || 0,
-            score: moduleData.score || 0,
-            maxScore: moduleData.maxScore || module.exercises.reduce((sum, ex) => sum + ex.points, 0),
-            timeSpent: moduleData.timeSpent || 0,
-            completedExercises: exerciseProgress.filter(ex => ex.completed).length,
-            totalExercises: module.exercises.length,
-            attempts: moduleData.attempts || 0,
-            bestScore: moduleData.bestScore || moduleData.score || 0,
-            lastAttempt: moduleData.lastAttempt?.toDate() || new Date(),
-            isCompleted: moduleData.isCompleted || false,
-            exercises: exerciseProgress
-          }
-          
-          moduleProgress.push(moduleProgressData)
-          
-          totalScore += moduleProgressData.score
-          totalMaxScore += moduleProgressData.maxScore
-          totalTimeSpent += moduleProgressData.timeSpent
-          
-          if (moduleProgressData.isCompleted) {
-            completedModules++
-          }
-        }
-      }
-      
-      // Calcular métricas de engajamento
-      const engagementMetrics = await this.calculateStudentEngagement(studentId)
-      
-      // 🚀 CORREÇÃO: Usar dados unificados para cálculos quando disponíveis
-      let finalTotalScore = totalScore
-      let finalCompletedModules = completedModules
-      let overallProgress = 0
-      
+      const enrollmentData = enrollmentSnapshot.docs[0].data()
+
+      // 3. Buscar progresso unificado (fonte de pontuação primária)
+      console.log(`[getStudentDetailedProgress] 🔄 Buscando pontuação unificada para ${studentId}`)
+      const unifiedScore = await unifiedScoringService.getUnifiedScore(studentId)
       if (unifiedScore) {
-        // Usar dados do sistema unificado (já normalizados)
-        finalTotalScore = totalScore // Usar a soma das notas dos módulos calculada acima
-        finalCompletedModules = completedModules // Usar a contagem calculada acima
-        overallProgress = unifiedScore.normalizedScore // Manter o progresso normalizado para a barra
-        
-        console.log(`[EnhancedClassService] 📊 Dados unificados: score=${finalTotalScore}, módulos concluídos=${finalCompletedModules}`)
+        console.log(`[getStudentDetailedProgress] ✅ Pontuação unificada encontrada.`)
       } else {
-        // Fallback para cálculo manual se não há dados unificados
-        overallProgress = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0
-        console.log(`[EnhancedClassService] ⚠️ Usando dados legacy para ${studentId}`)
+        console.log(`[getStudentDetailedProgress] ⚠️ Pontuação unificada não encontrada, continuará com cálculo legado.`)
       }
       
-      return {
+      // 4. Buscar progresso detalhado dos módulos (dados legados)
+      const moduleProgress = await this.getLegacyModuleProgress(studentId)
+
+      // 5. Consolidar e calcular métricas
+      const { totalScore, completedModules, totalTimeSpent, overallProgress, moduleScores } = this.consolidateStudentMetrics(
+        unifiedScore,
+        moduleProgress
+      )
+
+      // 6. Calcular métricas de engajamento (simulado por enquanto)
+      const engagementMetrics = await this.calculateStudentEngagement(studentId)
+
+      // 7. Montar o objeto de retorno final
+      const studentOverview: EnhancedStudentOverview = {
         studentId,
-        studentName: userData.fullName || userData.name || enrollmentData.studentName || userData.email,
-        email: userData.email || enrollmentData.email || enrollmentData.studentEmail,
+        studentName: userData.fullName || userData.name || enrollmentData.studentName || 'Nome não encontrado',
+        email: userData.email || enrollmentData.email,
         avatarUrl: userData.avatarUrl,
-        enrolledAt: enrollmentData.enrolledAt?.toDate() || enrollmentData.registeredAt?.toDate() || new Date(),
-        lastActivity: userData.lastActivity?.toDate() || enrollmentData.enrolledAt?.toDate() || new Date(),
+        enrolledAt: parseFirebaseDate(enrollmentData.enrolledAt) || new Date(),
+        lastActivity: parseFirebaseDate(userData.lastActivity) || new Date(),
         status: enrollmentData.status || 'active',
         role: 'student',
-        
+
         overallProgress: Math.round(overallProgress),
-        totalNormalizedScore: finalTotalScore, // 🎯 Agora usa dados unificados (0-100)
-        classRank: 0, // Será calculado depois
-        completedModules: finalCompletedModules, // 🎯 Baseado no critério unificado (≥70%)
+        totalNormalizedScore: totalScore,
+        classRank: 0, // Calculado posteriormente
+        completedModules,
         totalTimeSpent,
-        
-        activeDays: engagementMetrics.activeDays,
-        currentStreak: engagementMetrics.currentStreak,
-        longestStreak: engagementMetrics.longestStreak,
-        averageSessionTime: engagementMetrics.averageSessionTime,
+
+        ...engagementMetrics,
         
         moduleProgress,
         badges: await this.getStudentBadges(studentId),
         achievements: await this.getStudentAchievements(studentId),
         notes: enrollmentData.notes,
         
-        // 🎯 ADICIONAR: Dados específicos para melhor exibição na interface
-        moduleScores: unifiedScore?.moduleScores || {}, // Notas por módulo do sistema unificado
-        normalizedScore: finalTotalScore, // Score normalizado para exibição
-        name: userData.fullName || userData.name || enrollmentData.studentName, // Campo name para compatibilidade
-        totalScore: finalTotalScore, // Campo totalScore para compatibilidade
-      } as EnhancedStudentOverview
-      
+        // Campos para compatibilidade e UI
+        moduleScores: moduleScores,
+        normalizedScore: totalScore,
+        name: userData.fullName || userData.name || enrollmentData.studentName,
+        totalScore: totalScore,
+      }
+
+      console.log(`[getStudentDetailedProgress] ✅ Progresso detalhado de ${studentId} montado com sucesso. Score: ${totalScore}`)
+      return studentOverview
+
     } catch (error) {
-      console.error('Erro ao buscar progresso detalhado do estudante:', error)
+      console.error(`[getStudentDetailedProgress] ❌ Erro crítico ao buscar progresso detalhado para ${studentId} na turma ${classId}:`, error)
       return null
     }
+  }
+
+  // NOVO: Método auxiliar para buscar progresso legado dos módulos
+  private static async getLegacyModuleProgress(studentId: string): Promise<StudentModuleProgress[]> {
+    const moduleProgressQuery = query(
+      collection(db, 'student_module_progress'),
+      where('studentId', '==', studentId)
+    )
+    const moduleProgressSnapshot = await getDocs(moduleProgressQuery)
+    const progressList: StudentModuleProgress[] = []
+
+    for (const moduleDoc of moduleProgressSnapshot.docs) {
+      const moduleData = moduleDoc.data()
+      const module = modules.find(m => m.id === moduleData.moduleId)
+      if (module) {
+        const exerciseProgress = await this.getStudentExerciseProgress(studentId, moduleData.moduleId)
+        const moduleProgressData: StudentModuleProgress = {
+          moduleId: moduleData.moduleId,
+          moduleName: module.title,
+          progress: moduleData.progress || 0,
+          score: moduleData.score || 0,
+          maxScore: moduleData.maxScore || (Array.isArray(module.exercises) ? module.exercises.reduce((sum, ex) => sum + ex.points, 0) : 0),
+          timeSpent: moduleData.timeSpent || 0,
+          completedExercises: exerciseProgress.filter(ex => ex.completed).length,
+          totalExercises: Array.isArray(module.exercises) ? module.exercises.length : 0,
+          attempts: moduleData.attempts || 0,
+          bestScore: moduleData.bestScore || moduleData.score || 0,
+          lastAttempt: parseFirebaseDate(moduleData.lastAttempt),
+          isCompleted: moduleData.isCompleted || false,
+          exercises: exerciseProgress
+        }
+        progressList.push(moduleProgressData)
+      }
+    }
+    return progressList
+  }
+
+  // NOVO: Método para consolidar métricas de diferentes fontes
+  private static consolidateStudentMetrics(
+    unifiedScore: any,
+    moduleProgress: StudentModuleProgress[]
+  ) {
+    let totalScore = 0
+    let completedModules = 0
+    let totalTimeSpent = 0
+    let overallProgress = 0
+    let moduleScores: { [key: string]: number } = {}
+
+    if (unifiedScore && unifiedScore.moduleScores) {
+      console.log("[consolidateStudentMetrics] 🚀 Usando dados do sistema unificado.")
+      moduleScores = unifiedScore.moduleScores
+      totalScore = Object.values(moduleScores).reduce((sum: number, score: any) => sum + (score.score || score || 0), 0)
+      completedModules = Object.values(moduleScores).filter((score: any) => (score.score || score || 0) >= 70).length
+      overallProgress = unifiedScore.normalizedScore || 0
+    } else {
+      console.log("[consolidateStudentMetrics] ⚠️ Usando dados legados para cálculo.")
+      if (moduleProgress.length > 0) {
+        const totalMaxScore = moduleProgress.reduce((sum, m) => sum + m.maxScore, 0)
+        totalScore = moduleProgress.reduce((sum, m) => sum + m.score, 0)
+        completedModules = moduleProgress.filter(m => m.isCompleted).length
+        totalTimeSpent = moduleProgress.reduce((sum, m) => sum + m.timeSpent, 0)
+        overallProgress = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0
+        moduleProgress.forEach(m => {
+          moduleScores[m.moduleId] = m.score
+        })
+      }
+    }
+    
+    return { totalScore, completedModules, totalTimeSpent, overallProgress, moduleScores }
   }
   
   // Obter progresso detalhado dos exercícios de um estudante
@@ -865,7 +878,7 @@ export class EnhancedClassService {
   }
   
   // Obter todas as turmas de um professor específico (incluindo excluídas)
-  static async getProfessorClasses(professorId: string): Promise<EnhancedClass[]> {
+  static async getAllClasses(): Promise<EnhancedClass[]> {
     try {
       console.log(`[EnhancedClassService] 🔍 Buscando TODAS as turmas do sistema (não apenas do professor)`)
       
@@ -897,9 +910,9 @@ export class EnhancedClassService {
         // DEBUG: Log do status de cada turma
         console.log(`[EnhancedClassService] 🔍 Turma ${classData.name}: status="${classData.status}"`)
         
-        // IGNORAR turmas com status 'deleted' - ACEITAR 'active', 'open', 'closed'
-        if (classData.status === 'deleted') {
-          console.log(`[EnhancedClassService] ❌ Turma ${classData.name} IGNORADA (status: deleted)`)
+        // CORRIGIDO: Tratar status 'archived' e 'deleted'
+        if (classData.status === 'deleted' || classData.status === 'archived') {
+          console.log(`[EnhancedClassService] ❌ Turma ${classData.name} IGNORADA (status: ${classData.status})`)
           continue;
         }
         

@@ -3,7 +3,8 @@
  */
 
 import { db } from '@/lib/firebase'
-import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, writeBatch } from 'firebase/firestore'
+import { unifiedScoringService } from './unifiedScoringService'
 
 export interface ClassInvite {
   id: string
@@ -248,28 +249,41 @@ export class ClassInviteService {
 
       console.log('Criando registro de matrícula:', registration)
       
+      const batch = writeBatch(db);
+
       // Adicionar estudante à turma
-      await setDoc(doc(db, 'classStudents', `${classInfo.id}_${studentId}`), registration)
-      console.log('Registro de matrícula criado')
+      const studentClassRef = doc(db, 'classStudents', `${classInfo.id}_${studentId}`);
+      batch.set(studentClassRef, registration);
+      console.log('Registro de matrícula adicionado ao batch');
 
       // Atualizar contador de estudantes na turma
-      console.log('Atualizando contador da turma...')
-      await updateDoc(doc(db, 'classes', classInfo.id), {
+      const classRef = doc(db, 'classes', classInfo.id);
+      batch.update(classRef, {
         studentsCount: (classInfo.studentsCount || 0) + 1,
         lastStudentAdded: now,
         students: arrayUnion(studentId)
-      })
-      console.log('Contador da turma atualizado')
+      });
+      console.log('Atualização do contador da turma adicionada ao batch');
 
       // Incrementar uso do convite
-      console.log('Atualizando uso do convite...')
-      await updateDoc(doc(db, 'classInvites', code), {
-        currentUses: (await getDoc(doc(db, 'classInvites', code))).data()?.currentUses + 1 || 1,
+      const inviteRef = doc(db, 'classInvites', code);
+      const inviteSnap = await getDoc(inviteRef);
+      const currentUses = inviteSnap.data()?.currentUses || 0;
+      batch.update(inviteRef, {
+        currentUses: currentUses + 1,
         lastUsed: now
-      })
-      console.log('Uso do convite atualizado')
+      });
+      console.log('Atualização do uso do convite adicionada ao batch');
+      
+      // INICIALIZAR PONTUAÇÃO UNIFICADA
+      console.log(`[ClassInviteService] Inicializando pontuação para o novo estudante: ${studentId}`)
+      await unifiedScoringService.initializeStudentScore(studentId)
+      console.log(`[ClassInviteService] Pontuação inicializada com sucesso.`)
 
-      console.log('Matrícula concluída com sucesso!')
+      // Commit todas as operações
+      await batch.commit();
+      console.log('Batch commitado com sucesso. Matrícula concluída!');
+
       return { success: true }
     } catch (error) {
       console.error('Erro ao registrar estudante:', error)
