@@ -70,7 +70,7 @@ export class EnhancedClassService {
         studentsCount: students.length,
         activeStudents: students.filter(s => s.status === 'active' && 
           (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
-        totalModules: modules.length,
+        totalModules: Array.isArray(modules) ? modules.length : 4,
         avgProgress: analytics?.averageProgress || 0,
         avgScore: analytics?.averageScore || 0,
         lastActivity: analytics?.date
@@ -1039,7 +1039,7 @@ export class EnhancedClassService {
           studentsCount: students.length,
           activeStudents: students.filter(s => s.status === 'active' && 
             (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
-          totalModules: modules.length, // Usar o array importado
+          totalModules: Array.isArray(modules) ? modules.length : 4,
           avgProgress: analytics?.averageProgress || 0,
           avgScore: analytics?.averageScore || 0,
           lastActivity: analytics?.date
