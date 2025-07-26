@@ -153,15 +153,37 @@ export function ModuleProgressProvider({ children }: { children: React.ReactNode
         console.log('[ModuleProgressContext] ✅ Usando sistema unificado como primário')
         setStudentProgress(unifiedProgress)
         
-        // Verificar discrepâncias
+        // Verificar discrepâncias e reconciliar automaticamente
         const unifiedScore = unifiedProgress.totalNormalizedScore
         const legacyScore = legacyProgress.totalNormalizedScore
-        if (Math.abs(unifiedScore - legacyScore) > 5) {
+        const scoreDifference = Math.abs(unifiedScore - legacyScore)
+        
+        if (scoreDifference > 5) {
           console.warn('[ModuleProgressContext] ⚠️ Discrepância detectada:', {
             unificado: unifiedScore,
             legacy: legacyScore,
-            diferença: Math.abs(unifiedScore - legacyScore)
+            diferença: scoreDifference
           })
+          
+          // 🔧 RECONCILIAÇÃO AUTOMÁTICA: Sincronizar sistemas quando há discrepâncias
+          console.log('[ModuleProgressContext] 🔧 Iniciando reconciliação automática...')
+          try {
+            // Usar o score mais alto como referência (assumindo que o mais alto é o mais atual)
+            const referenceProgress = unifiedScore >= legacyScore ? unifiedProgress : legacyProgress
+            
+            console.log(`[ModuleProgressContext] 📊 Usando ${unifiedScore >= legacyScore ? 'sistema unificado' : 'sistema legacy'} como referência (score: ${referenceProgress.totalNormalizedScore})`)
+            
+            // Atualizar o progresso com os dados de referência
+            setStudentProgress(referenceProgress)
+            
+            // Sincronizar ambos os sistemas com os dados de referência
+            await syncAllSystems(user.uid)
+            
+            console.log('[ModuleProgressContext] ✅ Reconciliação automática concluída')
+          } catch (reconciliationError) {
+            console.error('[ModuleProgressContext] ❌ Erro na reconciliação automática:', reconciliationError)
+            // Continuar com sistema unificado em caso de erro
+          }
         }
       } else if (legacyProgress && !unifiedProgress) {
         // Apenas legacy existe - migrar para unificado

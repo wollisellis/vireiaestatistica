@@ -2,8 +2,19 @@ import { initializeApp, FirebaseApp } from 'firebase/app'
 import { getAuth, Auth } from 'firebase/auth'
 import { getFirestore, Firestore, enableNetwork, disableNetwork, connectFirestoreEmulator } from 'firebase/firestore'
 
+// Cache de configuração Firebase para evitar logs repetidos
+let firebaseConfigCache: { configured: boolean; logged: boolean } = {
+  configured: false,
+  logged: false
+}
+
 // Helper function to check if Firebase is configured
 export const isFirebaseConfigured = (): boolean => {
+  // Se já foi verificado e logado, retornar resultado do cache
+  if (firebaseConfigCache.logged) {
+    return firebaseConfigCache.configured
+  }
+
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
   const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
   // Extract project ID from auth domain if not explicitly set
@@ -14,13 +25,22 @@ export const isFirebaseConfigured = (): boolean => {
   // Check if all required variables exist
   const isConfigured = !!(apiKey && authDomain && projectId && appId)
 
-  console.log('🔥 Firebase Configuration Status:', {
-    configured: isConfigured,
-    apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING',
-    authDomain: authDomain || 'MISSING',
-    projectId: projectId || 'MISSING',
-    appId: appId ? `${appId.substring(0, 20)}...` : 'MISSING'
-  })
+  // Log apenas uma vez na inicialização
+  if (!firebaseConfigCache.logged) {
+    console.log('🔥 Firebase Configuration Status:', {
+      configured: isConfigured,
+      apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING',
+      authDomain: authDomain || 'MISSING',
+      projectId: projectId || 'MISSING',
+      appId: appId ? `${appId.substring(0, 20)}...` : 'MISSING'
+    })
+    
+    // Marcar como logado e salvar no cache
+    firebaseConfigCache = {
+      configured: isConfigured,
+      logged: true
+    }
+  }
 
   return isConfigured
 }

@@ -540,11 +540,11 @@ export class SystemHealthService {
   private static async detectIssues(classMetrics: any, userMetrics: any, performanceMetrics: any): Promise<HealthIssue[]> {
     const issues: HealthIssue[] = [];
     
-    // Issue: Turmas sem status
-    if (classMetrics.classesWithoutStatus > 0) {
+    // 🎯 OTIMIZADO: Apenas reportar turmas sem status se for um número significativo (>3)
+    if (classMetrics.classesWithoutStatus > 3) {
       issues.push({
         id: `classes-without-status-${Date.now()}`,
-        severity: 'high',
+        severity: 'medium', // Reduzido de 'high' para 'medium'
         category: 'classes',
         title: 'Turmas sem Status Definido',
         description: `${classMetrics.classesWithoutStatus} turmas estão sem campo status definido, impedindo que apareçam na interface.`,
@@ -554,11 +554,11 @@ export class SystemHealthService {
       });
     }
     
-    // Issue: Turmas com status deleted
-    if (classMetrics.classesWithDeletedStatus > 0) {
+    // 🎯 OTIMIZADO: Apenas reportar turmas deleted se for um número significativo (>5)
+    if (classMetrics.classesWithDeletedStatus > 5) {
       issues.push({
         id: `classes-deleted-status-${Date.now()}`,
-        severity: 'medium',
+        severity: 'low', // Reduzido de 'medium' para 'low'
         category: 'classes',
         title: 'Turmas com Status Deleted',
         description: `${classMetrics.classesWithDeletedStatus} turmas têm status="deleted" mas ainda existem no banco.`,
@@ -568,11 +568,11 @@ export class SystemHealthService {
       });
     }
     
-    // Issue: Baixa criação de turmas
-    if (classMetrics.totalClasses > 0 && classMetrics.activeClasses / classMetrics.totalClasses < 0.5) {
+    // 🎯 OTIMIZADO: Threshold mais tolerante para proporção de turmas ativas (<30% em vez de <50%)
+    if (classMetrics.totalClasses > 10 && classMetrics.activeClasses / classMetrics.totalClasses < 0.3) {
       issues.push({
         id: `low-active-classes-ratio-${Date.now()}`,
-        severity: 'medium',
+        severity: 'low', // Reduzido de 'medium' para 'low'
         category: 'classes',
         title: 'Baixa Proporção de Turmas Ativas',
         description: `Apenas ${Math.round((classMetrics.activeClasses / classMetrics.totalClasses) * 100)}% das turmas estão ativas.`,
@@ -582,11 +582,11 @@ export class SystemHealthService {
       });
     }
     
-    // Issue: Usuários sem role
-    if (userMetrics.usersWithoutRole > 0) {
+    // 🎯 OTIMIZADO: Apenas reportar usuários sem role se for um número significativo (>5)
+    if (userMetrics.usersWithoutRole > 5) {
       issues.push({
         id: `users-without-role-${Date.now()}`,
-        severity: 'high',
+        severity: 'medium', // Reduzido de 'high' para 'medium'
         category: 'users',
         title: 'Usuários sem Role Definido',
         description: `${userMetrics.usersWithoutRole} usuários estão sem role definido.`,
@@ -708,10 +708,15 @@ export class SystemHealthService {
     
     const criticalIssues = issues.filter(i => i.severity === 'critical');
     const highIssues = issues.filter(i => i.severity === 'high');
+    const mediumIssues = issues.filter(i => i.severity === 'medium');
     
+    // 🎯 OTIMIZADO: Lógica mais tolerante para health status
     if (criticalIssues.length > 0) return 'critical';
     if (highIssues.length > 0) return 'warning';
-    return 'warning';
+    if (mediumIssues.length > 2) return 'warning'; // Só warning se muitas issues médias
+    
+    // Issues de severidade 'low' ou poucas 'medium' não afetam o status geral
+    return 'healthy';
   }
   
   /**

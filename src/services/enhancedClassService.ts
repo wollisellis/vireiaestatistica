@@ -1119,6 +1119,85 @@ export class EnhancedClassService {
     }
   }
   
+  // Obter todas as turmas de um professor específico (método necessário para ImprovedClassManagement)
+  static async getProfessorClasses(professorId: string): Promise<EnhancedClass[]> {
+    try {
+      console.log(`[EnhancedClassService] 🔍 Buscando turmas do professor: ${professorId}`)
+      
+      let professorsClasses: EnhancedClass[] = []
+      
+      try {
+        // Tentativa 1: Query otimizada por professorId e status
+        const optimizedQuery = query(
+          collection(db, 'classes'),
+          where('professorId', '==', professorId),
+          where('status', 'in', ['open', 'closed']),
+          orderBy('createdAt', 'desc')
+        )
+        
+        const querySnapshot = await getDocs(optimizedQuery)
+        
+        if (querySnapshot.size > 0) {
+          console.log(`[EnhancedClassService] ✅ Query otimizada encontrou ${querySnapshot.size} turmas`)
+          
+          for (const classDoc of querySnapshot.docs) {
+            const classData = classDoc.data()
+            
+            // Calcular estatísticas básicas
+            const students = await this.getClassStudentsBasic(classDoc.id)
+            const analytics = await this.calculateClassAnalytics(classDoc.id)
+            
+            const enhancedClass: EnhancedClass = {
+              id: classDoc.id,
+              name: classData.name,
+              description: classData.description,
+              semester: classData.semester,
+              year: classData.year,
+              inviteCode: classData.inviteCode,
+              professorId: classData.professorId,
+              professorName: classData.professorName,
+              status: classData.status || 'open',
+              maxStudents: classData.maxStudents,
+              acceptingNewStudents: classData.acceptingNewStudents ?? true,
+              createdAt: classData.createdAt?.toDate() || new Date(),
+              updatedAt: classData.updatedAt?.toDate() || new Date(),
+              settings: classData.settings || this.getDefaultClassSettings(),
+              
+              // Estatísticas calculadas
+              studentsCount: students.length,
+              activeStudents: students.filter(s => s.status === 'active' && 
+                (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
+              totalModules: Array.isArray(modules) ? modules.length : 4,
+              avgProgress: analytics?.averageProgress || 0,
+              avgScore: analytics?.averageScore || 0,
+              lastActivity: analytics?.date
+            }
+            
+            professorsClasses.push(enhancedClass)
+          }
+          
+          console.log(`[EnhancedClassService] ✅ ${professorsClasses.length} turmas do professor carregadas`)
+          return professorsClasses
+        }
+      } catch (queryError) {
+        console.warn(`[EnhancedClassService] ⚠️ Query otimizada falhou, usando fallback:`, queryError)
+      }
+      
+      // Fallback: Buscar todas as turmas e filtrar por professorId
+      console.log(`[EnhancedClassService] 🔄 Usando fallback - buscando todas as turmas`)
+      const allClasses = await this.getAllClasses()
+      
+      professorsClasses = allClasses.filter(cls => cls.professorId === professorId)
+      
+      console.log(`[EnhancedClassService] ✅ Fallback encontrou ${professorsClasses.length} turmas do professor`)
+      return professorsClasses
+      
+    } catch (error) {
+      console.error(`[EnhancedClassService] ❌ Erro ao buscar turmas do professor ${professorId}:`, error)
+      return []
+    }
+  }
+  
   static async removeStudentFromClass(classId: string, studentId: string) {
     try {
       // Buscar o enrollment na coleção 'classStudents'

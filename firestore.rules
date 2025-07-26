@@ -90,14 +90,12 @@ service cloud.firestore {
 
     // UNIFIED SCORES - Sistema de pontuação (PROTEÇÃO CRÍTICA)
     match /unified_scores/{studentId} {
-      // ✅ Estudantes podem apenas ler sua própria pontuação
+      // ✅ Estudantes podem ler e atualizar sua própria pontuação
       allow read: if isAuthenticated() && isOwner(studentId);
+      allow write: if isAuthenticated() && isOwner(studentId);
       
       // ✅ Professores podem ler todas as pontuações
       allow read: if isProfessor();
-      
-      // 🚫 Apenas sistema pode escrever pontuações (via Cloud Functions)
-      allow write: if false;
     }
 
     // CLASSES - Turmas (CONTROLE TEMPORÁRIO MAIS PERMISSIVO)
@@ -140,6 +138,33 @@ service cloud.firestore {
       // ✅ Permitir criação para o próprio usuário
       allow create: if isAuthenticated() && 
         request.resource.data.studentId == request.auth.uid;
+    }
+
+    // STUDENT EXERCISE PROGRESS - Progresso detalhado dos exercícios
+    match /student_exercise_progress/{progressId} {
+      // ✅ Estudantes podem ler/escrever apenas seu próprio progresso
+      allow read, write: if isAuthenticated() && 
+        (resource.data.studentId == request.auth.uid ||
+         progressId.split('_')[0] == request.auth.uid);
+         
+      // ✅ Professores podem ler todo o progresso
+      allow read: if isProfessor();
+      
+      // ✅ Permitir criação para o próprio usuário
+      allow create: if isAuthenticated() && 
+        request.resource.data.studentId == request.auth.uid;
+    }
+
+    // USER PROGRESS - Progresso geral dos usuários (SISTEMA UNIFICADO)
+    match /user_progress/{userId} {
+      // ✅ Usuários podem ler/escrever apenas seu próprio progresso
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      // ✅ Professores podem ler todo o progresso
+      allow read: if isProfessor();
+      
+      // ✅ Permitir criação para o próprio usuário
+      allow create: if isAuthenticated() && isOwner(userId);
     }
 
     // RANKINGS - Sistema de classificação (SOMENTE LEITURA)
@@ -208,6 +233,39 @@ service cloud.firestore {
     match /_health/{docId} {
       allow read: if isAuthenticated();
       allow write: if false;
+    }
+
+    // SYSTEM ALERTS - Alertas do sistema (PROFESSORES)
+    match /alerts/{alertId} {
+      // ✅ Professores podem ler alertas direcionados a eles
+      allow read: if isProfessor() && 
+        resource.data.recipientId == request.auth.uid;
+        
+      // ✅ Sistema pode criar alertas
+      allow create: if isAuthenticated();
+      
+      // ✅ Professores podem marcar alertas como lidos
+      allow update: if isProfessor() && 
+        resource.data.recipientId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+    }
+
+    // SYSTEM HEALTH METRICS - Métricas de saúde do sistema
+    match /system_health_metrics/{metricId} {
+      // ✅ Professores podem ler métricas de saúde
+      allow read: if isProfessor();
+      
+      // ✅ Sistema pode criar/atualizar métricas
+      allow write: if isAuthenticated();
+    }
+
+    // CLASS LOGS - Logs de atividades das turmas
+    match /class_logs/{logId} {
+      // ✅ Professores podem ler logs das turmas
+      allow read: if isProfessor();
+      
+      // ✅ Sistema pode criar logs
+      allow create: if isAuthenticated();
     }
 
     // ========================================
