@@ -305,11 +305,15 @@ export class EnhancedClassService {
       // Se temos dados unificados, usar como fonte principal
       if (unifiedScore) {
         console.log(`[EnhancedClassService] ✅ Usando dados unificados para ${studentId}`)
-        totalScore = unifiedScore.normalizedScore // Usar score normalizado (0-100)
+        
+        // CORREÇÃO: Calcular pontuação total como SOMA das maiores notas de cada módulo
+        const moduleScores = Object.values(unifiedScore.moduleScores || {})
+        totalScore = moduleScores.reduce((sum, score) => sum + score, 0) // Somar todas as notas dos módulos
         
         // Contar módulos concluídos baseado no critério unificado (≥70%)
-        completedModules = Object.values(unifiedScore.moduleScores)
-          .filter(score => score >= 70).length
+        completedModules = moduleScores.filter(score => score >= 70).length
+        
+        console.log(`[EnhancedClassService] 📊 Pontuação total calculada: ${totalScore} (soma de ${moduleScores.length} módulos)`)
       }
       
       for (const moduleDoc of moduleProgressSnapshot.docs) {
@@ -360,10 +364,9 @@ export class EnhancedClassService {
       
       if (unifiedScore) {
         // Usar dados do sistema unificado (já normalizados)
-        finalTotalScore = unifiedScore.normalizedScore
-        finalCompletedModules = Object.values(unifiedScore.moduleScores)
-          .filter(score => score >= 70).length
-        overallProgress = unifiedScore.normalizedScore // Já é 0-100
+        finalTotalScore = totalScore // Usar a soma das notas dos módulos calculada acima
+        finalCompletedModules = completedModules // Usar a contagem calculada acima
+        overallProgress = unifiedScore.normalizedScore // Manter o progresso normalizado para a barra
         
         console.log(`[EnhancedClassService] 📊 Dados unificados: score=${finalTotalScore}, módulos concluídos=${finalCompletedModules}`)
       } else {
@@ -982,13 +985,23 @@ export class EnhancedClassService {
     try {
       console.log(`[EnhancedClassService] 🔍 Buscando TODAS as turmas do sistema (não apenas do professor)`)
       
-      // Query otimizada para buscar TODAS as turmas
-      const classesQuery = query(
-        collection(db, 'classes'),
-        orderBy('createdAt', 'desc')
-      )
+      let classesSnapshot;
       
-      const classesSnapshot = await getDocs(classesQuery)
+      try {
+        // Tentar query com orderBy primeiro
+        const classesQuery = query(
+          collection(db, 'classes'),
+          orderBy('createdAt', 'desc')
+        )
+        classesSnapshot = await getDocs(classesQuery)
+      } catch (orderError) {
+        console.warn(`[EnhancedClassService] ⚠️ OrderBy falhou, tentando sem orderBy:`, orderError)
+        
+        // Fallback: buscar sem orderBy
+        const classesQuery = query(collection(db, 'classes'))
+        classesSnapshot = await getDocs(classesQuery)
+      }
+      
       const allSystemClasses: EnhancedClass[] = []
       
       console.log(`[EnhancedClassService] 📊 ${classesSnapshot.docs.length} turmas encontradas no total`)
@@ -997,7 +1010,7 @@ export class EnhancedClassService {
       for (const classDoc of classesSnapshot.docs) {
         const classData = classDoc.data()
         
-        // IGNORAR turmas com status 'deleted'
+        // IGNORAR turmas com status 'deleted' - ACEITAR 'active', 'open', 'closed'
         if (classData.status === 'deleted') {
           continue;
         }

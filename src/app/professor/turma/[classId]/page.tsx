@@ -518,10 +518,6 @@ export default function EnhancedClassDashboard() {
                       <tr key={student.studentId || Math.random()} className="border-b hover:bg-gray-50 transition-colors">
                         <td className="py-4 px-4">
                           <div className="space-y-1">
-                            {/* ID primeiro */}
-                            <div className="text-xs text-gray-400 font-mono">
-                              ID: {student.studentId || 'N/A'}
-                            </div>
                             {/* Nome formatado */}
                             <div className="font-medium text-gray-900">
                               {displayName}
