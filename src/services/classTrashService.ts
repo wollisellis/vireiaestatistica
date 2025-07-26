@@ -1,5 +1,5 @@
 // Serviço de Lixeira para Turmas - Sistema de Soft Delete
-// Gerencia exclusão temporária e restauração de turmas com prazo de 20 dias
+// Gerencia exclusão temporária e restauração de turmas com prazo de 30 dias
 
 import { 
   doc, 
@@ -39,7 +39,7 @@ export interface TrashStats {
 export class ClassTrashService {
   private static readonly CLASSES_COLLECTION = 'classes'
   private static readonly DELETED_CLASSES_COLLECTION = 'deleted_classes'
-  private static readonly RETENTION_DAYS = 20
+  private static readonly RETENTION_DAYS = 30
 
   /**
    * Exclui uma turma (soft delete)

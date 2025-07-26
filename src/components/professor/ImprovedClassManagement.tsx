@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Textarea } from '@/components/ui/Textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import CountdownTimer from '@/components/ui/CountdownTimer'
 import CreateClassModal, { ClassFormData } from './CreateClassModal'
 import ClassInviteModal from './ClassInviteModal'
 import { 
@@ -17,7 +19,7 @@ import {
   StudentOverview 
 } from '@/services/professorClassService'
 import { EnhancedClassService } from '@/services/enhancedClassService'
-import { ClassTrashService } from '@/services/classTrashService'
+import { ClassTrashService, DeletedClass } from '@/services/classTrashService'
 import { EnhancedClass, EnhancedStudentOverview } from '@/types/classes'
 import { 
   Users, 
@@ -52,7 +54,10 @@ import {
   Timer,
   User,
   RotateCcw,
-  XCircle
+  XCircle,
+  Filter,
+  List,
+  Archive
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
@@ -74,6 +79,11 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   const [searchTerm, setSearchTerm] = useState('')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteClass, setInviteClass] = useState<EnhancedClass | null>(null)
+  
+  // Estados para sistema de filtros
+  const [viewFilter, setViewFilter] = useState<'all' | 'active' | 'deleted'>('all')
+  const [deletedClasses, setDeletedClasses] = useState<DeletedClass[]>([])
+  const [loadingDeleted, setLoadingDeleted] = useState(false)
   
   // Estados para visualização de detalhes do estudante
   const [selectedStudent, setSelectedStudent] = useState<EnhancedStudentOverview | null>(null)
@@ -155,6 +165,13 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
     }
   }, [selectedClass])
 
+  // Carregar turmas excluídas quando necessário
+  useEffect(() => {
+    if (viewFilter === 'deleted' && deletedClasses.length === 0) {
+      loadDeletedClasses()
+    }
+  }, [viewFilter])
+
   // 🎯 FUNÇÃO PARA RESTAURAR TURMA EXCLUÍDA
   const restoreClass = async (classId: string, className: string) => {
     try {
@@ -171,6 +188,24 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       console.error('Erro ao restaurar turma:', error)
       showNotification('error', 'Erro na Restauração', 
         error instanceof Error ? error.message : 'Erro ao restaurar turma')
+    }
+  }
+
+  // 🗑️ FUNÇÃO PARA CARREGAR TURMAS EXCLUÍDAS
+  const loadDeletedClasses = async () => {
+    try {
+      setLoadingDeleted(true)
+      console.log('🗑️ [ImprovedClassManagement] Carregando turmas excluídas...')
+      
+      const deletedClassesData = await ClassTrashService.getDeletedClasses(professorId)
+      setDeletedClasses(deletedClassesData)
+      
+      console.log(`✅ [ImprovedClassManagement] ${deletedClassesData.length} turmas excluídas carregadas`)
+    } catch (error) {
+      console.error('❌ [ImprovedClassManagement] Erro ao carregar turmas excluídas:', error)
+      showNotification('error', 'Erro ao Carregar', 'Não foi possível carregar as turmas excluídas')
+    } finally {
+      setLoadingDeleted(false)
     }
   }
 
@@ -493,6 +528,25 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
     setInviteClass(null)
   }
 
+  // 🎯 FILTROS DE TURMAS
+  const getFilteredClasses = () => {
+    switch (viewFilter) {
+      case 'active':
+        return classes.filter(cls => cls.status !== 'deleted')
+      case 'deleted':
+        return [] // Turmas excluídas são gerenciadas separadamente em deletedClasses
+      case 'all':
+      default:
+        return classes.filter(cls => cls.status !== 'deleted') // Por padrão, não mostrar excluídas
+    }
+  }
+
+  const filteredClasses = getFilteredClasses()
+
+  // Contadores para os tabs
+  const activeClassesCount = classes.filter(cls => cls.status !== 'deleted').length
+  const deletedClassesCount = deletedClasses.length
+
   const filteredStudents = students.filter(student =>
     student.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -732,57 +786,197 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
         loading={isLoading}
       />
 
-      {/* Lista de turmas */}
-      {classes.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-16"
-        >
-          <Card className="border-dashed border-2 border-gray-300">
-            <CardContent className="p-12">
-              <GraduationCap className="w-20 h-20 text-gray-400 mx-auto mb-6" />
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                Nenhuma turma criada ainda
-              </h3>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                Crie sua primeira turma para começar a gerenciar estudantes. 
-                O sistema permite convites automáticos e acompanhamento em tempo real.
-              </p>
-              <Button 
-                onClick={() => setIsCreatingClass(true)}
-                size="lg"
-                className="h-12 px-8"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Criar Primeira Turma
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {classes.map((cls, index) => (
+      {/* Sistema de Filtros com Tabs */}
+      <Tabs value={viewFilter} onValueChange={(value) => setViewFilter(value as 'all' | 'active' | 'deleted')} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <List className="w-4 h-4" />
+            Todas as Turmas
+            <Badge variant="secondary" className="ml-1">
+              {classes.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Somente Ativas
+            <Badge variant="secondary" className="ml-1">
+              {activeClassesCount}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="deleted" className="flex items-center gap-2">
+            <Archive className="w-4 h-4" />
+            Turmas Excluídas
+            <Badge variant="secondary" className="ml-1">
+              {deletedClassesCount}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab Content - Todas as Turmas */}
+        <TabsContent value="all">
+          {filteredClasses.length === 0 ? (
             <motion.div
-              key={cls.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-16"
             >
-              <EnhancedClassCard
-                classInfo={cls}
-                isSelected={selectedClass?.id === cls.id}
-                onSelect={() => setSelectedClass(cls)}
-                onCopyCode={() => copyClassCode(cls.code)}
-                onCopyInviteLink={() => copyInviteLink(cls.code)}
-                onViewDetails={() => router.push(`/professor/turma/${cls.id}`)}
-                onShowInvites={() => showClassInvites(cls)}
-                onRestore={() => restoreClass(cls.id, cls.name)}
-              />
+              <Card className="border-dashed border-2 border-gray-300">
+                <CardContent className="p-12">
+                  <GraduationCap className="w-20 h-20 text-gray-400 mx-auto mb-6" />
+                  <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+                    Nenhuma turma criada ainda
+                  </h3>
+                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                    Crie sua primeira turma para começar a gerenciar estudantes. 
+                    O sistema permite convites automáticos e acompanhamento em tempo real.
+                  </p>
+                  <Button 
+                    onClick={() => setIsCreatingClass(true)}
+                    size="lg"
+                    className="h-12 px-8"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Criar Primeira Turma
+                  </Button>
+                </CardContent>
+              </Card>
             </motion.div>
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              {filteredClasses.map((cls, index) => (
+                <motion.div
+                  key={cls.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <EnhancedClassCard
+                    classInfo={cls}
+                    isSelected={selectedClass?.id === cls.id}
+                    onSelect={() => setSelectedClass(cls)}
+                    onCopyCode={() => copyClassCode(cls.code)}
+                    onCopyInviteLink={() => copyInviteLink(cls.code)}
+                    onViewDetails={() => router.push(`/professor/turma/${cls.id}`)}
+                    onShowInvites={() => showClassInvites(cls)}
+                    onRestore={() => restoreClass(cls.id, cls.name)}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab Content - Somente Ativas */}
+        <TabsContent value="active">
+          {filteredClasses.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-16"
+            >
+              <Card className="border-dashed border-2 border-gray-300">
+                <CardContent className="p-12">
+                  <CheckCircle className="w-20 h-20 text-green-400 mx-auto mb-6" />
+                  <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+                    Nenhuma turma ativa
+                  </h3>
+                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                    Todas as suas turmas podem ter sido arquivadas ou excluídas. 
+                    Crie uma nova turma para começar.
+                  </p>
+                  <Button 
+                    onClick={() => setIsCreatingClass(true)}
+                    size="lg"
+                    className="h-12 px-8"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Nova Turma
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              {filteredClasses.map((cls, index) => (
+                <motion.div
+                  key={cls.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <EnhancedClassCard
+                    classInfo={cls}
+                    isSelected={selectedClass?.id === cls.id}
+                    onSelect={() => setSelectedClass(cls)}
+                    onCopyCode={() => copyClassCode(cls.code)}
+                    onCopyInviteLink={() => copyInviteLink(cls.code)}
+                    onViewDetails={() => router.push(`/professor/turma/${cls.id}`)}
+                    onShowInvites={() => showClassInvites(cls)}
+                    onRestore={() => restoreClass(cls.id, cls.name)}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab Content - Turmas Excluídas */}
+        <TabsContent value="deleted">
+          {loadingDeleted ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="animate-pulse">
+                  <Card className="h-48">
+                    <CardContent className="p-4">
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                      <div className="h-2 bg-gray-200 rounded"></div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+            </div>
+          ) : deletedClasses.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-16"
+            >
+              <Card className="border-dashed border-2 border-gray-300">
+                <CardContent className="p-12">
+                  <Archive className="w-20 h-20 text-gray-400 mx-auto mb-6" />
+                  <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+                    Nenhuma turma excluída
+                  </h3>
+                  <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                    Quando você excluir uma turma, ela ficará aqui por 30 dias 
+                    antes de ser removida permanentemente.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Durante esse período, você pode restaurar a turma a qualquer momento.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              {deletedClasses.map((deletedClass, index) => (
+                <motion.div
+                  key={deletedClass.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <DeletedClassCard
+                    deletedClass={deletedClass}
+                    onRestore={() => restoreClass(deletedClass.id, deletedClass.originalData.name)}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Detalhes da turma selecionada */}
       {selectedClass && (
@@ -1283,6 +1477,140 @@ function EnhancedStudentRow({ student, totalModules, onStudentClick }: {
               {student.isActive ? 'Ativo' : 'Inativo'}
             </Badge>
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+{/* Componente para turmas excluídas */}
+interface DeletedClassCardProps {
+  deletedClass: DeletedClass
+  onRestore: () => void
+}
+
+function DeletedClassCard({ deletedClass, onRestore }: DeletedClassCardProps) {
+  const { originalData, deletedAt, deletedByName, expiresAt, reason, canRestore, daysRemaining } = deletedClass
+  
+  const getUrgencyLevel = () => {
+    if (daysRemaining <= 0) return 'critical'
+    if (daysRemaining <= 3) return 'critical'
+    if (daysRemaining <= 7) return 'warning'
+    return 'safe'
+  }
+
+  const urgencyLevel = getUrgencyLevel()
+
+  return (
+    <Card className={`relative border-2 transition-all duration-300 hover:shadow-lg ${
+      urgencyLevel === 'critical' ? 'border-red-300 bg-red-50' :
+      urgencyLevel === 'warning' ? 'border-yellow-300 bg-yellow-50' :
+      'border-gray-300 bg-gray-50'
+    }`}>
+      <CardContent className="p-4">
+        <div className="space-y-4">
+          {/* Header da turma excluída */}
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-gray-900 text-sm sm:text-base truncate">
+                {originalData.name}
+              </h3>
+              <div className="text-xs text-gray-600 flex items-center space-x-2 mt-1">
+                <Calendar className="w-3 h-3 flex-shrink-0" />
+                <span>{originalData.semester} {originalData.year}</span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Código: <span className="font-mono">{originalData.code}</span>
+              </div>
+            </div>
+            
+            {/* Badge de status excluído */}
+            <Badge variant="destructive" className="flex items-center gap-1 text-xs px-2 py-1">
+              <Trash2 className="w-3 h-3" />
+              Excluída
+            </Badge>
+          </div>
+
+          {/* Contagem regressiva */}
+          <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-700">Tempo para exclusão permanente:</span>
+            </div>
+            <CountdownTimer
+              expiresAt={expiresAt.toDate()}
+              variant="detailed"
+              showIcon={true}
+              className="w-full"
+            />
+          </div>
+
+          {/* Informações de exclusão */}
+          <div className="space-y-2 text-xs text-gray-600">
+            <div className="flex items-center justify-between">
+              <span>Excluída por:</span>
+              <span className="font-medium">{deletedByName}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Data de exclusão:</span>
+              <span>{deletedAt.toDate().toLocaleDateString('pt-BR')}</span>
+            </div>
+            {reason && (
+              <div className="pt-1">
+                <span className="block text-gray-500">Motivo:</span>
+                <span className="text-gray-700 italic">"{reason}"</span>
+              </div>
+            )}
+          </div>
+
+          {/* Estatísticas da turma (preservadas) */}
+          <div className="grid grid-cols-2 gap-3 py-2 border-t border-gray-200">
+            <div className="text-center">
+              <div className="text-lg font-bold text-gray-600">{originalData.studentsCount || 0}</div>
+              <div className="text-xs text-gray-500">Estudantes</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-gray-600">{originalData.avgProgress || 0}%</div>
+              <div className="text-xs text-gray-500">Progresso</div>
+            </div>
+          </div>
+
+          {/* Ações */}
+          <div className="pt-3 border-t border-gray-200">
+            {canRestore ? (
+              <Button
+                onClick={onRestore}
+                size="sm"
+                className="w-full bg-green-600 hover:bg-green-700 text-white h-9"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Restaurar Turma
+              </Button>
+            ) : (
+              <div className="text-center">
+                <Button
+                  disabled
+                  size="sm"
+                  variant="outline"
+                  className="w-full border-red-300 text-red-600 h-9 cursor-not-allowed"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Prazo Expirado
+                </Button>
+                <p className="text-xs text-red-600 mt-2">
+                  Esta turma não pode mais ser restaurada
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Indicador de urgência */}
+          {urgencyLevel === 'critical' && daysRemaining > 0 && (
+            <div className="absolute top-2 right-2">
+              <div className="animate-pulse">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
