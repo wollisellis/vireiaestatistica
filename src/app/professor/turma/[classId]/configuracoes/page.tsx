@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { modules } from '@/data/modules'
+import ClassTrashService from '@/services/classTrashService'
 
 export default function ClassSettingsPage() {
   const params = useParams()
@@ -166,14 +167,19 @@ export default function ClassSettingsPage() {
   }
 
   const deleteClass = async () => {
-    if (!confirm('Tem certeza que deseja excluir esta turma? Esta ação não pode ser desfeita.')) {
+    if (!confirm('Tem certeza que deseja excluir esta turma? Esta ação enviará a turma para a lixeira.')) {
       return
     }
 
     try {
-      await ProfessorClassService.deleteClass(classId, user!.id)
-      console.log('Turma excluída com sucesso')
-      window.alert('Turma excluída com sucesso')
+      await ClassTrashService.deleteClass(
+        classId, 
+        user!.id, 
+        user!.displayName || user!.email || 'Professor',
+        'Excluída pelo professor via configurações'
+      )
+      console.log('Turma enviada para a lixeira com sucesso')
+      window.alert('Turma enviada para a lixeira com sucesso')
       router.push('/professor')
     } catch (error) {
       console.error('Erro ao excluir turma')

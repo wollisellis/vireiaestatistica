@@ -1010,8 +1010,12 @@ export class EnhancedClassService {
       for (const classDoc of classesSnapshot.docs) {
         const classData = classDoc.data()
         
+        // DEBUG: Log do status de cada turma
+        console.log(`[EnhancedClassService] 🔍 Turma ${classData.name}: status="${classData.status}"`)
+        
         // IGNORAR turmas com status 'deleted' - ACEITAR 'active', 'open', 'closed'
         if (classData.status === 'deleted') {
+          console.log(`[EnhancedClassService] ❌ Turma ${classData.name} IGNORADA (status: deleted)`)
           continue;
         }
         

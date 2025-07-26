@@ -179,6 +179,16 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       setIsLoading(true)
       console.log('🔄 [ImprovedClassManagement] Carregando turmas com sistema inteligente...')
       
+      // Limpar cache do Firestore para garantir dados frescos
+      if (typeof window !== 'undefined') {
+        try {
+          await db.clearPersistence?.()
+        } catch (error) {
+          // Ignore cache clear errors
+          console.log('Cache clear skipped (normal behavior)')
+        }
+      }
+      
       // Monitorar console para detectar auto-recovery
       const originalConsoleLog = console.log
       let recoveryDetected = false
@@ -203,6 +213,12 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       console.log = originalConsoleLog
       
       console.log(`✅ [ImprovedClassManagement] ${classesData.length} turmas carregadas`)
+      
+      // DEBUG: Log turmas carregadas com status
+      classesData.forEach(cls => {
+        console.log(`📋 Turma "${cls.name}": status="${cls.status}", id="${cls.id}"`)
+      })
+      
       setClasses(classesData)
       
       // Mostrar notificação de recovery se aplicável
@@ -543,7 +559,17 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                 </div>
 
                 {/* Botão Nova Turma */}
-                <div className="flex justify-center lg:justify-end">
+                <div className="flex justify-center lg:justify-end space-x-3">
+                  <Button 
+                    onClick={loadClasses}
+                    disabled={isLoading}
+                    variant="outline"
+                    size="lg" 
+                    className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-indigo-600 shadow-lg h-12 px-4"
+                  >
+                    <RefreshCw className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                    {isLoading ? 'Carregando...' : 'Atualizar'}
+                  </Button>
                   <Button 
                     onClick={() => setIsCreatingClass(true)}
                     size="lg" 
