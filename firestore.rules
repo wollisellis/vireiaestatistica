@@ -295,6 +295,28 @@ service cloud.firestore {
       allow create: if isProfessor();
     }
 
+    // CLASS INVITES - Códigos de convite das turmas (PROTEÇÃO CRÍTICA)
+    match /classInvites/{inviteCode} {
+      // ✅ Professores podem criar convites
+      allow create: if isProfessor() && 
+        request.resource.data.keys().hasAll(['classId', 'code', 'createdBy']) &&
+        request.resource.data.createdBy == request.auth.uid;
+      
+      // ✅ Professores podem ler convites que criaram
+      allow read: if isProfessor() && 
+        resource.data.createdBy == request.auth.uid;
+      
+      // ✅ Estudantes podem ler convites para validação (registro em turmas)
+      allow read: if isStudent();
+      
+      // ✅ Sistema pode atualizar contadores de uso (currentUses, lastUsed)
+      allow update: if isAuthenticated() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentUses', 'lastUsed']);
+      
+      // 🚫 Ninguém pode deletar convites (integridade histórica)
+      allow delete: if false;
+    }
+
     // ========================================
     // REGRA FINAL - BLOQUEIO PADRÃO
     // ========================================

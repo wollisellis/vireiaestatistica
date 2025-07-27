@@ -197,11 +197,31 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
     try {
       setLoadingDeleted(true)
       console.log('🗑️ [ImprovedClassManagement] Carregando turmas excluídas...')
+      console.log(`🔍 [ImprovedClassManagement] Professor ID usado na busca: "${professorId}"`)
+      
+      if (!professorId) {
+        console.error('❌ [ImprovedClassManagement] Professor ID não disponível!')
+        throw new Error('Professor ID não disponível')
+      }
       
       const deletedClassesData = await ClassTrashService.getDeletedClasses(professorId)
       setDeletedClasses(deletedClassesData)
       
       console.log(`✅ [ImprovedClassManagement] ${deletedClassesData.length} turmas excluídas carregadas`)
+      
+      // Log detalhado dos dados retornados
+      if (deletedClassesData.length > 0) {
+        console.log('📋 [ImprovedClassManagement] Detalhes das turmas excluídas encontradas:')
+        deletedClassesData.forEach((cls, index) => {
+          console.log(`   ${index + 1}. ID: ${cls.id}, Nome: ${cls.originalData.name}, Excluída em: ${cls.deletedAt.toDate().toLocaleDateString('pt-BR')}`)
+        })
+      } else {
+        console.log('🤔 [ImprovedClassManagement] Nenhuma turma excluída encontrada. Possíveis causas:')
+        console.log('   - Nenhuma turma foi excluída ainda')
+        console.log('   - Professor ID não corresponde ao usado na exclusão')
+        console.log('   - Turmas foram excluídas por método que não usa ClassTrashService')
+        console.log('   - Problema de permissão no Firestore')
+      }
     } catch (error) {
       console.error('❌ [ImprovedClassManagement] Erro ao carregar turmas excluídas:', error)
       showNotification('error', 'Erro ao Carregar', 'Não foi possível carregar as turmas excluídas')
