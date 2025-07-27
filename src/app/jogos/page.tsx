@@ -119,7 +119,7 @@ function JogosPageContent() {
     lastCompleted?: Date;
   } | null>(null);
   // 🎯 HYDRATION-SAFE RANKING COLLAPSED STATE
-  const [rankingCollapsed, setRankingCollapsed] = useState(true); // Default fixo para evitar mismatch
+  const [rankingCollapsed, setRankingCollapsed] = useState(false); // 🔧 DEBUG: Expandido por padrão para testar
   const [isHydrated, setIsHydrated] = useState(false);
   
   // 🎯 REFS PARA DEBOUNCE
