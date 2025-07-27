@@ -40,6 +40,7 @@ import { StudentClassInfo } from '@/components/student/StudentClassInfo';
 import { ClassRankingPanel } from '@/components/ranking/ClassRankingPanel';
 import unifiedScoringService from '@/services/unifiedScoringService';
 import { debounce, devLog } from '@/utils/debounce';
+import ProfessorClassService from '@/services/professorClassService';
 import FirebaseConnectionTest from '@/components/debug/FirebaseConnectionTest';
 import { JogosPageSkeleton, JogosPageMinimalSkeleton } from '@/components/ui/JogosPageSkeleton';
 
@@ -161,21 +162,47 @@ function JogosPageContent() {
     }
   }, []);
 
-  // 🎯 REDIRECIONAMENTO PARA USUÁRIOS NÃO LOGADOS
+  // 🎯 REDIRECIONAMENTO PARA USUÁRIOS NÃO LOGADOS E ONBOARDING
   useEffect(() => {
     // Se não está carregando e não há usuário autenticado, redirecionar para /
     if (!loading) {
       const userId = getUserId();
       const isGuestUser = userId === 'guest-user' || userId === 'professor-guest-user';
-      
+
       // Se não há usuário ou é um guest não autorizado, redirecionar
       if (!user && !isGuestUser) {
         console.log('🔐 Usuário não logado detectado, redirecionando para /');
         router.push('/');
         return;
       }
+
+      // 🎯 ONBOARDING: Verificar se estudante precisa inserir código da turma
+      if (user && user.role === 'student' && userId && !isGuestUser) {
+        checkStudentOnboarding(userId);
+      }
     }
   }, [loading, user, router]);
+
+  // 🎯 FUNÇÃO PARA VERIFICAR ONBOARDING DO ESTUDANTE
+  const checkStudentOnboarding = async (studentId: string) => {
+    try {
+      console.log('🎓 Verificando onboarding do estudante:', studentId);
+
+      // Verificar se estudante já está matriculado em alguma turma
+      const studentClasses = await ProfessorClassService.getStudentClasses(studentId);
+
+      if (studentClasses.length === 0) {
+        console.log('📚 Estudante não matriculado em nenhuma turma, redirecionando para onboarding');
+        router.push('/entrar-turma');
+        return;
+      }
+
+      console.log(`✅ Estudante já matriculado em ${studentClasses.length} turma(s)`);
+    } catch (error) {
+      console.error('❌ Erro ao verificar onboarding:', error);
+      // Em caso de erro, não redirecionar para não quebrar a experiência
+    }
+  };
 
   // 🎯 UNIFIED DATA LOADING EFFECT - Reduz re-renders
   useEffect(() => {
@@ -631,7 +658,7 @@ interface ErrorBoundaryState {
 }
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children: any;
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {

@@ -285,8 +285,8 @@ export function ClassRankingPanel({
     );
   }
 
-  // Se não há estudantes ou não é estudante, não mostrar
-  if (!user || user.role !== 'student' || classStudents.length === 0) {
+  // Se não é estudante, não mostrar
+  if (!user || user.role !== 'student') {
     return null;
   }
 

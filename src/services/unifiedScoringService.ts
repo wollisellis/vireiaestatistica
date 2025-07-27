@@ -456,7 +456,7 @@ class UnifiedScoringService {
       .map(([moduleId, _]) => moduleId)
     
     const completedModules = completedModuleIds.length
-    const totalModules = 4 // Atualizar conforme necessário
+    const totalModules = 1 // ✅ ATUALIZADO: Apenas 1 módulo disponível atualmente
     const completionRate = Math.round((completedModules / totalModules) * 100)
     
     return {
