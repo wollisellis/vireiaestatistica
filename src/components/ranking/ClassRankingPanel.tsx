@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Trophy, 
-  Medal, 
-  Award, 
-  ChevronUp, 
-  ChevronDown,
+import {
+  Trophy,
+  Medal,
+  Award,
   Star,
   Users,
   TrendingUp,
@@ -69,8 +67,6 @@ export function ClassRankingPanel({
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  // 🎯 HYDRATION-SAFE EXPANDED STATE
-  const [expanded, setExpanded] = useState(!compact); // Default fixo para evitar mismatch
   const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,10 +75,6 @@ export function ClassRankingPanel({
   // 🎯 HYDRATION EFFECT - Carrega localStorage após hidratação
   useEffect(() => {
     setIsHydrated(true);
-    const saved = localStorage.getItem('ranking-panel-expanded');
-    if (saved) {
-      setExpanded(JSON.parse(saved));
-    }
   }, []);
 
   useEffect(() => {
@@ -404,26 +396,11 @@ export function ClassRankingPanel({
             >
               <TrendingUp className="w-4 h-4" />
             </Button>
-          {compact && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const newState = !expanded;
-                setExpanded(newState);
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem('ranking-panel-expanded', JSON.stringify(newState));
-                }
-              }}
-              className="p-2 hover:bg-blue-100 rounded-lg transition-all"
-            >
-              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
-          )}
+
         </div>
         </div>
         
-        {showStats && classInfo && expanded && (
+        {showStats && classInfo && (
           <motion.div 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -457,7 +434,7 @@ export function ClassRankingPanel({
                     (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'bg-blue-100 text-blue-700' :
                     'bg-orange-100 text-orange-700'
                   }`}>
-                    {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)}%
+                    {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)} pts
                     {(classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 && (
                       <span className="ml-2">✅</span>
                     )}
@@ -536,15 +513,8 @@ export function ClassRankingPanel({
                               'bg-gray-100 text-gray-600'
                             }`}>
                               <Star className="w-3 h-3" />
-                              <span>{formatScore(student.totalScore)}%</span>
+                              <span>{formatScore(student.totalScore)} pts</span>
                             </div>
-                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                              student.totalScore >= 70 ? 'bg-green-50 text-green-700' :
-                              student.totalScore > 0 ? 'bg-blue-50 text-blue-700' :
-                              'bg-gray-50 text-gray-600'
-                            }`}>
-                              {student.totalScore >= 70 ? '✅ Aprovado' : student.totalScore > 0 ? '📚 Cursando' : '⏳ Aguardando'}
-                            </span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Target className="w-3 h-3 text-green-500" />

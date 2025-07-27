@@ -134,8 +134,6 @@ function JogosPageContent() {
     attempts?: number;
     lastCompleted?: Date;
   } | null>(null);
-  // 🎯 HYDRATION-SAFE RANKING COLLAPSED STATE
-  const [rankingCollapsed, setRankingCollapsed] = useState(false); // 🔧 DEBUG: Expandido por padrão para testar
   const [isHydrated, setIsHydrated] = useState(false);
   
   // 🎯 REFS PARA DEBOUNCE
@@ -172,10 +170,6 @@ function JogosPageContent() {
   // 🎯 HYDRATION EFFECT - Carrega localStorage após hidratação
   useEffect(() => {
     setIsHydrated(true);
-    const saved = localStorage.getItem('ranking-collapsed');
-    if (saved) {
-      setRankingCollapsed(JSON.parse(saved));
-    }
   }, []);
 
   // 🎯 REDIRECIONAMENTO PARA USUÁRIOS NÃO LOGADOS E ONBOARDING
@@ -406,15 +400,7 @@ function JogosPageContent() {
     }
   }, [user, signOut]);
   
-  const toggleRanking = useCallback(() => {
-    const newState = !rankingCollapsed;
-    startTransition(() => {
-      setRankingCollapsed(newState);
-    });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ranking-collapsed', JSON.stringify(newState));
-    }
-  }, [rankingCollapsed]);
+
   
   // 🎯 LOADING STATE & READY CHECK - Usando skeleton UI
   if (loading || !ready || !isHydrated) {
@@ -603,46 +589,21 @@ function JogosPageContent() {
               {/* 🎯 INFORMAÇÕES DA TURMA */}
               {user && <StudentClassInfo studentId={getUserId() || ''} />}
               
-              {/* 🎯 RANKING COLAPSÍVEL */}
+              {/* 🎯 RANKING DA TURMA */}
               <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
                 <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Trophy className="w-5 h-5 text-yellow-600" />
-                      <h3 className="font-semibold text-gray-900">🔧 DEBUG: Ranking da Turma (Expandido)</h3>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleRanking}
-                      className="p-1 h-auto"
-                    >
-                      {rankingCollapsed ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronUp className="w-4 h-4" />
-                      )}
-                    </Button>
+                  <div className="flex items-center space-x-2">
+                    <Trophy className="w-5 h-5 text-yellow-600" />
+                    <h3 className="font-semibold text-gray-900">🏆 Ranking da Turma</h3>
                   </div>
                 </CardHeader>
-                <AnimatePresence>
-                  {!rankingCollapsed && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <CardContent className="pt-0">
-                        <ClassRankingPanel
-                          moduleId="introducao-avaliacao-nutricional"
-                          user={user}
-                          loading={loading}
-                        />
-                      </CardContent>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <CardContent className="pt-0">
+                  <ClassRankingPanel
+                    moduleId="introducao-avaliacao-nutricional"
+                    user={user}
+                    loading={loading}
+                  />
+                </CardContent>
               </Card>
             </div>
           </div>
