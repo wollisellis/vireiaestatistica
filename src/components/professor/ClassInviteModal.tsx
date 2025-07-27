@@ -48,7 +48,7 @@ export function ClassInviteModal({ isOpen, onClose, classInfo }: ClassInviteModa
 
   const safeClassInfo = {
     ...classInfo,
-    code: classInfo.code || 'CÓDIGO_PENDENTE',
+    code: classInfo.code || classInfo.inviteCode || 'CÓDIGO_PENDENTE',
     capacity: classInfo.capacity || classInfo.maxStudents || 50,
     studentsCount: classInfo.studentsCount || 0
   }

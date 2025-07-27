@@ -337,9 +337,17 @@ service cloud.firestore {
          collection.matches('.*[Ss]ystem.*'));
     }
 
-    // Coleções de estudantes (ACESSO AMPLO TEMPORÁRIO)
+    // Coleções de estudantes e dados gerais (ACESSO CONTROLADO)
     match /{collection}/{document} {
-      allow read, write, create: if isAuthenticated();
+      // ✅ Usuários autenticados podem ler dados gerais
+      allow read: if isAuthenticated();
+
+      // ✅ Professores podem gerenciar dados do sistema
+      allow write, create, update: if isProfessor();
+
+      // ✅ Estudantes podem atualizar seus próprios dados
+      allow update: if isAuthenticated() &&
+        (collection == 'unified_scores' && document == request.auth.uid);
     }
   }
 }

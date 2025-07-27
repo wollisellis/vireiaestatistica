@@ -273,10 +273,12 @@ export class ProfessorClassService {
       // 📝 ATUALIZAR TURMA COM CÓDIGO E METADADOS FINAIS
       const finalUpdate = {
         code: classCode,
+        inviteCode: classCode, // ✅ CORREÇÃO: Garantir que ambos os campos sejam definidos
         codeGeneratedAt: serverTimestamp(),
         setupCompleted: true,
         setupCompletedAt: serverTimestamp(),
-        processingTimeMs: Date.now() - startTime
+        processingTimeMs: Date.now() - startTime,
+        status: 'open' // ✅ CORREÇÃO: Garantir status consistente
       }
       
       await updateDoc(docRef, finalUpdate)
@@ -359,11 +361,11 @@ export class ProfessorClassService {
     try {
       console.log('[ProfessorClassService] 🔓 Carregando turmas com sistema de recovery automático')
       
-      // 🎯 TENTATIVA 1: Query otimizada com status corretos (open, closed - não archived)
+      // 🎯 TENTATIVA 1: Query otimizada com status corretos (incluindo 'active' para compatibilidade)
       try {
         const optimizedQuery = query(
           collection(db, this.CLASSES_COLLECTION),
-          where('status', 'in', ['open', 'closed']),
+          where('status', 'in', ['open', 'closed', 'active']),
           orderBy('createdAt', 'desc')
         )
         

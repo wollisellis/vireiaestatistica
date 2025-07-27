@@ -145,7 +145,7 @@ export class EnhancedClassService {
   private static async getStudentsMethod1(classId: string): Promise<EnhancedStudentOverview[]> {
     try {
       console.log(`[Método 1] Buscando com range query para ${classId}`)
-      
+
       // Query usando range para documentos que começam com classId_
       const studentsQuery = query(
         collection(db, 'classStudents'),
@@ -160,20 +160,37 @@ export class EnhancedClassService {
 
       for (const doc of studentsSnapshot.docs) {
         const studentData = doc.data()
-        
+
         // Filtrar apenas documentos ativos (se o campo existir)
-        if (studentData.status === 'removed' || studentData.status === 'inactive') {
-          console.log(`[Método 1] Ignorando estudante inativo: ${doc.id}`)
+        if (studentData.status === 'removed') {
+          console.log(`[Método 1] Ignorando estudante removido: ${doc.id}`)
           continue
         }
 
-        const studentProgress = await this.getStudentDetailedProgress(
-          studentData.studentId,
-          classId
-        )
+        // ✅ CORREÇÃO: Criar objeto de estudante diretamente se getStudentDetailedProgress falhar
+        try {
+          const studentProgress = await this.getStudentDetailedProgress(
+            studentData.studentId,
+            classId
+          )
 
-        if (studentProgress) {
-          students.push(studentProgress)
+          if (studentProgress) {
+            students.push(studentProgress)
+          } else {
+            // Fallback: criar objeto básico do estudante
+            console.log(`[Método 1] Criando objeto básico para estudante: ${studentData.studentId}`)
+            const basicStudent = await this.createBasicStudentObject(studentData, classId)
+            if (basicStudent) {
+              students.push(basicStudent)
+            }
+          }
+        } catch (progressError) {
+          console.warn(`[Método 1] Erro ao buscar progresso do estudante ${studentData.studentId}:`, progressError)
+          // Fallback: criar objeto básico do estudante
+          const basicStudent = await this.createBasicStudentObject(studentData, classId)
+          if (basicStudent) {
+            students.push(basicStudent)
+          }
         }
       }
 
@@ -207,14 +224,29 @@ export class EnhancedClassService {
         // Verificar se o documento pertence à turma específica
         if (docId.startsWith(`${classId}_`)) {
           console.log(`[Método 2] ✅ Documento ${docId} pertence à turma`)
-          
-          const studentProgress = await this.getStudentDetailedProgress(
-            studentData.studentId,
-            classId
-          )
 
-          if (studentProgress) {
-            students.push(studentProgress)
+          try {
+            const studentProgress = await this.getStudentDetailedProgress(
+              studentData.studentId,
+              classId
+            )
+
+            if (studentProgress) {
+              students.push(studentProgress)
+            } else {
+              // Fallback: criar objeto básico do estudante
+              const basicStudent = await this.createBasicStudentObject(studentData, classId)
+              if (basicStudent) {
+                students.push(basicStudent)
+              }
+            }
+          } catch (progressError) {
+            console.warn(`[Método 2] Erro ao buscar progresso do estudante ${studentData.studentId}:`, progressError)
+            // Fallback: criar objeto básico do estudante
+            const basicStudent = await this.createBasicStudentObject(studentData, classId)
+            if (basicStudent) {
+              students.push(basicStudent)
+            }
           }
         }
       }
@@ -785,7 +817,81 @@ export class EnhancedClassService {
       return []
     }
   }
-  
+
+  // ✅ NOVO: Método para criar objeto básico do estudante quando getStudentDetailedProgress falha
+  private static async createBasicStudentObject(studentData: any, classId: string): Promise<EnhancedStudentOverview | null> {
+    try {
+      if (!studentData.studentId || !studentData.studentName) {
+        console.warn('Dados insuficientes para criar objeto básico do estudante:', studentData)
+        return null
+      }
+
+      // Buscar dados básicos do usuário se possível
+      let userData = null
+      try {
+        const userDoc = await getDoc(doc(db, 'users', studentData.studentId))
+        if (userDoc.exists()) {
+          userData = userDoc.data()
+        }
+      } catch (userError) {
+        console.warn('Não foi possível buscar dados do usuário:', userError)
+      }
+
+      // Buscar pontuação unificada se possível
+      let unifiedScore = null
+      try {
+        const scoreDoc = await getDoc(doc(db, 'unified_scores', studentData.studentId))
+        if (scoreDoc.exists()) {
+          unifiedScore = scoreDoc.data()
+        }
+      } catch (scoreError) {
+        console.warn('Não foi possível buscar pontuação unificada:', scoreError)
+      }
+
+      // Criar objeto básico do estudante
+      const basicStudent: EnhancedStudentOverview = {
+        studentId: studentData.studentId,
+        name: studentData.studentName,
+        email: studentData.studentEmail || studentData.email || userData?.email || '',
+        status: studentData.status || 'active',
+        enrolledAt: studentData.enrolledAt?.toDate?.() || studentData.registeredAt?.toDate?.() || new Date(),
+        lastActivity: studentData.lastActivity?.toDate?.() || new Date(),
+
+        // Dados de progresso básicos
+        totalScore: unifiedScore?.totalScore || 0,
+        normalizedScore: unifiedScore?.normalizedScore || 0,
+        completedModules: unifiedScore?.completedModules || 0,
+        averageScore: unifiedScore?.averageScore || 0,
+
+        // Dados de módulos básicos
+        moduleScores: unifiedScore?.moduleScores || {},
+        moduleProgress: unifiedScore?.moduleProgress || {},
+
+        // Dados de ranking
+        classRank: 0,
+        overallRank: 0,
+
+        // Dados de atividade
+        streakDays: 0,
+        lastLoginAt: userData?.lastLoginAt?.toDate?.() || null,
+
+        // Dados de achievements
+        achievements: userData?.achievements || [],
+
+        // Metadados
+        classId: classId,
+        isActive: studentData.status !== 'removed' && studentData.status !== 'inactive'
+      }
+
+      console.log(`[createBasicStudentObject] Objeto básico criado para: ${basicStudent.name}`)
+      return basicStudent
+
+    } catch (error) {
+      console.error('Erro ao criar objeto básico do estudante:', error)
+      return null
+    }
+  }
+
   private static getDefaultClassSettings() {
     return {
       allowLateSubmissions: true,
@@ -1186,7 +1292,7 @@ export class EnhancedClassService {
       let professorsClasses: EnhancedClass[] = []
       
       try {
-        // Tentativa 1: Query otimizada por professorId e status (incluindo 'active')
+        // Tentativa 1: Query otimizada por professorId e status (incluindo todos os status válidos)
         const optimizedQuery = query(
           collection(db, 'classes'),
           where('professorId', '==', professorId),

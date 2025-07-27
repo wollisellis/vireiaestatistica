@@ -178,7 +178,7 @@ export class ClassTrashService {
       // 1. Restaurar status da turma
       const classRef = doc(db, this.CLASSES_COLLECTION, classId)
       batch.update(classRef, {
-        status: 'active', // ✅ CORREÇÃO: Usar 'active' para consistência com ProfessorClassService
+        status: 'open', // ✅ CORREÇÃO: Usar 'open' para consistência com as consultas
         restoredAt: serverTimestamp(),
         restoredBy,
         updatedAt: serverTimestamp(),
