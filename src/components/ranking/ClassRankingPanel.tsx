@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { isRecentActivity } from '@/utils/dateUtils';
-import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
+import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { enhancedClassService } from '@/services/enhancedClassService';
 import ProfessorClassService from '@/services/professorClassService';
 
@@ -59,7 +59,7 @@ export function ClassRankingPanel({
 }: ClassRankingPanelProps) {
   console.log(`🔧 [ClassRankingPanel] Componente renderizado! moduleId: ${moduleId}`);
 
-  const { user } = useFirebaseAuth();
+  const { user } = useFlexibleAccess();
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loading, setLoading] = useState(true);
