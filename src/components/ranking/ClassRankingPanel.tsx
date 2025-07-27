@@ -78,7 +78,7 @@ export function ClassRankingPanel({
   }, []);
 
   useEffect(() => {
-    if (user?.id && user.role === 'student') {
+    if (user?.id && (user.role === 'student' || user.role === 'professor')) {
       loadClassRankingData();
     } else {
       setLoading(false);
@@ -87,7 +87,7 @@ export function ClassRankingPanel({
 
   // 🚀 OTIMIZAÇÃO: Atualização automática do ranking a cada 60 segundos (otimizado para performance)
   useEffect(() => {
-    if (user?.id && user.role === 'student') {
+    if (user?.id && (user.role === 'student' || user.role === 'professor')) {
       const interval = setInterval(() => {
         console.log('🔄 Atualização automática do ranking (60s)...');
         loadClassRankingData();
@@ -133,16 +133,32 @@ export function ClassRankingPanel({
 
       if (!user?.id) return;
 
-      // Buscar turmas do estudante
-      const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
-      
-      if (studentClasses.length === 0) {
-        setError('Você não está matriculado em nenhuma turma');
+      let targetClasses = [];
+
+      // 🎯 NOVO: Lógica diferente para professores e estudantes
+      if (user.role === 'professor') {
+        // Para professores: buscar turmas que eles criaram/administram
+        console.log('🎓 Professor detectado, buscando turmas administradas...');
+        const professorClasses = await ProfessorClassService.getProfessorClasses(user.id);
+        targetClasses = professorClasses || [];
+      } else {
+        // Para estudantes: buscar turmas em que estão matriculados
+        console.log('👨‍🎓 Estudante detectado, buscando turmas matriculadas...');
+        const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
+        targetClasses = studentClasses || [];
+      }
+
+      if (!targetClasses || targetClasses.length === 0) {
+        const errorMsg = user.role === 'professor'
+          ? 'Você não possui turmas criadas'
+          : 'Você não está matriculado em nenhuma turma';
+        setError(errorMsg);
         return;
       }
 
-      // Usar a primeira turma encontrada (ou poderia ter lógica para selecionar)
-      const firstClass = studentClasses[0];
+      // Usar a primeira turma encontrada
+      const firstClass = targetClasses[0];
+      console.log(`🎯 Usando turma: ${firstClass.name} (${firstClass.id})`);
       
       setClassInfo({
         id: firstClass.id,
@@ -153,8 +169,14 @@ export function ClassRankingPanel({
       });
 
       // Buscar dados dos estudantes da turma
-      const studentsData = await enhancedClassService.getClassStudents(firstClass.id);
-      
+      let studentsData = await enhancedClassService.getClassStudents(firstClass.id);
+
+      // 🚀 FALLBACK: Se não encontrar estudantes via users, buscar diretamente de classStudents
+      if (!Array.isArray(studentsData) || studentsData.length === 0) {
+        console.log('⚠️ Nenhum estudante encontrado via users, tentando busca direta...');
+        studentsData = await enhancedClassService.getClassStudentsDirectly(firstClass.id);
+      }
+
       if (!Array.isArray(studentsData) || studentsData.length === 0) {
         setError('Nenhum estudante encontrado na turma');
         return;

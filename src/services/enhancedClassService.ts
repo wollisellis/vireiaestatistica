@@ -1,17 +1,18 @@
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
   limit,
   writeBatch,
   Timestamp,
+  serverTimestamp,
   onSnapshot,
   enableNetwork,
   disableNetwork
@@ -308,14 +309,11 @@ export class EnhancedClassService {
   ): Promise<EnhancedStudentOverview | null> {
     try {
       // 1. Buscar dados do usuário (fonte principal de informações)
-      const userDoc = await getDoc(doc(db, 'users', studentId))
-      if (!userDoc.exists()) {
-        console.warn(`[getStudentDetailedProgress] ❌ Usuário não encontrado: ${studentId}`)
-        return null
-      }
-      const userData = userDoc.data()
+      let userDoc = await getDoc(doc(db, 'users', studentId))
+      let userData = null
+      let enrollmentData = null
 
-      // 2. Buscar dados de matrícula na turma (confirma a associação)
+      // 2. Buscar dados de matrícula na turma (sempre necessário)
       const enrollmentQuery = query(
         collection(db, 'classStudents'),
         where('classId', '==', classId),
@@ -323,12 +321,41 @@ export class EnhancedClassService {
         limit(1)
       )
       const enrollmentSnapshot = await getDocs(enrollmentQuery)
-      
+
       if (enrollmentSnapshot.empty) {
         console.warn(`[getStudentDetailedProgress] ❌ Matrícula não encontrada para estudante ${studentId} na turma ${classId}`)
         return null
       }
-      const enrollmentData = enrollmentSnapshot.docs[0].data()
+      enrollmentData = enrollmentSnapshot.docs[0].data()
+
+      if (!userDoc.exists()) {
+        console.warn(`[getStudentDetailedProgress] ❌ Usuário não encontrado: ${studentId}`)
+        console.log(`[getStudentDetailedProgress] 🔧 Criando usuário automaticamente para: ${enrollmentData.studentName}`)
+
+        // 🚀 AUTO-CORREÇÃO: Criar usuário automaticamente
+        const newUserData = {
+          uid: studentId,
+          email: enrollmentData.studentEmail || `${studentId}@temp.unicamp.br`,
+          fullName: enrollmentData.studentName,
+          name: enrollmentData.studentName,
+          role: 'student',
+          status: 'active',
+          createdAt: serverTimestamp(),
+          lastActivity: serverTimestamp(),
+          anonymousId: `EST${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          displayName: enrollmentData.studentName,
+          photoURL: null,
+          emailVerified: false,
+          source: 'auto-created-from-enrollment',
+          version: '1.0'
+        }
+
+        await setDoc(doc(db, 'users', studentId), newUserData)
+        userData = newUserData
+        console.log(`[getStudentDetailedProgress] ✅ Usuário criado automaticamente com anonymousId: ${newUserData.anonymousId}`)
+      } else {
+        userData = userDoc.data()
+      }
 
       // 3. Buscar progresso unificado (fonte de pontuação primária)
       console.log(`[getStudentDetailedProgress] 🔄 Buscando pontuação unificada para ${studentId}`)
@@ -1400,6 +1427,77 @@ export class EnhancedClassService {
     } catch (error) {
       console.error('Erro ao remover estudante:', error)
       throw error
+    }
+  }
+
+  // 🚀 NOVO: Busca direta de estudantes da coleção classStudents (fallback)
+  static async getClassStudentsDirectly(classId: string) {
+    console.log(`[getClassStudentsDirectly] 🔍 Buscando estudantes diretamente para turma: ${classId}`)
+
+    try {
+      // Buscar matrículas ativas na turma
+      const enrollmentsQuery = query(
+        collection(db, 'classStudents'),
+        where('classId', '==', classId),
+        where('status', '!=', 'removed')
+      )
+
+      const enrollmentsSnapshot = await getDocs(enrollmentsQuery)
+      console.log(`[getClassStudentsDirectly] 📚 Encontradas ${enrollmentsSnapshot.size} matrículas`)
+
+      if (enrollmentsSnapshot.empty) {
+        console.log(`[getClassStudentsDirectly] ❌ Nenhuma matrícula encontrada para turma ${classId}`)
+        return []
+      }
+
+      const students = []
+
+      for (const enrollmentDoc of enrollmentsSnapshot.docs) {
+        const enrollmentData = enrollmentDoc.data()
+        const studentId = enrollmentData.studentId
+
+        console.log(`[getClassStudentsDirectly] 👤 Processando estudante: ${enrollmentData.studentName}`)
+
+        // Buscar pontuação do estudante
+        const scoreDoc = await getDoc(doc(db, 'unified_scores', studentId))
+        const scoreData = scoreDoc.exists() ? scoreDoc.data() : null
+
+        // Criar objeto estudante com dados disponíveis
+        const studentData = {
+          studentId: studentId,
+          id: studentId,
+          uid: studentId,
+          fullName: enrollmentData.studentName,
+          name: enrollmentData.studentName,
+          email: enrollmentData.studentEmail || `${studentId}@temp.unicamp.br`,
+          anonymousId: `EST${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          role: 'student',
+
+          // Dados de pontuação
+          totalScore: scoreData?.totalScore || 0,
+          totalNormalizedScore: scoreData?.normalizedScore || 0,
+          moduleScores: scoreData?.moduleScores || {},
+
+          // Dados da matrícula
+          classId: classId,
+          enrolledAt: enrollmentData.enrolledAt,
+          status: enrollmentData.status || 'active',
+
+          // Metadados
+          lastActivity: scoreData?.lastActivity || enrollmentData.enrolledAt,
+          source: 'direct-enrollment-lookup'
+        }
+
+        students.push(studentData)
+        console.log(`[getClassStudentsDirectly] ✅ Estudante processado: ${studentData.fullName} (${studentData.totalScore} pontos)`)
+      }
+
+      console.log(`[getClassStudentsDirectly] 🎯 Total de estudantes processados: ${students.length}`)
+      return students
+
+    } catch (error) {
+      console.error(`[getClassStudentsDirectly] ❌ Erro ao buscar estudantes:`, error)
+      return []
     }
   }
 }

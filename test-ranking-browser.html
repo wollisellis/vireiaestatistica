@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Dados do Ranking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Teste de Dados do Ranking - Bioestat</h1>
+        
+        <div>
+            <button class="button" onclick="testRankingData()" id="testBtn">Testar Dados</button>
+            <button class="button" onclick="populateTestData()" id="populateBtn">Popular Dados de Teste</button>
+            <button class="button" onclick="clearLogs()" style="background: #6c757d;">Limpar Logs</button>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="success" class="success" style="display: none;"></div>
+
+        <div id="stats" class="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-number" id="unifiedScores">0</div>
+                <div class="stat-label">Unified Scores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="users">0</div>
+                <div class="stat-label">Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="classStudents">0</div>
+                <div class="stat-label">Class Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="progress">0</div>
+                <div class="stat-label">Progress</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="quizAttempts">0</div>
+                <div class="stat-label">Quiz Attempts</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📝 Logs</h2>
+        <div id="logs" class="logs"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhkVmMHgGyQjrjcrNBjmgFqDGnVOJBUvs",
+            authDomain: "vireiestatistica-ba7c5.firebaseapp.com",
+            projectId: "vireiestatistica-ba7c5",
+            storageBucket: "vireiestatistica-ba7c5.appspot.com",
+            messagingSenderId: "794181951301",
+            appId: "1:794181951301:web:d1c5c4e8f7a9b2c3d4e5f6"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let isAuthenticated = false;
+
+        // Função para adicionar logs
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            logElement.innerHTML += `<div>${timestamp}: ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        // Função para mostrar erro
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            document.getElementById('success').style.display = 'none';
+        }
+
+        // Função para mostrar sucesso
+        function showSuccess(message) {
+            const successElement = document.getElementById('success');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+        }
+
+        // Função para atualizar estatísticas
+        function updateStats(stats) {
+            document.getElementById('unifiedScores').textContent = stats.unifiedScores;
+            document.getElementById('users').textContent = stats.users;
+            document.getElementById('classStudents').textContent = stats.classStudents;
+            document.getElementById('progress').textContent = stats.progress;
+            document.getElementById('quizAttempts').textContent = stats.quizAttempts;
+            document.getElementById('stats').style.display = 'grid';
+        }
+
+        // Função para autenticar
+        async function authenticate() {
+            if (isAuthenticated) return true;
+            
+            try {
+                addLog('🔐 Autenticando...');
+                await signInAnonymously(auth);
+                isAuthenticated = true;
+                addLog('✅ Autenticado com sucesso');
+                return true;
+            } catch (error) {
+                addLog(`❌ Erro na autenticação: ${error.message}`);
+                showError(`Erro na autenticação: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Função principal de teste
+        window.testRankingData = async function() {
+            const testBtn = document.getElementById('testBtn');
+            const populateBtn = document.getElementById('populateBtn');
+            
+            testBtn.disabled = true;
+            populateBtn.disabled = true;
+            
+            try {
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('success').style.display = 'none';
+                
+                if (!await authenticate()) return;
+                
+                addLog('🔍 Iniciando teste dos dados do ranking...');
+                
+                // 1. Verificar unified_scores
+                addLog('📊 Verificando coleção unified_scores...');
+                const unifiedScoresSnapshot = await getDocs(collection(db, 'unified_scores'));
+                addLog(`Documentos unified_scores encontrados: ${unifiedScoresSnapshot.size}`);
+                
+                if (unifiedScoresSnapshot.size > 0) {
+                    unifiedScoresSnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        addLog(`Estudante ${doc.id}: totalScore=${data.totalScore || 0}, normalizedScore=${data.normalizedScore || 0}`);
+                    });
+                }
+
+                // 2. Verificar users
+                addLog('👥 Verificando coleção users...');
+                const usersSnapshot = await getDocs(collection(db, 'users'));
+                addLog(`Usuários encontrados: ${usersSnapshot.size}`);
+                
+                if (usersSnapshot.size > 0) {
+                    usersSnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        addLog(`Usuário ${doc.id}: ${data.fullName || 'N/A'} (${data.role || 'N/A'}) - ${data.email || 'N/A'}`);
+                    });
+                }
+
+                // 3. Verificar classStudents
+                addLog('🎓 Verificando coleção classStudents...');
+                const classStudentsSnapshot = await getDocs(collection(db, 'classStudents'));
+                addLog(`Matrículas encontradas: ${classStudentsSnapshot.size}`);
+                
+                if (classStudentsSnapshot.size > 0) {
+                    classStudentsSnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        addLog(`Matrícula ${doc.id}: studentId=${data.studentId || 'N/A'}, classId=${data.classId || 'N/A'}`);
+                    });
+                }
+
+                // 4. Verificar student_module_progress
+                addLog('📈 Verificando coleção student_module_progress...');
+                const progressSnapshot = await getDocs(collection(db, 'student_module_progress'));
+                addLog(`Progressos encontrados: ${progressSnapshot.size}`);
+                
+                if (progressSnapshot.size > 0) {
+                    progressSnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        addLog(`Progresso ${doc.id}: studentId=${data.studentId || 'N/A'}, moduleId=${data.moduleId || 'N/A'}, completed=${data.completed || false}, score=${data.score || 0}`);
+                    });
+                }
+
+                // 5. Verificar quiz_attempts
+                addLog('📝 Verificando coleção quiz_attempts...');
+                const quizAttemptsSnapshot = await getDocs(collection(db, 'quiz_attempts'));
+                addLog(`Tentativas de quiz encontradas: ${quizAttemptsSnapshot.size}`);
+                
+                if (quizAttemptsSnapshot.size > 0) {
+                    quizAttemptsSnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        addLog(`Tentativa ${doc.id}: studentId=${data.studentId || 'N/A'}, moduleId=${data.moduleId || 'N/A'}, score=${data.score || 0}, completed=${data.completed || false}`);
+                    });
+                }
+
+                // Atualizar estatísticas
+                updateStats({
+                    unifiedScores: unifiedScoresSnapshot.size,
+                    users: usersSnapshot.size,
+                    classStudents: classStudentsSnapshot.size,
+                    progress: progressSnapshot.size,
+                    quizAttempts: quizAttemptsSnapshot.size
+                });
+
+                addLog('✅ Teste concluído com sucesso!');
+                showSuccess('Teste concluído com sucesso! Verifique os logs para detalhes.');
+
+            } catch (error) {
+                const errorMessage = `❌ Erro ao testar dados: ${error.message}`;
+                addLog(errorMessage);
+                showError(errorMessage);
+            } finally {
+                testBtn.disabled = false;
+                populateBtn.disabled = false;
+            }
+        };
+
+        // Função para popular dados de teste
+        window.populateTestData = async function() {
+            addLog('⚠️ Função de popular dados não implementada neste script simples');
+            addLog('💡 Use a interface da aplicação para popular dados de teste');
+        };
+
+        // Função para limpar logs
+        window.clearLogs = function() {
+            document.getElementById('logs').innerHTML = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+            document.getElementById('stats').style.display = 'none';
+        };
+
+        // Inicializar
+        addLog('🚀 Script de teste carregado. Clique em "Testar Dados" para começar.');
+    </script>
+</body>
+</html>
