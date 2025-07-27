@@ -3,6 +3,8 @@
 // Force dynamic rendering to avoid stale cache issues
 export const dynamic = 'force-dynamic';
 
+'use client';
+
 import React, { useEffect, useState, useCallback, useRef, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -618,7 +620,7 @@ function JogosPageContent() {
                       transition={{ duration: 0.3 }}
                     >
                       <CardContent className="pt-0">
-                        <ClassRankingPanel />
+                        <ClassRankingPanel moduleId="introducao-avaliacao-nutricional" />
                       </CardContent>
                     </motion.div>
                   )}
