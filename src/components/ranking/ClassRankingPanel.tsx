@@ -133,6 +133,8 @@ export function ClassRankingPanel({
 
       if (!user?.id) return;
 
+      console.log(`🎯 [ClassRankingPanel] Iniciando carregamento para usuário: ${user.fullName} (${user.role})`);
+
       let targetClasses = [];
 
       // 🎯 NOVO: Lógica diferente para professores e estudantes
