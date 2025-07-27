@@ -82,11 +82,12 @@ export function ClassRankingPanel({
   useEffect(() => {
     console.log(`🔧 [ClassRankingPanel] useEffect executado - user: ${user?.fullName}, role: ${user?.role}, id: ${user?.id}`);
 
-    if (user?.id && (user.role === 'student' || user.role === 'professor')) {
-      console.log(`🔧 [ClassRankingPanel] Condição atendida, chamando loadClassRankingData...`);
+    // 🎯 NOVO: Suporte para contas múltiplas (professor + estudante)
+    if (user?.id) {
+      console.log(`🔧 [ClassRankingPanel] Usuário logado, chamando loadClassRankingData...`);
       loadClassRankingData();
     } else {
-      console.log(`🔧 [ClassRankingPanel] Condição NÃO atendida, setLoading(false)`);
+      console.log(`🔧 [ClassRankingPanel] Usuário não logado, setLoading(false)`);
       setLoading(false);
     }
   }, [user?.id, moduleId]);
@@ -143,24 +144,67 @@ export function ClassRankingPanel({
 
       let targetClasses = [];
 
-      // 🎯 NOVO: Lógica diferente para professores e estudantes
-      if (user.role === 'professor') {
-        // Para professores: buscar turmas que eles criaram/administram
-        console.log('🎓 Professor detectado, buscando turmas administradas...');
+      // 🎯 NOVO: Suporte para contas múltiplas (professor + estudante)
+      console.log(`🔧 [ClassRankingPanel] Buscando turmas para usuário: ${user.fullName} (role: ${user.role})`);
+
+      let allClasses = [];
+
+      // Buscar como professor (turmas que administra)
+      try {
+        console.log('🎓 Buscando turmas como professor...');
         const professorClasses = await ProfessorClassService.getProfessorClasses(user.id);
-        targetClasses = professorClasses || [];
-      } else {
-        // Para estudantes: buscar turmas em que estão matriculados
-        console.log('👨‍🎓 Estudante detectado, buscando turmas matriculadas...');
-        const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
-        targetClasses = studentClasses || [];
+        if (professorClasses && professorClasses.length > 0) {
+          console.log(`🎓 Encontradas ${professorClasses.length} turmas como professor`);
+          allClasses.push(...professorClasses);
+        }
+      } catch (error) {
+        console.log('🎓 Erro ao buscar turmas como professor:', error);
       }
 
+      // Buscar como estudante (turmas em que está matriculado)
+      try {
+        console.log('👨‍🎓 Buscando turmas como estudante...');
+        const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
+        if (studentClasses && studentClasses.length > 0) {
+          console.log(`👨‍🎓 Encontradas ${studentClasses.length} turmas como estudante`);
+          allClasses.push(...studentClasses);
+        }
+      } catch (error) {
+        console.log('👨‍🎓 Erro ao buscar turmas como estudante:', error);
+      }
+
+      // Remover duplicatas (caso esteja como professor e estudante na mesma turma)
+      targetClasses = allClasses.filter((classe, index, self) =>
+        index === self.findIndex(c => c.id === classe.id)
+      );
+
+      console.log(`🔧 [ClassRankingPanel] Total de turmas encontradas: ${targetClasses.length}`);
+
       if (!targetClasses || targetClasses.length === 0) {
-        const errorMsg = user.role === 'professor'
-          ? 'Você não possui turmas criadas'
-          : 'Você não está matriculado em nenhuma turma';
+        console.log(`🔧 [ClassRankingPanel] Nenhuma turma encontrada, tentando busca direta...`);
+
+        // 🎯 FALLBACK: Buscar diretamente estudantes da turma padrão
+        try {
+          const directStudents = await getClassStudentsDirectly();
+          if (directStudents && directStudents.length > 0) {
+            console.log(`✅ [ClassRankingPanel] Encontrados ${directStudents.length} estudantes via busca direta`);
+            setClassStudents(directStudents);
+            setClassInfo({
+              id: 'default-class',
+              name: 'Turma Geral',
+              description: 'Ranking geral de todos os estudantes'
+            });
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.log('❌ Erro na busca direta:', error);
+        }
+
+        const errorMsg = 'Nenhum estudante encontrado no sistema';
+        console.log(`❌ [ClassRankingPanel] ${errorMsg}`);
         setError(errorMsg);
+        setLoading(false);
         return;
       }
 
