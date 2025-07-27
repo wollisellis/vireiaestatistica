@@ -49,17 +49,23 @@ interface ClassRankingPanelProps {
   compact?: boolean;
   showStats?: boolean;
   moduleId?: string;
+  user?: any; // 🔧 NOVO: Usuário passado como prop
+  loading?: boolean; // 🔧 NOVO: Estado de loading
 }
 
 export function ClassRankingPanel({
   className = '',
   compact = false,
   showStats = true,
-  moduleId
+  moduleId,
+  user: propUser,
+  loading: propLoading
 }: ClassRankingPanelProps) {
   console.log(`🔧 [ClassRankingPanel] Componente renderizado! moduleId: ${moduleId}`);
 
-  const { user } = useFlexibleAccess();
+  // 🔧 NOVO: Usar usuário da prop ou do contexto como fallback
+  const { user: contextUser } = useFlexibleAccess();
+  const user = propUser || contextUser;
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +86,17 @@ export function ClassRankingPanel({
   }, []);
 
   useEffect(() => {
-    console.log(`🔧 [ClassRankingPanel] useEffect executado - user: ${user?.fullName}, role: ${user?.role}, id: ${user?.id}`);
+    console.log(`🔧 [ClassRankingPanel] useEffect executado:`, {
+      propUser: propUser,
+      contextUser: contextUser,
+      finalUser: user,
+      userType: typeof user,
+      userId: user?.id || user?.uid,
+      userEmail: user?.email,
+      userRole: user?.role,
+      propLoading: propLoading,
+      moduleId: moduleId
+    });
 
     // 🎯 AGUARDAR: Aguardar usuário estar disponível
     if (user === null) {
@@ -88,14 +104,20 @@ export function ClassRankingPanel({
       return; // Aguardar próximo render
     }
 
-    if (user?.id) {
-      console.log(`🔧 [ClassRankingPanel] Usuário logado, chamando loadClassRankingData...`);
+    if (user === undefined) {
+      console.log(`🔧 [ClassRankingPanel] Usuário undefined, aguardando...`);
+      return; // Aguardar próximo render
+    }
+
+    if (user?.id || user?.uid) {
+      const userId = user.id || user.uid;
+      console.log(`🔧 [ClassRankingPanel] Usuário logado (${userId}), chamando loadClassRankingData...`);
       loadClassRankingData();
     } else {
-      console.log(`🔧 [ClassRankingPanel] Usuário não logado, setLoading(false)`);
+      console.log(`🔧 [ClassRankingPanel] Usuário sem ID válido, setLoading(false)`);
       setLoading(false);
     }
-  }, [user, moduleId]);
+  }, [user, moduleId, propUser, contextUser]);
 
   // 🚀 OTIMIZAÇÃO: Atualização automática do ranking a cada 60 segundos (otimizado para performance)
   useEffect(() => {

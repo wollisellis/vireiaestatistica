@@ -90,6 +90,20 @@ function JogosPageContent() {
   // 🎯 ESTADOS MÍNIMOS NECESSÁRIOS
   const router = useRouter();
   const { user, loading, hasAccess, isProfessor } = useFlexibleAccess();
+
+  // 🔧 DEBUG: Logs detalhados do usuário na página jogos
+  useEffect(() => {
+    console.log(`🔧 [JogosPage] Estado do usuário:`, {
+      user: user,
+      userType: typeof user,
+      userId: user?.id || user?.uid,
+      userEmail: user?.email,
+      userRole: user?.role,
+      loading: loading,
+      hasAccess: hasAccess,
+      isProfessor: isProfessor
+    });
+  }, [user, loading, hasAccess, isProfessor]);
   const { signOut } = useFirebaseAuth();
 
   // 🎯 HELPER: Obter ID do usuário (compatível com RBACUser e FirebaseUser)
@@ -620,7 +634,11 @@ function JogosPageContent() {
                       transition={{ duration: 0.3 }}
                     >
                       <CardContent className="pt-0">
-                        <ClassRankingPanel moduleId="introducao-avaliacao-nutricional" />
+                        <ClassRankingPanel
+                          moduleId="introducao-avaliacao-nutricional"
+                          user={user}
+                          loading={loading}
+                        />
                       </CardContent>
                     </motion.div>
                   )}
