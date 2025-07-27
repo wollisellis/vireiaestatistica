@@ -440,8 +440,22 @@ export class EnhancedClassService {
     if (unifiedScore && unifiedScore.moduleScores) {
       console.log("[consolidateStudentMetrics] 🚀 Usando dados do sistema unificado.")
       moduleScores = unifiedScore.moduleScores
-      totalScore = Object.values(moduleScores).reduce((sum: number, score: any) => sum + (score.score || score || 0), 0)
-      completedModules = Object.values(moduleScores).filter((score: any) => (score.score || score || 0) >= 70).length
+
+      // ✅ CORREÇÃO: Usar a maior pontuação (bestScore ou score)
+      totalScore = Object.values(moduleScores).reduce((sum: number, score: any) => {
+        const currentScore = score.score || score || 0;
+        const bestScore = score.bestScore || currentScore;
+        return sum + Math.max(currentScore, bestScore);
+      }, 0)
+
+      // ✅ CORREÇÃO: Contar módulos completados baseado na maior pontuação
+      completedModules = Object.values(moduleScores).filter((score: any) => {
+        const currentScore = score.score || score || 0;
+        const bestScore = score.bestScore || currentScore;
+        const finalScore = Math.max(currentScore, bestScore);
+        return finalScore >= 70; // Módulo completo se pontuação >= 70
+      }).length
+
       overallProgress = unifiedScore.normalizedScore || 0
     } else {
       console.log("[consolidateStudentMetrics] ⚠️ Usando dados legados para cálculo.")

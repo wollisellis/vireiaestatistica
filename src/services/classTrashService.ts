@@ -205,7 +205,7 @@ export class ClassTrashService {
       await batch.commit()
 
       console.log(`✅ [ClassTrashService.restoreClass] Turma ${classId} restaurada com sucesso`)
-      console.log(`📍 [ClassTrashService.restoreClass] Status restaurado para: 'active'`)
+      console.log(`📍 [ClassTrashService.restoreClass] Status restaurado para: 'open'`)
       console.log(`👤 [ClassTrashService.restoreClass] Restaurada por: ${restoredBy}`)
       console.log(`🗑️ [ClassTrashService.restoreClass] Documento removido de: deleted_classes/${classId}`)
     } catch (error) {

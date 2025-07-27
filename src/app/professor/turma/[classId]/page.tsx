@@ -126,7 +126,10 @@ export default function EnhancedClassDashboard() {
 
     const total = safeStudents.length;
     const active = safeStudents.filter(student => (student.completedModules || 0) > 0).length;
-    const totalProgress = safeStudents.reduce((sum, student) => sum + ((student.completedModules || 0) / 4) * 100, 0);
+
+    // ✅ CORREÇÃO: Usar o número real de módulos do sistema (atualmente 1)
+    const totalModulesInSystem = classData.totalModules || 1; // Atualmente só há 1 módulo
+    const totalProgress = safeStudents.reduce((sum, student) => sum + ((student.completedModules || 0) / totalModulesInSystem) * 100, 0);
     const totalScore = safeStudents.reduce((sum, student) => sum + (student.totalScore || 0), 0);
     const avgProgress = total > 0 ? totalProgress / total : 0;
     const avgScore = total > 0 ? totalScore / total : 0;
@@ -141,15 +144,36 @@ export default function EnhancedClassDashboard() {
   // Função para extrair número de RA do email
   const extractRANumber = (email: string): string => {
     if (!email) return 'N/A';
-    
+
     // Para emails da UNICAMP (padrão: ra123456@dac.unicamp.br ou ra123456@unicamp.br)
     if (email.includes('@dac.unicamp.br') || email.includes('@unicamp.br')) {
       const raMatch = email.match(/^([a-z]\d+)/i);
       return raMatch ? raMatch[1].toUpperCase() : email.split('@')[0];
     }
-    
+
     // Para outros emails, retornar parte antes do @
     return email.split('@')[0];
+  };
+
+  // Função para obter ID de 4 dígitos do estudante
+  const getStudentId = (student: any): string => {
+    // Priorizar anonymousId se disponível
+    if (student.anonymousId) {
+      return student.anonymousId;
+    }
+
+    // Fallback para RA extraído do email
+    const ra = extractRANumber(student.email || '');
+    if (ra !== 'N/A' && ra.length >= 4) {
+      return ra.slice(-4); // Últimos 4 dígitos
+    }
+
+    // Último fallback: gerar baseado no studentId
+    if (student.studentId) {
+      return student.studentId.slice(-4).toUpperCase();
+    }
+
+    return 'N/A';
   };
 
   // Função para formatar nome (primeiro nome + sobrenome)
@@ -510,8 +534,11 @@ export default function EnhancedClassDashboard() {
                   {filteredStudents && filteredStudents.length > 0 ? filteredStudents.map(student => {
                     if (!student) return null;
 
-                    const progressPercentage = ((student.completedModules || 0) / 4) * 100;
+                    // ✅ CORREÇÃO: Usar número real de módulos do sistema
+                    const totalModulesInSystem = classData.totalModules || 1;
+                    const progressPercentage = ((student.completedModules || 0) / totalModulesInSystem) * 100;
                     const raNumber = extractRANumber(student.email || '');
+                    const studentId = getStudentId(student);
                     const displayName = formatStudentName(student);
 
                     return (
@@ -526,9 +553,14 @@ export default function EnhancedClassDashboard() {
                             <div className="text-sm text-gray-500">
                               {student.email || 'Email não disponível'}
                             </div>
-                            {/* Número de RA */}
-                            <div className="text-xs text-blue-600 font-semibold">
-                              RA: {raNumber}
+                            {/* ID do Estudante (4 dígitos) */}
+                            <div className="flex items-center space-x-2">
+                              <div className="text-xs text-blue-600 font-semibold">
+                                RA: {raNumber}
+                              </div>
+                              <div className="text-xs font-mono font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded border border-emerald-200">
+                                #{studentId}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -541,7 +573,7 @@ export default function EnhancedClassDashboard() {
                             ></div>
                           </div>
                           <span className="text-sm text-gray-600">
-                            {student.completedModules || 0}/{classData.totalModules || 4} Módulos
+                            {student.completedModules || 0}/{totalModulesInSystem} Módulos
                           </span>
                         </td>
 
