@@ -167,37 +167,27 @@ export function ClassRankingPanel({
 
       if (!user?.id) return;
 
-      console.log(`🎯 [ClassRankingPanel] Iniciando carregamento para usuário: ${user.fullName} (${user.role})`);
-
       let targetClasses = [];
-
-      // 🎯 NOVO: Suporte para contas múltiplas (professor + estudante)
-      console.log(`🔧 [ClassRankingPanel] Buscando turmas para usuário: ${user.fullName} (role: ${user.role})`);
-
       let allClasses = [];
 
       // Buscar como professor (turmas que administra)
       try {
-        console.log('🎓 Buscando turmas como professor...');
         const professorClasses = await ProfessorClassService.getProfessorClasses(user.id);
         if (professorClasses && professorClasses.length > 0) {
-          console.log(`🎓 Encontradas ${professorClasses.length} turmas como professor`);
           allClasses.push(...professorClasses);
         }
       } catch (error) {
-        console.log('🎓 Erro ao buscar turmas como professor:', error);
+        // Silently handle error
       }
 
       // Buscar como estudante (turmas em que está matriculado)
       try {
-        console.log('👨‍🎓 Buscando turmas como estudante...');
         const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
         if (studentClasses && studentClasses.length > 0) {
-          console.log(`👨‍🎓 Encontradas ${studentClasses.length} turmas como estudante`);
           allClasses.push(...studentClasses);
         }
       } catch (error) {
-        console.log('👨‍🎓 Erro ao buscar turmas como estudante:', error);
+        // Silently handle error
       }
 
       // Remover duplicatas (caso esteja como professor e estudante na mesma turma)
@@ -205,16 +195,11 @@ export function ClassRankingPanel({
         index === self.findIndex(c => c.id === classe.id)
       );
 
-      console.log(`🔧 [ClassRankingPanel] Total de turmas encontradas: ${targetClasses.length}`);
-
       if (!targetClasses || targetClasses.length === 0) {
-        console.log(`🔧 [ClassRankingPanel] Nenhuma turma encontrada, tentando busca direta...`);
-
-        // 🎯 FALLBACK: Buscar diretamente estudantes da turma padrão
+        // Fallback: Buscar diretamente estudantes da turma padrão
         try {
           const directStudents = await getClassStudentsDirectly();
           if (directStudents && directStudents.length > 0) {
-            console.log(`✅ [ClassRankingPanel] Encontrados ${directStudents.length} estudantes via busca direta`);
             setClassStudents(directStudents);
             setClassInfo({
               id: 'default-class',
@@ -225,20 +210,17 @@ export function ClassRankingPanel({
             return;
           }
         } catch (error) {
-          console.log('❌ Erro na busca direta:', error);
+          // Silently handle error
         }
 
-        const errorMsg = 'Nenhum estudante encontrado no sistema';
-        console.log(`❌ [ClassRankingPanel] ${errorMsg}`);
-        setError(errorMsg);
+        setError('Nenhum estudante encontrado no sistema');
         setLoading(false);
         return;
       }
 
       // Usar a primeira turma encontrada
       const firstClass = targetClasses[0];
-      console.log(`🎯 Usando turma: ${firstClass.name} (${firstClass.id})`);
-      
+
       setClassInfo({
         id: firstClass.id,
         name: firstClass.name,
@@ -247,13 +229,10 @@ export function ClassRankingPanel({
         studentsCount: firstClass.studentsCount
       });
 
-      // 🚀 NOVA ABORDAGEM: Usar a mesma lógica da página do professor
-      console.log(`🔧 [ClassRankingPanel] Usando enhancedClassService.getClassStudents (mesma lógica do professor)`);
       let studentsData = await enhancedClassService.getClassStudents(firstClass.id);
 
-      // 🚀 FALLBACK: Se não encontrar estudantes via users, buscar diretamente de classStudents
+      // Fallback: Se não encontrar estudantes via users, buscar diretamente de classStudents
       if (!Array.isArray(studentsData) || studentsData.length === 0) {
-        console.log('⚠️ Nenhum estudante encontrado via users, tentando busca direta...');
         studentsData = await enhancedClassService.getClassStudentsDirectly(firstClass.id);
       }
 
@@ -262,43 +241,22 @@ export function ClassRankingPanel({
         return;
       }
 
-      console.log(`🎯 [ClassRankingPanel] Estudantes encontrados: ${studentsData.length}`);
-
-      // 📊 NOVA LÓGICA: Transformar dados usando a mesma lógica da página do professor
+      // Transformar dados usando a mesma lógica da página do professor
       const transformedStudents: ClassStudent[] = studentsData.map((student: any) => {
-        // 🎯 MESMA LÓGICA DA PÁGINA DO PROFESSOR: normalizedScore || totalScore || 0
         const studentScore = student.normalizedScore || student.totalScore || 0;
         const studentId = student.studentId || student.id || student.uid || '';
         const isCurrentUser = studentId === user.id;
 
-        // Log detalhado para debug (mesma estrutura da página do professor)
-        console.log(`🎯 Processando estudante:`, {
-          name: student.studentName || student.name,
-          id: studentId.slice(-6),
-          normalizedScore: student.normalizedScore,
-          totalScore: student.totalScore,
-          scoreUsed: studentScore,
-          completedModules: student.completedModules,
-          isCurrentUser
-        });
-        
         return {
           studentId,
           studentName: student.studentName || student.name || student.displayName || `Estudante (${studentId.slice(-6)})`,
           email: student.email || '',
-          totalScore: Math.round(Math.max(0, studentScore)), // Garantir valor não-negativo
-          completedModules: student.completedModules || (studentScore > 0 ? 1 : 0), // Inferir se completou pelo score
+          totalScore: Math.round(Math.max(0, studentScore)),
+          completedModules: student.completedModules || (studentScore > 0 ? 1 : 0),
           lastActivity: student.lastActivity ? new Date(student.lastActivity) : new Date(),
           isCurrentUser
         };
       });
-
-      // 🔍 DEBUG: Verificar dados antes da ordenação
-      console.log(`🔍 [ClassRankingPanel] Estudantes transformados ANTES da ordenação:`, transformedStudents.map(s => ({
-        name: s.studentName,
-        score: s.totalScore,
-        hasValidScore: s.totalScore > 0
-      })));
 
       // Ordenar por pontuação e definir posições
       const sortedStudents = transformedStudents
@@ -309,31 +267,9 @@ export function ClassRankingPanel({
         }))
         .slice(0, displayLimit);
 
-      console.log(`🔍 [ClassRankingPanel] Estudantes APÓS ordenação e slice:`, sortedStudents.map(s => ({
-        position: s.position,
-        name: s.studentName,
-        score: s.totalScore
-      })));
-
-      console.log(`📊 Total final de estudantes: ${sortedStudents.length}`);
-      console.log(`🏆 [ClassRankingPanel] RANKING FINAL PROCESSADO:`, sortedStudents.map(s => ({
-        position: s.position,
-        name: s.studentName,
-        score: s.totalScore,
-        isCurrentUser: s.isCurrentUser
-      })));
-
-      console.log(`🎨 [ClassRankingPanel] EXECUTANDO setClassStudents com ${sortedStudents.length} estudantes`);
       setClassStudents(sortedStudents);
-      console.log(`✅ [ClassRankingPanel] setClassStudents EXECUTADO COM SUCESSO`);
-
-      // Log adicional para verificar se o estado foi atualizado
-      setTimeout(() => {
-        console.log(`🔍 [ClassRankingPanel] Estado atual após setClassStudents: ${classStudents.length} estudantes`);
-      }, 100);
 
     } catch (err) {
-      console.error('Erro ao carregar ranking da turma:', err);
       setError('Erro ao carregar dados da turma');
     } finally {
       setLoading(false);
@@ -372,23 +308,33 @@ export function ClassRankingPanel({
 
   if (loading || !isHydrated) {
     return (
-      <Card className={className}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center space-x-2">
-            <GraduationCap className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-900">Ranking da Turma</h3>
+      <Card className={`${className} border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50`}>
+        <CardHeader className="pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <GraduationCap className="w-5 h-5 text-blue-600 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-base">
+                🏆 Carregando Ranking...
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Buscando dados da turma
+              </p>
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                <div className="flex items-center space-x-3 p-4 bg-white rounded-xl border border-gray-200">
+                  <div className="w-10 h-10 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full"></div>
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-1/2"></div>
                   </div>
+                  <div className="w-16 h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full"></div>
                 </div>
               </div>
             ))}
@@ -400,61 +346,60 @@ export function ClassRankingPanel({
 
   if (error) {
     return (
-      <Card className={className}>
+      <Card className={`${className} border-0 shadow-lg bg-gradient-to-br from-red-50 to-pink-50`}>
         <CardContent className="p-6 text-center">
-          <GraduationCap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500 mb-2">{error}</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <div className="p-3 bg-red-100 rounded-full w-fit mx-auto mb-4">
+            <GraduationCap className="w-8 h-8 text-red-500" />
+          </div>
+          <h3 className="font-bold text-gray-900 text-base mb-2">
+            ⚠️ Ops! Algo deu errado
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={loadClassRankingData}
+            className="bg-white hover:bg-red-50 border-red-200 text-red-700 hover:border-red-300"
           >
-            Tentar Novamente
+            🔄 Tentar Novamente
           </Button>
         </CardContent>
       </Card>
     );
   }
 
-  // 🚀 CORREÇÃO: Permitir tanto estudantes quanto professores verem o ranking
   if (!user || (user.role !== 'student' && user.role !== 'professor')) {
-    console.log(`🔧 [ClassRankingPanel] Usuário sem permissão para ver ranking: role=${user?.role}`);
     return null;
   }
 
-  // 🔧 DEBUG: Log do estado atual na renderização
-  console.log(`🎨 [ClassRankingPanel] RENDERIZANDO:`, {
-    loading: loading,
-    error: error,
-    classStudentsLength: classStudents?.length || 0,
-    classInfo: classInfo,
-    expanded: expanded,
-    classStudents: classStudents?.map(s => ({ name: s.studentName, score: s.totalScore }))
-  });
-
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
+    <Card className={`${className} border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50`}>
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <GraduationCap className="w-5 h-5 text-blue-600" />
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <GraduationCap className="w-5 h-5 text-blue-600" />
+            </div>
             <div>
-              <h3 className="font-semibold text-gray-900 text-sm">
-                Ranking da Turma
+              <h3 className="font-bold text-gray-900 text-base">
+                🏆 Ranking da Turma
               </h3>
               {classInfo && (
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {classInfo.name} · {classInfo.semester}/{classInfo.year}
+                <p className="text-sm text-gray-600 mt-1 font-medium">
+                  {classInfo.name}
+                  {classInfo.semester && classInfo.year && (
+                    <span className="text-gray-400"> • {classInfo.semester}/{classInfo.year}</span>
+                  )}
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={loadClassRankingData}
-              className="p-1 text-gray-500 hover:text-blue-600"
+              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-all"
               title="Atualizar ranking"
             >
               <TrendingUp className="w-4 h-4" />
@@ -470,7 +415,7 @@ export function ClassRankingPanel({
                   localStorage.setItem('ranking-panel-expanded', JSON.stringify(newState));
                 }
               }}
-              className="p-1"
+              className="p-2 hover:bg-blue-100 rounded-lg transition-all"
             >
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </Button>
@@ -628,7 +573,6 @@ export function ClassRankingPanel({
                               return Date.now() - activityDate.getTime() < 24 * 60 * 60 * 1000
                                 ? 'bg-green-400' : 'bg-gray-300';
                             } catch (error) {
-                              console.warn('Erro ao processar lastActivity:', error);
                               return 'bg-gray-300';
                             }
                           })()}
