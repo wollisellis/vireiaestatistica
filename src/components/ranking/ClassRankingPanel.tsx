@@ -82,7 +82,12 @@ export function ClassRankingPanel({
   useEffect(() => {
     console.log(`🔧 [ClassRankingPanel] useEffect executado - user: ${user?.fullName}, role: ${user?.role}, id: ${user?.id}`);
 
-    // 🎯 NOVO: Suporte para contas múltiplas (professor + estudante)
+    // 🎯 AGUARDAR: Aguardar usuário estar disponível
+    if (user === null) {
+      console.log(`🔧 [ClassRankingPanel] Usuário ainda carregando...`);
+      return; // Aguardar próximo render
+    }
+
     if (user?.id) {
       console.log(`🔧 [ClassRankingPanel] Usuário logado, chamando loadClassRankingData...`);
       loadClassRankingData();
@@ -90,7 +95,7 @@ export function ClassRankingPanel({
       console.log(`🔧 [ClassRankingPanel] Usuário não logado, setLoading(false)`);
       setLoading(false);
     }
-  }, [user?.id, moduleId]);
+  }, [user, moduleId]);
 
   // 🚀 OTIMIZAÇÃO: Atualização automática do ranking a cada 60 segundos (otimizado para performance)
   useEffect(() => {

@@ -1,9 +1,9 @@
 'use client';
 
+'use client';
+
 // Force dynamic rendering to avoid stale cache issues
 export const dynamic = 'force-dynamic';
-
-'use client';
 
 import React, { useEffect, useState, useCallback, useRef, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
