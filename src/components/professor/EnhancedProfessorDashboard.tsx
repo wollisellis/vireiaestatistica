@@ -67,19 +67,37 @@ export function EnhancedProfessorDashboard({
         for (const classDoc of classesSnapshot.docs) {
           const classId = classDoc.id
           console.log(`🔍 [EnhancedProfessorDashboard] Processando turma: ${classId}`)
-          
-          const studentsQuery = query(
+
+          // ✅ CORREÇÃO: Buscar em ambas as coleções de estudantes
+          const studentsQuery1 = query(
             collection(db, 'classStudents'),
             where('classId', '==', classId)
           )
-          const studentsSnapshot = await getDocs(studentsQuery)
-          
-          studentsSnapshot.docs.forEach(doc => {
+          const studentsSnapshot1 = await getDocs(studentsQuery1)
+
+          const studentsQuery2 = query(
+            collection(db, 'class_students'),
+            where('classId', '==', classId)
+          )
+          const studentsSnapshot2 = await getDocs(studentsQuery2)
+
+          // Adicionar estudantes da primeira coleção
+          studentsSnapshot1.docs.forEach(doc => {
             const studentId = doc.data().studentId
             if (studentId) {
               allStudentIds.add(studentId)
             }
           })
+
+          // Adicionar estudantes da segunda coleção
+          studentsSnapshot2.docs.forEach(doc => {
+            const studentId = doc.data().studentId
+            if (studentId) {
+              allStudentIds.add(studentId)
+            }
+          })
+
+          console.log(`📊 [EnhancedProfessorDashboard] Turma ${classId}: ${studentsSnapshot1.size + studentsSnapshot2.size} estudantes`)
         }
 
         // 2. Buscar módulos ativos
