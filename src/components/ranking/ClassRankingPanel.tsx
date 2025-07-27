@@ -51,12 +51,14 @@ interface ClassRankingPanelProps {
   moduleId?: string;
 }
 
-export function ClassRankingPanel({ 
-  className = '', 
-  compact = false, 
+export function ClassRankingPanel({
+  className = '',
+  compact = false,
   showStats = true,
-  moduleId 
+  moduleId
 }: ClassRankingPanelProps) {
+  console.log(`🔧 [ClassRankingPanel] Componente renderizado! moduleId: ${moduleId}`);
+
   const { user } = useFirebaseAuth();
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
@@ -78,9 +80,13 @@ export function ClassRankingPanel({
   }, []);
 
   useEffect(() => {
+    console.log(`🔧 [ClassRankingPanel] useEffect executado - user: ${user?.fullName}, role: ${user?.role}, id: ${user?.id}`);
+
     if (user?.id && (user.role === 'student' || user.role === 'professor')) {
+      console.log(`🔧 [ClassRankingPanel] Condição atendida, chamando loadClassRankingData...`);
       loadClassRankingData();
     } else {
+      console.log(`🔧 [ClassRankingPanel] Condição NÃO atendida, setLoading(false)`);
       setLoading(false);
     }
   }, [user?.id, moduleId]);
