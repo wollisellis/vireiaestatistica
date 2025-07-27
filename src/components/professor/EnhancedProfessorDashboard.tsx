@@ -46,22 +46,23 @@ export function EnhancedProfessorDashboard({
 
     const fetchStats = async () => {
       try {
-        // 1. Buscar apenas as turmas do professor atual
+        // ✅ CORREÇÃO: Buscar todas as turmas do sistema (acesso compartilhado para professores)
         const professorId = user?.uid || user?.id
         if (!professorId) {
           console.warn('Professor ID não disponível')
           return
         }
 
+        // Todos os professores podem ver todas as turmas
         const classesQuery = query(
           collection(db, 'classes'),
-          where('professorId', '==', professorId)
+          where('status', 'in', ['active', 'open', 'closed'])
         )
         const classesSnapshot = await getDocs(classesQuery)
         const allStudentIds = new Set<string>()
         let totalClasses = classesSnapshot.docs.length
         
-        console.log(`📊 [EnhancedProfessorDashboard] Encontradas ${totalClasses} turmas para professor ${professorId}`)
+        console.log(`📊 [EnhancedProfessorDashboard] Encontradas ${totalClasses} turmas do sistema (acesso compartilhado)`)
         
         for (const classDoc of classesSnapshot.docs) {
           const classId = classDoc.id

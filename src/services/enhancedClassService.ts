@@ -1115,8 +1115,8 @@ export class EnhancedClassService {
           updatedAt: classData.updatedAt?.toDate() || new Date(),
           settings: classData.settings || this.getDefaultClassSettings(),
           
-          // Estatísticas calculadas
-          studentsCount: students.length,
+          // ✅ CORREÇÃO: Usar studentsCount do banco (mais confiável) ou fallback para students.length
+          studentsCount: classData.studentsCount || students.length,
           activeStudents: students.filter(s => s.status === 'active' && 
             (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
           totalModules: Array.isArray(modules) ? modules.length : 4,
@@ -1298,18 +1298,18 @@ export class EnhancedClassService {
     }
   }
   
-  // Obter todas as turmas de um professor específico (método necessário para ImprovedClassManagement)
+  // ✅ CORREÇÃO: Obter TODAS as turmas do sistema (acesso compartilhado para professores)
+  // Todos os professores devem ver todas as turmas
   static async getProfessorClasses(professorId: string): Promise<EnhancedClass[]> {
     try {
-      console.log(`[EnhancedClassService] 🔍 Buscando turmas do professor: ${professorId}`)
-      
-      let professorsClasses: EnhancedClass[] = []
-      
+      console.log(`[EnhancedClassService] 🔍 Buscando TODAS as turmas do sistema (acesso compartilhado para professores)`)
+
+      let allSystemClasses: EnhancedClass[] = []
+
       try {
-        // Tentativa 1: Query otimizada por professorId e status (incluindo todos os status válidos)
+        // ✅ CORREÇÃO: Query sem filtro por professorId - todos os professores veem todas as turmas
         const optimizedQuery = query(
           collection(db, 'classes'),
-          where('professorId', '==', professorId),
           where('status', 'in', ['active', 'open', 'closed']),
           orderBy('createdAt', 'desc')
         )
@@ -1317,12 +1317,12 @@ export class EnhancedClassService {
         const querySnapshot = await getDocs(optimizedQuery)
         
         if (querySnapshot.size > 0) {
-          console.log(`[EnhancedClassService] ✅ Query otimizada encontrou ${querySnapshot.size} turmas`)
-          
+          console.log(`[EnhancedClassService] ✅ Query otimizada encontrou ${querySnapshot.size} turmas do sistema`)
+
           // 🔍 DEBUG: Log status de todas as turmas encontradas
           querySnapshot.docs.forEach(doc => {
             const data = doc.data()
-            console.log(`📋 [EnhancedClassService] Turma encontrada: "${data.name}" (status: ${data.status})`)
+            console.log(`📋 [EnhancedClassService] Turma encontrada: "${data.name}" (status: ${data.status}, professor: ${data.professorId})`)
           })
           
           for (const classDoc of querySnapshot.docs) {
@@ -1358,24 +1358,24 @@ export class EnhancedClassService {
               lastActivity: analytics?.date
             }
             
-            professorsClasses.push(enhancedClass)
+            allSystemClasses.push(enhancedClass)
           }
-          
-          console.log(`[EnhancedClassService] ✅ ${professorsClasses.length} turmas do professor carregadas`)
-          return professorsClasses
+
+          console.log(`[EnhancedClassService] ✅ ${allSystemClasses.length} turmas do sistema carregadas (acesso compartilhado)`)
+          return allSystemClasses
         }
       } catch (queryError) {
         console.warn(`[EnhancedClassService] ⚠️ Query otimizada falhou, usando fallback:`, queryError)
       }
       
-      // Fallback: Buscar todas as turmas e filtrar por professorId
-      console.log(`[EnhancedClassService] 🔄 Usando fallback - buscando todas as turmas`)
+      // ✅ CORREÇÃO: Fallback também retorna todas as turmas (sem filtro por professor)
+      console.log(`[EnhancedClassService] 🔄 Usando fallback - buscando todas as turmas do sistema`)
       const allClasses = await this.getAllClasses()
-      
-      professorsClasses = allClasses.filter(cls => cls.professorId === professorId)
-      
-      console.log(`[EnhancedClassService] ✅ Fallback encontrou ${professorsClasses.length} turmas do professor`)
-      return professorsClasses
+
+      allSystemClasses = allClasses // Não filtrar por professorId
+
+      console.log(`[EnhancedClassService] ✅ Fallback encontrou ${allSystemClasses.length} turmas do sistema`)
+      return allSystemClasses
       
     } catch (error) {
       console.error(`[EnhancedClassService] ❌ Erro ao buscar turmas do professor ${professorId}:`, error)
