@@ -176,17 +176,24 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   // 🎯 FUNÇÃO PARA RESTAURAR TURMA EXCLUÍDA
   const restoreClass = async (classId: string, className: string) => {
     try {
+      console.log(`🔄 [ImprovedClassManagement] Iniciando restauração da turma "${className}" (${classId})`)
       showNotification('info', 'Restaurando Turma', 'Restaurando turma excluída...')
       
       await ClassTrashService.restoreClass(classId, professorId)
+      console.log(`✅ [ImprovedClassManagement] Turma restaurada com sucesso no backend`)
       
       showNotification('success', 'Turma Restaurada', `${className} foi restaurada com sucesso!`)
       
-      // Recarregar turmas
-      await loadClasses()
+      // Recarregar ambas as listas: turmas ativas e excluídas
+      console.log(`🔄 [ImprovedClassManagement] Recarregando listas após restauração...`)
+      await Promise.all([
+        loadClasses(), // Recarregar turmas ativas
+        loadDeletedClasses() // Recarregar turmas excluídas (para remover a restaurada)
+      ])
+      console.log(`✅ [ImprovedClassManagement] Listas recarregadas após restauração`)
       
     } catch (error) {
-      console.error('Erro ao restaurar turma:', error)
+      console.error('❌ [ImprovedClassManagement] Erro ao restaurar turma:', error)
       showNotification('error', 'Erro na Restauração', 
         error instanceof Error ? error.message : 'Erro ao restaurar turma')
     }

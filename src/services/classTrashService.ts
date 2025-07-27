@@ -144,16 +144,21 @@ export class ClassTrashService {
    */
   static async restoreClass(classId: string, restoredBy: string): Promise<void> {
     try {
-      console.log(`Iniciando restauração da turma ${classId}`)
+      console.log(`🔄 [ClassTrashService.restoreClass] Iniciando restauração da turma`)
+      console.log(`📋 ClassID: ${classId}`)
+      console.log(`👤 RestoredBy: ${restoredBy}`)
 
       // Verificar se a turma está na lixeira
+      console.log(`🔍 [ClassTrashService.restoreClass] Verificando se turma está na lixeira...`)
       const deletedClassRef = doc(db, this.DELETED_CLASSES_COLLECTION, classId)
       const deletedClassDoc = await getDoc(deletedClassRef)
 
       if (!deletedClassDoc.exists()) {
+        console.error(`❌ [ClassTrashService.restoreClass] Turma ${classId} não encontrada na lixeira`)
         throw new Error('Turma não encontrada na lixeira')
       }
 
+      console.log(`✅ [ClassTrashService.restoreClass] Turma encontrada na lixeira`)
       const deletedData = deletedClassDoc.data() as DeletedClass
 
       // Verificar se ainda pode ser restaurada
@@ -173,7 +178,7 @@ export class ClassTrashService {
       // 1. Restaurar status da turma
       const classRef = doc(db, this.CLASSES_COLLECTION, classId)
       batch.update(classRef, {
-        status: 'open',
+        status: 'active', // ✅ CORREÇÃO: Usar 'active' para consistência com ProfessorClassService
         restoredAt: serverTimestamp(),
         restoredBy,
         updatedAt: serverTimestamp(),
@@ -196,9 +201,13 @@ export class ClassTrashService {
       // 3. Remover da lixeira
       batch.delete(deletedClassRef)
 
+      console.log(`💾 [ClassTrashService.restoreClass] Executando batch.commit()...`)
       await batch.commit()
 
-      console.log(`Turma ${classId} restaurada com sucesso`)
+      console.log(`✅ [ClassTrashService.restoreClass] Turma ${classId} restaurada com sucesso`)
+      console.log(`📍 [ClassTrashService.restoreClass] Status restaurado para: 'active'`)
+      console.log(`👤 [ClassTrashService.restoreClass] Restaurada por: ${restoredBy}`)
+      console.log(`🗑️ [ClassTrashService.restoreClass] Documento removido de: deleted_classes/${classId}`)
     } catch (error) {
       console.error('Erro ao restaurar turma:', error)
       throw error
