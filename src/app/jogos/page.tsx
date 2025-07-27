@@ -593,7 +593,7 @@ function JogosPageContent() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Trophy className="w-5 h-5 text-yellow-600" />
-                      <h3 className="font-semibold text-gray-900">Ranking da Turma</h3>
+                      <h3 className="font-semibold text-gray-900">🔧 DEBUG: Ranking da Turma (Expandido)</h3>
                     </div>
                     <Button
                       variant="ghost"
