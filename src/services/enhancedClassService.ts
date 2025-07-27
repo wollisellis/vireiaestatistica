@@ -1127,11 +1127,11 @@ export class EnhancedClassService {
       let professorsClasses: EnhancedClass[] = []
       
       try {
-        // Tentativa 1: Query otimizada por professorId e status
+        // Tentativa 1: Query otimizada por professorId e status (incluindo 'active')
         const optimizedQuery = query(
           collection(db, 'classes'),
           where('professorId', '==', professorId),
-          where('status', 'in', ['open', 'closed']),
+          where('status', 'in', ['active', 'open', 'closed']),
           orderBy('createdAt', 'desc')
         )
         
@@ -1139,6 +1139,12 @@ export class EnhancedClassService {
         
         if (querySnapshot.size > 0) {
           console.log(`[EnhancedClassService] ✅ Query otimizada encontrou ${querySnapshot.size} turmas`)
+          
+          // 🔍 DEBUG: Log status de todas as turmas encontradas
+          querySnapshot.docs.forEach(doc => {
+            const data = doc.data()
+            console.log(`📋 [EnhancedClassService] Turma encontrada: "${data.name}" (status: ${data.status})`)
+          })
           
           for (const classDoc of querySnapshot.docs) {
             const classData = classDoc.data()
