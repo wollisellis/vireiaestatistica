@@ -17,6 +17,7 @@ import {
 import { DeleteClassModal } from '@/components/professor/DeleteClassModal';
 import { ClassTrashService } from '@/services/classTrashService';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
+import { safeToLocaleDateString } from '@/utils/dateUtils';
 
 interface EnhancedStudent extends ClassEnrollment {
   name?: string;
@@ -591,7 +592,7 @@ export default function EnhancedClassDashboard() {
                         <td className="py-4 px-4">
                           <span className="text-sm text-gray-600">
                             {student.lastActivity ?
-                              new Date(student.lastActivity).toLocaleDateString('pt-BR') :
+                              safeToLocaleDateString(student.lastActivity) :
                               'Nunca'
                             }
                           </span>

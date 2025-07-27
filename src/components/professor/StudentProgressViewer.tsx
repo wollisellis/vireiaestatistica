@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Progress } from '@/components/ui/Progress'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog'
-import { parseFirebaseDate } from '@/utils/dateUtils'
+import { parseFirebaseDate, safeToLocaleDateString } from '@/utils/dateUtils'
 import { 
   ProfessorClassService, 
   StudentOverview,
@@ -157,7 +157,7 @@ export function StudentProgressViewer({ classId, className = '' }: StudentProgre
           : 0).toFixed(1),
         exercicios_perfeitos: student.moduleProgress?.reduce((sum, m) => 
           sum + m.exercises.filter(ex => ex.score === ex.maxScore).length, 0) || 0,
-        ultimo_acesso: student.lastActivity?.toDate?.()?.toLocaleDateString('pt-BR') || '',
+        ultimo_acesso: safeToLocaleDateString(student.lastActivity),
         ranking_turma: student.classRank || (index + 1),
         percentil: `${Math.round(((enhancedStudents.length - (index + 1)) / enhancedStudents.length) * 100)}%`
       }))

@@ -300,6 +300,14 @@ export function ClassRankingPanel({
         }))
         .slice(0, displayLimit);
 
+      console.log(`📊 Total final de estudantes: ${sortedStudents.length}`);
+      console.log(`🏆 [ClassRankingPanel] RANKING FINAL PROCESSADO:`, sortedStudents.map(s => ({
+        position: s.position,
+        name: s.studentName,
+        score: s.totalScore,
+        isCurrentUser: s.isCurrentUser
+      })));
+
       setClassStudents(sortedStudents);
 
     } catch (err) {
@@ -390,6 +398,16 @@ export function ClassRankingPanel({
   if (!user || user.role !== 'student') {
     return null;
   }
+
+  // 🔧 DEBUG: Log do estado atual na renderização
+  console.log(`🎨 [ClassRankingPanel] RENDERIZANDO:`, {
+    loading: loading,
+    error: error,
+    classStudentsLength: classStudents?.length || 0,
+    classInfo: classInfo,
+    expanded: expanded,
+    classStudents: classStudents?.map(s => ({ name: s.studentName, score: s.totalScore }))
+  });
 
   return (
     <Card className={className}>

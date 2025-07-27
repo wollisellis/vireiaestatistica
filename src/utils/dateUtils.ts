@@ -91,3 +91,64 @@ export const getTimestamp = (dateValue: any): number => {
   const date = parseFirebaseDate(dateValue);
   return date ? date.getTime() : 0;
 };
+
+/**
+ * Formata data para exibição em português brasileiro
+ * SAFE: Retorna string padrão em caso de erro
+ */
+export const formatDate = (dateValue: any, options?: Intl.DateTimeFormatOptions): string => {
+  const date = parseFirebaseDate(dateValue);
+  if (!date) return 'Data inválida';
+
+  const defaultOptions: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    ...options
+  };
+
+  try {
+    return date.toLocaleDateString('pt-BR', defaultOptions);
+  } catch (error) {
+    console.warn('Erro ao formatar data:', error, dateValue);
+    return 'Data inválida';
+  }
+};
+
+/**
+ * Versão SUPER SEGURA de toLocaleDateString
+ * Garante que nunca vai quebrar, mesmo com dados inválidos
+ */
+export const safeToLocaleDateString = (dateValue: any, locale: string = 'pt-BR', options?: Intl.DateTimeFormatOptions): string => {
+  try {
+    // Se é null/undefined
+    if (!dateValue) return 'N/A';
+
+    // Parse seguro da data
+    const date = parseFirebaseDate(dateValue);
+    if (!date) return 'Data inválida';
+
+    // Formatação segura
+    return date.toLocaleDateString(locale, options);
+  } catch (error) {
+    console.warn('🚨 Erro em safeToLocaleDateString:', error, dateValue);
+    return 'Data inválida';
+  }
+};
+
+/**
+ * Versão SUPER SEGURA de toLocaleTimeString
+ */
+export const safeToLocaleTimeString = (dateValue: any, locale: string = 'pt-BR', options?: Intl.DateTimeFormatOptions): string => {
+  try {
+    if (!dateValue) return 'N/A';
+
+    const date = parseFirebaseDate(dateValue);
+    if (!date) return 'Hora inválida';
+
+    return date.toLocaleTimeString(locale, options);
+  } catch (error) {
+    console.warn('🚨 Erro em safeToLocaleTimeString:', error, dateValue);
+    return 'Hora inválida';
+  }
+};

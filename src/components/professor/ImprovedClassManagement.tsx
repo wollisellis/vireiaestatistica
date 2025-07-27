@@ -21,6 +21,7 @@ import {
 import { EnhancedClassService } from '@/services/enhancedClassService'
 import { ClassTrashService, DeletedClass } from '@/services/classTrashService'
 import { EnhancedClass, EnhancedStudentOverview } from '@/types/classes'
+import { safeToLocaleDateString } from '@/utils/dateUtils'
 import { 
   Users, 
   Plus, 
@@ -1260,7 +1261,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-700">
-                      {new Date(studentModule1Data.stats.lastActivityDate.seconds * 1000).toLocaleDateString('pt-BR', {
+                      {safeToLocaleDateString(studentModule1Data.stats.lastActivityDate, 'pt-BR', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',

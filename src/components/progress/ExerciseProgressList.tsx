@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Progress } from '@/components/ui/Progress'
 import { Button } from '@/components/ui/Button'
 import { ExerciseProgress } from '@/lib/moduleProgressSystem'
+import { safeToLocaleDateString, safeToLocaleTimeString } from '@/utils/dateUtils'
 import { 
   CheckCircle, 
   Clock, 
@@ -162,7 +163,7 @@ function ExerciseProgressItem({
         {/* Data de conclusão */}
         {completed && completedAt && (
           <div className="text-xs text-gray-500 mb-3">
-            Concluído em {completedAt.toLocaleDateString('pt-BR')} às {completedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            Concluído em {safeToLocaleDateString(completedAt)} às {safeToLocaleTimeString(completedAt, 'pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </div>
         )}
 
