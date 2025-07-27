@@ -293,11 +293,16 @@ service cloud.firestore {
          collection.matches('.*[Ss]ystem.*'));
     }
 
+    // Coleções de estudantes (ACESSO AMPLO TEMPORÁRIO)
+    match /{collection}/{document} {
+      allow read, write, create: if isAuthenticated();
+    }
+
     // DELETED CLASSES - Lixeira de turmas (ACESSO DE PROFESSORES)
     match /deleted_classes/{classId} {
       // ✅ Professores podem ver e gerenciar turmas na lixeira
       allow read, write: if isProfessor();
-
+      
       // ✅ Permitir criação quando turma é excluída
       allow create: if isProfessor();
     }
@@ -325,21 +330,12 @@ service cloud.firestore {
     }
 
     // ========================================
-    // COLEÇÕES GERAIS - CONTROLE BÁSICO
+    // REGRA FINAL - BLOQUEIO PADRÃO
     // ========================================
 
-    // Coleções de configuração e sistema (PROFESSORES)
-    match /{collection}/{document} {
-      allow read, write: if isProfessor() &&
-        (collection == 'settings' ||
-         collection == 'system_health' ||
-         collection == 'audit_logs' ||
-         collection.matches('.*[Ss]ystem.*'));
-    }
-
-    // Coleções de estudantes (ACESSO AMPLO TEMPORÁRIO)
-    match /{collection}/{document} {
-      allow read, write, create: if isAuthenticated();
+    // Bloquear acesso a qualquer outra coleção não especificada
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

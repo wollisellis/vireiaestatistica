@@ -1,0 +1,135 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ========================================
+    // REGRAS TEMPORÁRIAS PARA DEBUG
+    // ========================================
+    // Versão mais permissiva para diagnosticar problemas
+    // Sistema educacional para avaliação nutricional - UNICAMP
+    // ========================================
+
+    // ========================================
+    // FUNÇÕES AUXILIARES SIMPLIFICADAS
+    // ========================================
+
+    // Função para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Função para verificar email institucional
+    function hasInstitutionalEmail() {
+      return request.auth != null && 
+        (request.auth.token.email.matches('.*@unicamp\\.br') ||
+         request.auth.token.email.matches('.*@g\\.unicamp\\.br') ||
+         request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
+         request.auth.token.email.matches('.*@fcm\\.unicamp\\.br'));
+    }
+
+    // Função para verificar se é professor
+    function isProfessor() {
+      return hasInstitutionalEmail() && (
+        request.auth.token.role == 'professor' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor') ||
+        request.auth.token.email.matches('.*@unicamp\\.br') // Professores têm email @unicamp.br
+      );
+    }
+
+    // Função para verificar se é estudante
+    function isStudent() {
+      return hasInstitutionalEmail() && (
+        request.auth.token.role == 'student' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student') ||
+        !request.auth.token.email.matches('.*@unicamp\\.br') // Não professores são estudantes
+      );
+    }
+
+    // Função para verificar se é dono do documento
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // ========================================
+    // REGRAS TEMPORÁRIAS MAIS PERMISSIVAS
+    // ========================================
+
+    // ACESSO GERAL PARA DEBUG
+    match /{document=**} {
+      // ✅ TEMPORÁRIO: Permitir leitura para usuários autenticados
+      allow read: if isAuthenticated();
+      
+      // ✅ TEMPORÁRIO: Permitir escrita para professores
+      allow write: if isProfessor();
+      
+      // ✅ TEMPORÁRIO: Permitir criação para usuários autenticados
+      allow create: if isAuthenticated();
+    }
+
+    // USERS COLLECTION - Perfis de usuários
+    match /users/{userId} {
+      // ✅ Usuários podem ver e editar apenas seus próprios dados
+      allow read, update: if isAuthenticated() && isOwner(userId);
+      
+      // ✅ Professores podem ver dados de todos os usuários
+      allow read: if isProfessor();
+      
+      // ✅ Permitir criação de conta com validação
+      allow create: if hasInstitutionalEmail() && 
+        request.resource.data.keys().hasAll(['role', 'email']) &&
+        request.resource.data.role in ['professor', 'student'] &&
+        request.auth.uid == userId;
+    }
+
+    // UNIFIED SCORES - Sistema de pontuação
+    match /unified_scores/{studentId} {
+      // ✅ Estudantes podem ler e atualizar sua própria pontuação
+      allow read: if isAuthenticated() && isOwner(studentId);
+      allow write: if isAuthenticated() && isOwner(studentId);
+      
+      // ✅ Professores podem ler todas as pontuações
+      allow read: if isProfessor();
+    }
+
+    // CLASSES - Turmas
+    match /classes/{classId} {
+      // ✅ Todos os usuários autenticados podem ler turmas
+      allow read: if isAuthenticated();
+      
+      // ✅ Professores podem gerenciar todas as turmas
+      allow write, delete, create: if isProfessor();
+      
+      // ✅ Usuários autenticados podem criar turmas (temporário)
+      allow create: if isAuthenticated();
+    }
+
+    // CLASS STUDENTS - Matrículas
+    match /classStudents/{enrollmentId} {
+      // ✅ TEMPORÁRIO: Todos os usuários autenticados podem ler e gerenciar matrículas
+      allow read, write, create: if isAuthenticated();
+    }
+
+    // CLASS INVITES - Códigos de convite das turmas
+    match /classInvites/{inviteCode} {
+      // ✅ Todos os usuários autenticados podem ler convites
+      allow read: if isAuthenticated();
+      
+      // ✅ Professores podem criar e gerenciar convites
+      allow write, create: if isProfessor();
+      
+      // ✅ Sistema pode atualizar contadores de uso
+      allow update: if isAuthenticated();
+    }
+
+    // MODULES - Módulos educacionais
+    match /modules/{moduleId} {
+      // ✅ Todos os usuários autenticados podem ler módulos
+      allow read: if isAuthenticated();
+      
+      // ✅ Apenas professores podem criar/editar módulos
+      allow write: if isProfessor();
+    }
+  }
+}

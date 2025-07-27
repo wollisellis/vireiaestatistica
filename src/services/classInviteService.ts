@@ -19,6 +19,7 @@ export interface ClassInvite {
 }
 
 export interface ClassRegistration {
+  classId: string // ✅ CORREÇÃO: Adicionar classId para consultas
   studentId: string
   studentName: string
   studentEmail: string
@@ -237,6 +238,7 @@ export class ClassInviteService {
 
       // Criar registro do estudante
       const registration: ClassRegistration = {
+        classId: classInfo.id, // ✅ CORREÇÃO: Adicionar classId para consultas
         studentId,
         studentName,
         studentEmail,

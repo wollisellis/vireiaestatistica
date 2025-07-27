@@ -681,25 +681,85 @@ export class EnhancedClassService {
     return Date.now()
   }
 
-  // Buscar estudantes básicos de uma turma (otimizado)
+  // Buscar estudantes básicos de uma turma (otimizado com fallback)
   static async getClassStudentsBasic(classId: string): Promise<BasicStudent[]> {
     try {
       console.log(`[getClassStudentsBasic] 🔄 Buscando estudantes básicos para turma: ${classId}`)
-      
-      // Query direta e otimizada
+
+      // Método 1: Query otimizada com índice composto
+      try {
+        const q = query(
+          collection(db, 'classStudents'),
+          where('classId', '==', classId),
+          where('status', 'in', ['active', 'inactive'])
+        )
+
+        const snapshot = await getDocs(q)
+
+        if (!snapshot.empty) {
+          const students = snapshot.docs.map(doc => {
+            const data = doc.data()
+            return {
+              id: doc.id,
+              studentId: data.studentId,
+              studentName: data.studentName || data.name,
+              studentEmail: data.studentEmail || data.email,
+              status: data.status,
+              enrolledAt: data.enrolledAt?.toDate(),
+              lastActivity: data.lastActivity?.toDate()
+            }
+          }).filter(student => student.studentId && student.studentName)
+
+          console.log(`[getClassStudentsBasic] ✅ Método 1: ${students.length} estudantes encontrados`)
+          return students
+        }
+      } catch (indexError) {
+        console.warn(`[getClassStudentsBasic] ⚠️ Método 1 falhou (índice), tentando fallback...`)
+      }
+
+      // Método 2: Fallback usando apenas classId
+      try {
+        const q = query(
+          collection(db, 'classStudents'),
+          where('classId', '==', classId)
+        )
+
+        const snapshot = await getDocs(q)
+
+        if (!snapshot.empty) {
+          const students = snapshot.docs.map(doc => {
+            const data = doc.data()
+            return {
+              id: doc.id,
+              studentId: data.studentId,
+              studentName: data.studentName || data.name,
+              studentEmail: data.studentEmail || data.email,
+              status: data.status,
+              enrolledAt: data.enrolledAt?.toDate(),
+              lastActivity: data.lastActivity?.toDate()
+            }
+          }).filter(student =>
+            student.studentId &&
+            student.studentName &&
+            (!student.status || ['active', 'inactive', 'pending'].includes(student.status))
+          )
+
+          console.log(`[getClassStudentsBasic] ✅ Método 2: ${students.length} estudantes encontrados`)
+          return students
+        }
+      } catch (fallbackError) {
+        console.warn(`[getClassStudentsBasic] ⚠️ Método 2 falhou, tentando método 3...`)
+      }
+
+      // Método 3: Fallback usando range de document IDs
       const q = query(
         collection(db, 'classStudents'),
-        where('classId', '==', classId),
-        where('status', 'in', ['active', 'inactive'])
+        where('__name__', '>=', `${classId}_`),
+        where('__name__', '<', `${classId}_\uf8ff`)
       )
-      
+
       const snapshot = await getDocs(q)
-      
-      if (snapshot.empty) {
-        console.log(`[getClassStudentsBasic] ❌ Nenhum estudante encontrado para turma ${classId}`)
-        return []
-      }
-      
+
       const students = snapshot.docs.map(doc => {
         const data = doc.data()
         return {
@@ -711,17 +771,16 @@ export class EnhancedClassService {
           enrolledAt: data.enrolledAt?.toDate(),
           lastActivity: data.lastActivity?.toDate()
         }
-      }).filter(student => student.studentId && student.studentName)
-      
-      console.log(`[getClassStudentsBasic] ✅ ${students.length} estudantes encontrados`)
+      }).filter(student =>
+        student.studentId &&
+        student.studentName &&
+        (!student.status || student.status !== 'removed')
+      )
+
+      console.log(`[getClassStudentsBasic] ✅ Método 3: ${students.length} estudantes encontrados`)
       return students
-      
+
     } catch (error) {
-      if (error.code === 'failed-precondition' && error.message.includes('index')) {
-        console.warn(`[getClassStudentsBasic] ⚠️ Índice requerido. Criando em: https://console.firebase.google.com/v1/r/project/vireiestatistica-ba7c5/firestore/indexes`)
-        return []
-      }
-      
       console.error('Erro ao buscar estudantes básicos:', error)
       return []
     }
