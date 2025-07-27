@@ -247,7 +247,8 @@ export function ClassRankingPanel({
         studentsCount: firstClass.studentsCount
       });
 
-      // Buscar dados dos estudantes da turma
+      // 🚀 NOVA ABORDAGEM: Usar a mesma lógica da página do professor
+      console.log(`🔧 [ClassRankingPanel] Usando enhancedClassService.getClassStudents (mesma lógica do professor)`);
       let studentsData = await enhancedClassService.getClassStudents(firstClass.id);
 
       // 🚀 FALLBACK: Se não encontrar estudantes via users, buscar diretamente de classStudents
@@ -261,20 +262,21 @@ export function ClassRankingPanel({
         return;
       }
 
-      // 📊 MELHORADO: Transformar dados com melhor processamento e debug
+      console.log(`🎯 [ClassRankingPanel] Estudantes encontrados: ${studentsData.length}`);
+
+      // 📊 NOVA LÓGICA: Transformar dados usando a mesma lógica da página do professor
       const transformedStudents: ClassStudent[] = studentsData.map((student: any) => {
-        // Priorizar totalNormalizedScore (escala 0-100) para ranking consistente
-        const studentScore = student.totalNormalizedScore || student.totalScore || student.score || 0;
+        // 🎯 MESMA LÓGICA DA PÁGINA DO PROFESSOR: normalizedScore || totalScore || 0
+        const studentScore = student.normalizedScore || student.totalScore || 0;
         const studentId = student.studentId || student.id || student.uid || '';
         const isCurrentUser = studentId === user.id;
-        
-        // Log detalhado para debug
+
+        // Log detalhado para debug (mesma estrutura da página do professor)
         console.log(`🎯 Processando estudante:`, {
           name: student.studentName || student.name,
           id: studentId.slice(-6),
-          totalNormalizedScore: student.totalNormalizedScore,
+          normalizedScore: student.normalizedScore,
           totalScore: student.totalScore,
-          score: student.score,
           scoreUsed: studentScore,
           completedModules: student.completedModules,
           isCurrentUser
@@ -291,6 +293,13 @@ export function ClassRankingPanel({
         };
       });
 
+      // 🔍 DEBUG: Verificar dados antes da ordenação
+      console.log(`🔍 [ClassRankingPanel] Estudantes transformados ANTES da ordenação:`, transformedStudents.map(s => ({
+        name: s.studentName,
+        score: s.totalScore,
+        hasValidScore: s.totalScore > 0
+      })));
+
       // Ordenar por pontuação e definir posições
       const sortedStudents = transformedStudents
         .sort((a, b) => b.totalScore - a.totalScore)
@@ -300,6 +309,12 @@ export function ClassRankingPanel({
         }))
         .slice(0, displayLimit);
 
+      console.log(`🔍 [ClassRankingPanel] Estudantes APÓS ordenação e slice:`, sortedStudents.map(s => ({
+        position: s.position,
+        name: s.studentName,
+        score: s.totalScore
+      })));
+
       console.log(`📊 Total final de estudantes: ${sortedStudents.length}`);
       console.log(`🏆 [ClassRankingPanel] RANKING FINAL PROCESSADO:`, sortedStudents.map(s => ({
         position: s.position,
@@ -308,7 +323,14 @@ export function ClassRankingPanel({
         isCurrentUser: s.isCurrentUser
       })));
 
+      console.log(`🎨 [ClassRankingPanel] EXECUTANDO setClassStudents com ${sortedStudents.length} estudantes`);
       setClassStudents(sortedStudents);
+      console.log(`✅ [ClassRankingPanel] setClassStudents EXECUTADO COM SUCESSO`);
+
+      // Log adicional para verificar se o estado foi atualizado
+      setTimeout(() => {
+        console.log(`🔍 [ClassRankingPanel] Estado atual após setClassStudents: ${classStudents.length} estudantes`);
+      }, 100);
 
     } catch (err) {
       console.error('Erro ao carregar ranking da turma:', err);
@@ -394,8 +416,9 @@ export function ClassRankingPanel({
     );
   }
 
-  // Se não é estudante, não mostrar
-  if (!user || user.role !== 'student') {
+  // 🚀 CORREÇÃO: Permitir tanto estudantes quanto professores verem o ranking
+  if (!user || (user.role !== 'student' && user.role !== 'professor')) {
+    console.log(`🔧 [ClassRankingPanel] Usuário sem permissão para ver ranking: role=${user?.role}`);
     return null;
   }
 
