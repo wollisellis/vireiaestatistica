@@ -1417,19 +1417,49 @@ export class EnhancedClassService {
     try {
       console.log(`[EnhancedClassService] ⚡ Buscando turmas com carregamento otimizado (sem estatísticas pesadas)`)
 
-      const optimizedQuery = query(
-        collection(db, 'classes'),
-        where('status', 'in', ['active', 'open', 'closed']),
-        orderBy('createdAt', 'desc')
-      )
-      
-      const querySnapshot = await getDocs(optimizedQuery)
-      console.log(`[EnhancedClassService] ✅ Query otimizada encontrou ${querySnapshot.size} turmas`)
+      let querySnapshot: any = null
+
+      // 🎯 TENTATIVA 1: Query otimizada com filtro de status (pode falhar se não houver índice)
+      try {
+        const optimizedQuery = query(
+          collection(db, 'classes'),
+          where('status', 'in', ['active', 'open', 'closed']),
+          orderBy('createdAt', 'desc')
+        )
+        
+        querySnapshot = await getDocs(optimizedQuery)
+        console.log(`[EnhancedClassService] ✅ Query otimizada encontrou ${querySnapshot.size} turmas`)
+      } catch (indexError) {
+        console.log(`[EnhancedClassService] ⚠️ Query otimizada falhou (índice não configurado), usando fallback...`)
+        
+        // 🔄 FALLBACK 1: Query simples com orderBy (mais provável de funcionar)
+        try {
+          const fallbackQuery = query(
+            collection(db, 'classes'),
+            orderBy('createdAt', 'desc')
+          )
+          
+          querySnapshot = await getDocs(fallbackQuery)
+          console.log(`[EnhancedClassService] ✅ Fallback 1 encontrou ${querySnapshot.size} turmas`)
+        } catch (orderError) {
+          console.log(`[EnhancedClassService] ⚠️ Fallback 1 falhou, usando fallback final...`)
+          
+          // 🔄 FALLBACK 2: Query mais simples possível
+          const simpleQuery = collection(db, 'classes')
+          querySnapshot = await getDocs(simpleQuery)
+          console.log(`[EnhancedClassService] ✅ Fallback final encontrou ${querySnapshot.size} turmas`)
+        }
+      }
 
       const classes: EnhancedClass[] = []
       
       for (const classDoc of querySnapshot.docs) {
         const classData = classDoc.data()
+        
+        // 🚫 FILTRO LOCAL: Excluir turmas deletadas (já que pode não ter filtro na query)
+        if (classData.status === 'deleted') {
+          continue
+        }
         
         // ⚡ OTIMIZAÇÃO: Apenas dados básicos, sem estatísticas pesadas
         const enhancedClass: EnhancedClass = {
@@ -1464,7 +1494,7 @@ export class EnhancedClassService {
       return classes
       
     } catch (error) {
-      console.error(`[EnhancedClassService] ❌ Erro no carregamento otimizado:`, error)
+      console.error(`[EnhancedClassService] ❌ Erro crítico no carregamento otimizado:`, error)
       return []
     }
   }
