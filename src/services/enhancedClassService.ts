@@ -383,6 +383,7 @@ export class EnhancedClassService {
         studentId,
         studentName: userData.fullName || userData.name || enrollmentData.studentName || 'Nome não encontrado',
         email: userData.email || enrollmentData.email,
+        anonymousId: userData.anonymousId, // Adicionar anonymousId para exibição no ranking
         avatarUrl: userData.avatarUrl,
         enrolledAt: parseFirebaseDate(enrollmentData.enrolledAt) || new Date(),
         lastActivity: parseFirebaseDate(userData.lastActivity) || new Date(),
@@ -894,6 +895,7 @@ export class EnhancedClassService {
         studentId: studentData.studentId,
         name: studentData.studentName,
         email: studentData.studentEmail || studentData.email || userData?.email || '',
+        anonymousId: userData?.anonymousId, // Adicionar anonymousId do usuário
         status: studentData.status || 'active',
         enrolledAt: studentData.enrolledAt?.toDate?.() || studentData.registeredAt?.toDate?.() || new Date(),
         lastActivity: studentData.lastActivity?.toDate?.() || new Date(),

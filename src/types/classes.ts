@@ -45,6 +45,7 @@ export interface EnhancedStudentOverview {
   studentId: string
   studentName: string
   email: string
+  anonymousId?: string // ID anônimo de 4 dígitos para exibição
   avatarUrl?: string
   enrolledAt: Date
   lastActivity: Date
