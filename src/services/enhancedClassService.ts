@@ -1411,6 +1411,63 @@ export class EnhancedClassService {
       return []
     }
   }
+
+  // ⚡ NOVO: Método otimizado para carregamento rápido das turmas (sem estatísticas pesadas)
+  static async getProfessorClassesOptimized(professorId: string): Promise<EnhancedClass[]> {
+    try {
+      console.log(`[EnhancedClassService] ⚡ Buscando turmas com carregamento otimizado (sem estatísticas pesadas)`)
+
+      const optimizedQuery = query(
+        collection(db, 'classes'),
+        where('status', 'in', ['active', 'open', 'closed']),
+        orderBy('createdAt', 'desc')
+      )
+      
+      const querySnapshot = await getDocs(optimizedQuery)
+      console.log(`[EnhancedClassService] ✅ Query otimizada encontrou ${querySnapshot.size} turmas`)
+
+      const classes: EnhancedClass[] = []
+      
+      for (const classDoc of querySnapshot.docs) {
+        const classData = classDoc.data()
+        
+        // ⚡ OTIMIZAÇÃO: Apenas dados básicos, sem estatísticas pesadas
+        const enhancedClass: EnhancedClass = {
+          id: classDoc.id,
+          name: classData.name,
+          description: classData.description,
+          semester: classData.semester,
+          year: classData.year,
+          inviteCode: classData.inviteCode,
+          professorId: classData.professorId,
+          professorName: classData.professorName,
+          status: classData.status || 'open',
+          maxStudents: classData.maxStudents,
+          acceptingNewStudents: classData.acceptingNewStudents ?? true,
+          createdAt: classData.createdAt?.toDate() || new Date(),
+          updatedAt: classData.updatedAt?.toDate() || new Date(),
+          settings: classData.settings || this.getDefaultClassSettings(),
+          
+          // ⚡ ESTATÍSTICAS BÁSICAS (sem consultas pesadas ao Firestore)
+          studentsCount: 0, // Será carregado quando necessário
+          activeStudents: 0, // Será carregado quando necessário  
+          totalModules: 1, // Valor fixo baseado no sistema atual
+          avgProgress: 0, // Será carregado quando necessário
+          avgScore: 0, // Será carregado quando necessário
+          lastActivity: new Date() // Valor padrão
+        }
+        
+        classes.push(enhancedClass)
+      }
+
+      console.log(`[EnhancedClassService] ⚡ ${classes.length} turmas carregadas com otimização ultra-rápida`)
+      return classes
+      
+    } catch (error) {
+      console.error(`[EnhancedClassService] ❌ Erro no carregamento otimizado:`, error)
+      return []
+    }
+  }
   
   static async removeStudentFromClass(classId: string, studentId: string) {
     try {

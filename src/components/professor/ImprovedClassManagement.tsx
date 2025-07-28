@@ -84,7 +84,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
   const [inviteClass, setInviteClass] = useState<EnhancedClass | null>(null)
   
   // Estados para sistema de filtros
-  const [viewFilter, setViewFilter] = useState<'all' | 'active' | 'deleted'>('all')
+  const [viewFilter, setViewFilter] = useState<'active' | 'deleted'>('active')
   const [deletedClasses, setDeletedClasses] = useState<DeletedClass[]>([])
   const [loadingDeleted, setLoadingDeleted] = useState(false)
   
@@ -272,8 +272,8 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
         originalConsoleLog(...args)
       }
       
-      // Carregar todas as turmas com sistema unificado fidedigno
-      const classesData = await EnhancedClassService.getProfessorClasses(professorId)
+      // ⚡ OTIMIZAÇÃO: Usar método otimizado para carregamento ultra-rápido
+      const classesData = await EnhancedClassService.getProfessorClassesOptimized(professorId)
       
       // Restaurar console.log
       console.log = originalConsoleLog
@@ -566,7 +566,6 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
         return classes.filter(cls => cls.status !== 'deleted')
       case 'deleted':
         return [] // Turmas excluídas são gerenciadas separadamente em deletedClasses
-      case 'all':
       default:
         return classes.filter(cls => cls.status !== 'deleted') // Por padrão, não mostrar excluídas
     }
@@ -822,86 +821,25 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       />
 
       {/* Sistema de Filtros com Tabs */}
-      <Tabs value={viewFilter} onValueChange={(value) => setViewFilter(value as 'all' | 'active' | 'deleted')} className="w-full">
-        <TabsList className={`grid w-full mb-4 sm:mb-6 ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-3'}`}>
-          <TabsTrigger value="all" className="flex items-center justify-center gap-2 py-2 sm:py-3">
-            <List className="w-4 h-4" />
-            <span className="text-sm sm:text-base">Todas as Turmas</span>
-            <Badge variant="secondary" className="ml-1 text-xs">
-              {classes.length}
-            </Badge>
-          </TabsTrigger>
+      <Tabs value={viewFilter} onValueChange={(value) => setViewFilter(value as 'active' | 'deleted')} className="w-full">
+        <TabsList className={`grid w-full mb-4 sm:mb-6 ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-2'}`}>
           <TabsTrigger value="active" className="flex items-center justify-center gap-2 py-2 sm:py-3">
             <CheckCircle className="w-4 h-4" />
-            <span className="text-sm sm:text-base">Somente Ativas</span>
+            <span className="text-sm sm:text-base">Ativas</span>
             <Badge variant="secondary" className="ml-1 text-xs">
               {activeClassesCount}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="deleted" className="flex items-center justify-center gap-2 py-2 sm:py-3">
             <Archive className="w-4 h-4" />
-            <span className="text-sm sm:text-base">Turmas Excluídas</span>
+            <span className="text-sm sm:text-base">Excluídas</span>
             <Badge variant="secondary" className="ml-1 text-xs">
               {deletedClassesCount}
             </Badge>
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab Content - Todas as Turmas */}
-        <TabsContent value="all">
-          {filteredClasses.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-16"
-            >
-              <Card className="border-dashed border-2 border-gray-300">
-                <CardContent className="p-12">
-                  <GraduationCap className="w-20 h-20 text-gray-400 mx-auto mb-6" />
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                    Nenhuma turma criada ainda
-                  </h3>
-                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                    Crie sua primeira turma para começar a gerenciar estudantes. 
-                    O sistema permite convites automáticos e acompanhamento em tempo real.
-                  </p>
-                  <Button 
-                    onClick={() => setIsCreatingClass(true)}
-                    size="lg"
-                    className="h-12 px-8"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Criar Primeira Turma
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-              {filteredClasses.map((cls, index) => (
-                <motion.div
-                  key={cls.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <EnhancedClassCard
-                    classInfo={cls}
-                    isSelected={selectedClass?.id === cls.id}
-                    onSelect={() => setSelectedClass(cls)}
-                    onCopyCode={() => copyClassCode(cls.code)}
-                    onCopyInviteLink={() => copyInviteLink(cls.code)}
-                    onViewDetails={() => router.push(`/professor/turma/${cls.id}`)}
-                    onShowInvites={() => showClassInvites(cls)}
-                    onRestore={() => restoreClass(cls.id, cls.name)}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Tab Content - Somente Ativas */}
+        {/* Tab Content - Turmas Ativas */}
         <TabsContent value="active">
           {filteredClasses.length === 0 ? (
             <motion.div
