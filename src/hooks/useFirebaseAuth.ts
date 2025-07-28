@@ -295,8 +295,33 @@ export function useFirebaseAuth() {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true)
-      const { user } = await signInWithEmailAndPassword(auth, email, password)
-      return { data: { user }, error: null }
+      const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password)
+      
+      // Verificar se usuário tem perfil e se precisa de anonymousId
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+      
+      if (userDoc.exists()) {
+        const existingProfile = userDoc.data() as User
+        
+        // Verificar se usuário estudante precisa de anonymousId
+        if (!existingProfile.anonymousId && existingProfile.role === 'student') {
+          console.log('🆔 Gerando anonymousId para usuário existente (login email)...')
+          const newAnonymousId = generateAnonymousId()
+          
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
+            anonymousId: newAnonymousId,
+            anonymousIdGeneratedAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true })
+          
+          console.log('✅ AnonymousId gerado com sucesso:', newAnonymousId)
+          return { data: { user: firebaseUser, profile: { ...existingProfile, anonymousId: newAnonymousId } }, error: null }
+        }
+        
+        return { data: { user: firebaseUser, profile: existingProfile }, error: null }
+      }
+      
+      return { data: { user: firebaseUser }, error: null }
     } catch (error: unknown) {
       console.error('Sign in error:', error)
       return { data: null, error: { message: (error as Error).message } }
@@ -401,6 +426,18 @@ export function useFirebaseAuth() {
         console.log('👤 Usuário existente encontrado')
         // Existing user - allow role switching or multiple roles
         const existingProfile = userDoc.data() as User
+        
+        // Verificar se usuário estudante precisa de anonymousId
+        let needsUpdate = false
+        const updates: any = {}
+        
+        if (!existingProfile.anonymousId && existingProfile.role === 'student') {
+          console.log('🆔 Gerando anonymousId para usuário existente...')
+          const newAnonymousId = generateAnonymousId()
+          updates.anonymousId = newAnonymousId
+          updates.anonymousIdGeneratedAt = serverTimestamp()
+          needsUpdate = true
+        }
 
         // If user is trying to access a different role, update their profile
         if (existingProfile.role !== role) {
@@ -426,6 +463,22 @@ export function useFirebaseAuth() {
           }, { merge: true })
 
           console.log('✅ Papel atualizado com sucesso:', updatedProfile)
+          return { data: { user: firebaseUser, profile: updatedProfile, isNewUser: false }, error: null }
+        }
+        
+        // Se precisa apenas atualizar o anonymousId (sem mudança de role)
+        if (needsUpdate) {
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
+            ...updates,
+            updatedAt: serverTimestamp()
+          }, { merge: true })
+          
+          const updatedProfile = {
+            ...existingProfile,
+            ...updates
+          }
+          
+          console.log('✅ AnonymousId gerado com sucesso:', updates.anonymousId)
           return { data: { user: firebaseUser, profile: updatedProfile, isNewUser: false }, error: null }
         }
 
