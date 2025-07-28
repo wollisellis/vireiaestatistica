@@ -390,7 +390,7 @@ export class EnhancedClassService {
         status: enrollmentData.status || 'active',
         role: 'student',
 
-        overallProgress: Math.round(overallProgress),
+        overallProgress: overallProgress,
         totalNormalizedScore: totalScore,
         classRank: 0, // Calculado posteriormente
         completedModules,
@@ -589,8 +589,8 @@ export class EnhancedClassService {
       const progressSum = students.reduce((sum, s) => sum + s.overallProgress, 0)
       const scoreSum = students.reduce((sum, s) => sum + s.totalNormalizedScore, 0)
       
-      const averageProgress = Math.round(progressSum / totalStudents)
-      const averageScore = Math.round(scoreSum / totalStudents)
+      const averageProgress = progressSum / totalStudents
+      const averageScore = scoreSum / totalStudents
       
       // Calcular outras métricas
       const completedModules = students.reduce((sum, s) => sum + s.completedModules, 0)

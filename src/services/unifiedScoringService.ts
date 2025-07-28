@@ -151,8 +151,8 @@ class UnifiedScoringService {
       // Criar um ID único para o exercício
       const exerciseKey = `${moduleId}_${exerciseId}`
       
-      // Calcular pontuação normalizada (0-100)
-      const normalizedScore = Math.round((score / maxScore) * 100)
+      // Calcular pontuação normalizada (0-100) - mantendo precisão decimal
+      const normalizedScore = (score / maxScore) * 100
       
       const currentScore = await this.getUnifiedScore(studentId) || this.createEmptyScore(studentId)
       
@@ -169,7 +169,7 @@ class UnifiedScoringService {
       if (moduleExercises.length > 0) {
         const moduleAverage = moduleExercises
           .reduce((sum, key) => sum + currentScore.exerciseScores[key], 0) / moduleExercises.length
-        currentScore.moduleScores[moduleId] = Math.round(moduleAverage)
+        currentScore.moduleScores[moduleId] = moduleAverage
       }
       
       // Recalcular totais
@@ -334,8 +334,8 @@ class UnifiedScoringService {
     const moduleAverage = moduleScores.reduce((sum, s) => sum + s, 0) / moduleScores.length
     const gameAverage = gameScores.length > 0 ? gameScores.reduce((sum, s) => sum + s, 0) / gameScores.length : 0
 
-    // Peso: 80% módulos, 20% jogos (priorizar aprendizado)
-    return Math.round(moduleAverage * 0.8 + gameAverage * 0.2)
+    // Peso: 80% módulos, 20% jogos (priorizar aprendizado) - mantendo precisão
+    return moduleAverage * 0.8 + gameAverage * 0.2
   }
 
   // Calcular pontuação normalizada (0-100)
@@ -346,7 +346,7 @@ class UnifiedScoringService {
 
     // Calcular média das pontuações dos módulos (já estão em escala 0-100)
     const averageModuleScore = moduleScores.reduce((sum, s) => sum + s, 0) / moduleScores.length
-    return Math.min(100, Math.max(0, Math.round(averageModuleScore)))
+    return Math.min(100, Math.max(0, averageModuleScore))
   }
 
   // Calcular nível baseado na pontuação (escala 0-100)
@@ -457,7 +457,7 @@ class UnifiedScoringService {
     
     const completedModules = completedModuleIds.length
     const totalModules = 1 // ✅ ATUALIZADO: Apenas 1 módulo disponível atualmente
-    const completionRate = Math.round((completedModules / totalModules) * 100)
+    const completionRate = (completedModules / totalModules) * 100
     
     return {
       completedModules,
@@ -576,7 +576,7 @@ class UnifiedScoringService {
       // Calcular pontuação baseada nas métricas das questões
       const totalQuestions = questionMetrics.length
       const correctAnswers = questionMetrics.filter(m => m.correct).length
-      const exerciseScore = Math.round((correctAnswers / totalQuestions) * 100)
+      const exerciseScore = (correctAnswers / totalQuestions) * 100
 
       // Usar método existente updateExerciseScore
       await this.updateExerciseScore(studentId, moduleId, exerciseId, exerciseScore, 100)

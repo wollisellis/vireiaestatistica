@@ -286,9 +286,8 @@ export function ClassRankingPanel({
   };
 
   const formatScore = (score: number) => {
-    // Mostrar até 1 casa decimal se necessário, sem arredondamento
-    const truncated = Math.trunc(score * 10) / 10;
-    return truncated % 1 === 0 ? truncated.toString() : truncated.toFixed(1);
+    // Retornar o valor exato, mostrando até 1 casa decimal se necessário
+    return score % 1 === 0 ? score.toString() : score.toFixed(1);
   };
 
   if (loading || !isHydrated) {
