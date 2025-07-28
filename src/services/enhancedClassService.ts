@@ -1419,18 +1419,17 @@ export class EnhancedClassService {
 
       let querySnapshot: any = null
 
-      // 🎯 TENTATIVA 1: Query otimizada com filtro de status (pode falhar se não houver índice)
+      // 🎯 TENTATIVA 1: Query igual ao EnhancedProfessorDashboard (sem orderBy para evitar problema de índice)
       try {
         const optimizedQuery = query(
           collection(db, 'classes'),
-          where('status', 'in', ['active', 'open', 'closed']),
-          orderBy('createdAt', 'desc')
+          where('status', 'in', ['active', 'open', 'closed'])
         )
         
         querySnapshot = await getDocs(optimizedQuery)
-        console.log(`[EnhancedClassService] ✅ Query otimizada encontrou ${querySnapshot.size} turmas`)
+        console.log(`[EnhancedClassService] ✅ Query com filtro de status encontrou ${querySnapshot.size} turmas`)
       } catch (indexError) {
-        console.log(`[EnhancedClassService] ⚠️ Query otimizada falhou (índice não configurado), usando fallback...`)
+        console.log(`[EnhancedClassService] ⚠️ Query com filtro falhou, usando fallback...`)
         
         // 🔄 FALLBACK 1: Query simples com orderBy (mais provável de funcionar)
         try {
@@ -1453,11 +1452,19 @@ export class EnhancedClassService {
 
       const classes: EnhancedClass[] = []
       
+      // 🔍 DEBUG: Log das turmas encontradas
+      console.log(`[EnhancedClassService] 📋 Turmas encontradas na query:`)
+      querySnapshot.docs.forEach((doc, index) => {
+        const data = doc.data()
+        console.log(`   ${index + 1}. ID: ${doc.id}, Nome: "${data.name}", Status: "${data.status}"`)
+      })
+      
       for (const classDoc of querySnapshot.docs) {
         const classData = classDoc.data()
         
         // 🚫 FILTRO LOCAL: Excluir turmas deletadas (já que pode não ter filtro na query)
         if (classData.status === 'deleted') {
+          console.log(`[EnhancedClassService] ⏭️ Ignorando turma deletada: ${classData.name}`)
           continue
         }
         
@@ -1488,6 +1495,7 @@ export class EnhancedClassService {
         }
         
         classes.push(enhancedClass)
+        console.log(`[EnhancedClassService] ✅ Turma adicionada: "${enhancedClass.name}" (ID: ${enhancedClass.id})`)
       }
 
       console.log(`[EnhancedClassService] ⚡ ${classes.length} turmas carregadas com otimização ultra-rápida`)
