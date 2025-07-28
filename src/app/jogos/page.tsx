@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 // Force dynamic rendering to avoid stale cache issues
 export const dynamic = 'force-dynamic';
 
@@ -14,18 +12,16 @@ import CompletedModuleModal from '@/components/games/CompletedModuleModal';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { doc, onSnapshot, getDocs, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { 
-  BookOpen, 
-  Trophy, 
-  Home, 
-  ChevronRight, 
+import {
+  BookOpen,
+  Trophy,
+  Home,
+  ChevronRight,
   TrendingUp,
   Award,
   User,
   GraduationCap,
   LogOut,
-  ChevronUp,
-  ChevronDown,
   X,
   Minimize2,
   Maximize2,
