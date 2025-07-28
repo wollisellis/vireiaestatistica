@@ -32,6 +32,7 @@ interface ClassStudent {
   lastActivity?: Date;
   isCurrentUser?: boolean;
   position?: number;
+  anonymousId?: string;
 }
 
 interface ClassInfo {
@@ -192,22 +193,7 @@ export function ClassRankingPanel({
       );
 
       if (!targetClasses || targetClasses.length === 0) {
-        // Fallback: Buscar diretamente estudantes da turma padrão
-        try {
-          const directStudents = await getClassStudentsDirectly();
-          if (directStudents && directStudents.length > 0) {
-            setClassStudents(directStudents);
-            setClassInfo({
-              id: 'default-class',
-              name: 'Turma Geral',
-              description: 'Ranking geral de todos os estudantes'
-            });
-            setLoading(false);
-            return;
-          }
-        } catch (error) {
-          // Silently handle error
-        }
+        // Sem turmas encontradas
 
         setError('Nenhum estudante encontrado no sistema');
         setLoading(false);
@@ -250,7 +236,8 @@ export function ClassRankingPanel({
           totalScore: Math.min(100, Math.max(0, studentScore)), // Escala 0-100 sem arredondamento
           completedModules: student.completedModules || (studentScore > 0 ? 1 : 0),
           lastActivity: student.lastActivity ? new Date(student.lastActivity) : new Date(),
-          isCurrentUser
+          isCurrentUser,
+          anonymousId: student.anonymousId || studentId.slice(-4) // Usa anonymousId se disponível
         };
       });
 
@@ -447,7 +434,7 @@ export function ClassRankingPanel({
                 </div>
                 <div className="flex items-center justify-between text-xs text-blue-700 mt-1">
                   <span className="font-mono font-bold bg-blue-100 px-2 py-0.5 rounded">
-                    {user?.id?.slice(-4) || '0000'}
+                    #{(user as any)?.anonymousId || user?.id?.slice(-4) || '0000'}
                   </span>
                   <span className="font-medium flex-shrink-0">
                     {classStudents.find(s => s.isCurrentUser)?.completedModules || 0}/1 módulo
@@ -489,7 +476,7 @@ export function ClassRankingPanel({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <p className="text-sm font-semibold text-gray-900 truncate flex-1">
-                            {showNames ? student.studentName : `ID: ${student.studentId.slice(-4) || '0000'}`}
+                            {showNames ? student.studentName : `#${student.anonymousId || student.studentId.slice(-4) || '0000'}`}
                           </p>
                           {student.isCurrentUser && (
                             <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 font-semibold flex-shrink-0">
