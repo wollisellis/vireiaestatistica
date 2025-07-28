@@ -30,8 +30,6 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import { StudentProgressProvider } from '@/contexts/StudentProgressContext';
-import { PersonalLearningDashboard } from '@/components/dashboard/PersonalLearningDashboard';
 import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
@@ -451,29 +449,30 @@ function JogosPageContent() {
   }
   
   return (
-    <StudentProgressProvider>
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-        {/* 🎯 HEADER SIMPLIFICADO */}
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        {/* 🎯 HEADER RESPONSIVO */}
         <div className="bg-white border-b border-emerald-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center space-x-4">
-                <Link href="/dashboard-avancado" className="flex items-center space-x-2 text-emerald-600 hover:text-emerald-700">
+            <div className="flex justify-between items-center py-3 sm:py-4">
+              {/* Navigation - Esconde texto em mobile */}
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <Link href="/dashboard-avancado" className="flex items-center space-x-1 sm:space-x-2 text-emerald-600 hover:text-emerald-700">
                   <Home className="w-5 h-5" />
-                  <span className="font-medium">Dashboard</span>
+                  <span className="font-medium hidden sm:inline">Dashboard</span>
                 </Link>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
-                <div className="flex items-center space-x-2">
+                <ChevronRight className="w-4 h-4 text-gray-400 hidden sm:block" />
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   <BookOpen className="w-5 h-5 text-emerald-600" />
-                  <span className="font-semibold text-gray-900">Módulos Educacionais</span>
+                  <span className="font-semibold text-gray-900 text-sm sm:text-base">Módulos</span>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-3 text-base text-gray-700">
-                  <User className="w-5 h-5 text-emerald-600" />
-                  <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-lg">
+              {/* User info - Compacto em mobile */}
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <div className="flex items-center space-x-1 sm:space-x-3 text-sm sm:text-base text-gray-700">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 hidden sm:block" />
+                  <div className="flex items-center space-x-1 sm:space-x-2">
+                    <span className="font-semibold text-sm sm:text-lg">
                       {(() => {
                         // Extrair apenas o primeiro nome do aluno
                         const fullName = (user as any)?.displayName || (user as any)?.name || (user as any)?.fullName;
@@ -494,7 +493,7 @@ function JogosPageContent() {
                       const anonymousId = (user as any)?.anonymousId;
                       if (anonymousId) {
                         return (
-                          <span className="text-sm text-emerald-700 font-mono font-bold bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-sm">
+                          <span className="text-xs sm:text-sm text-emerald-700 font-mono font-bold bg-emerald-100 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-emerald-200 shadow-sm">
                             #{anonymousId}
                           </span>
                         );
@@ -503,16 +502,17 @@ function JogosPageContent() {
                       // Fallback para userId truncado (como antes)
                       const displayId = userId.length <= 4 ? userId : userId.slice(-8);
                       return (
-                        <span className="text-sm text-gray-600 font-mono bg-gray-100 px-2 py-1 rounded border">
+                        <span className="text-xs sm:text-sm text-gray-600 font-mono bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border">
                           ID:{displayId.toUpperCase()}
                         </span>
                       );
                     })()}
                   </div>
                   {isProfessor && (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                      <GraduationCap className="w-4 h-4 mr-1.5" />
-                      Professor
+                    <span className="hidden sm:inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                      <GraduationCap className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Professor</span>
+                      <span className="sm:hidden">Prof</span>
                     </span>
                   )}
                 </div>
@@ -520,35 +520,35 @@ function JogosPageContent() {
                   onClick={handleLogout}
                   variant="ghost"
                   size="sm"
-                  className="text-gray-500 hover:text-red-600"
+                  className="text-gray-500 hover:text-red-600 p-1 sm:p-2"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sair
+                  <LogOut className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sair</span>
                 </Button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 🎯 MAIN CONTENT */}
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
+        {/* 🎯 MAIN CONTENT - RESPONSIVO */}
+        <div className="max-w-8xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6 xl:gap-8">
             
-            {/* 🎯 MÓDULOS - COL PRINCIPAL */}
-            <div className="xl:col-span-2 2xl:col-span-3 space-y-8">
+            {/* 🎯 MÓDULOS - COL PRINCIPAL RESPONSIVA */}
+            <div className="lg:col-span-2 2xl:col-span-3 space-y-4 sm:space-y-6 lg:space-y-8">
               <div>
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
-                    <BookOpen className="w-6 h-6 text-emerald-600" />
+                <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
+                  <div className="p-1.5 sm:p-2 bg-emerald-100 rounded-lg flex-shrink-0">
+                    <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Módulos de Avaliação Nutricional</h1>
-                    <p className="text-gray-600 mt-1">Aprenda os fundamentos da avaliação nutricional com dados brasileiros</p>
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Módulos de Avaliação Nutricional</h1>
+                    <p className="text-gray-600 text-sm sm:text-base mt-0.5 sm:mt-1 hidden sm:block">Aprenda os fundamentos da avaliação nutricional com dados brasileiros</p>
                   </div>
                 </div>
 
-                {/* 🎯 GRID DE MÓDULOS SIMPLIFICADO */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+                {/* 🎯 GRID DE MÓDULOS RESPONSIVO */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
                   <AnimatePresence>
                     {nutritionalGames.map((module) => (
                       <EnhancedModuleCard
@@ -567,11 +567,6 @@ function JogosPageContent() {
                 </div>
               </div>
 
-              {/* 🎯 DASHBOARD PESSOAL */}
-              <div className="mt-12">
-                <PersonalLearningDashboard />
-              </div>
-
               {/* 🔧 DEBUG COMPONENT (ONLY IN DEVELOPMENT) */}
               {process.env.NODE_ENV === 'development' && (
                 <div className="mt-12">
@@ -580,8 +575,8 @@ function JogosPageContent() {
               )}
             </div>
 
-            {/* 🎯 SIDEBAR DIREITO */}
-            <div className="xl:col-span-1 space-y-6">
+            {/* 🎯 SIDEBAR RESPONSIVA - Esconde em mobile, mostra em tablet+ */}
+            <div className="hidden lg:block lg:col-span-1 space-y-4 lg:space-y-6">
               {/* 🎯 INFORMAÇÕES DA TURMA */}
               {user && <StudentClassInfo studentId={getUserId() || ''} />}
               
@@ -593,6 +588,32 @@ function JogosPageContent() {
                 expanded={true}
                 showNames={false}
               />
+            </div>
+          </div>
+
+          {/* 🎯 SIDEBAR MOBILE - Visível apenas em dispositivos móveis */}
+          <div className="lg:hidden mt-6 sm:mt-8 space-y-4">
+            <div className="border-t border-gray-200 pt-4">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 px-1">Informações Adicionais</h2>
+              
+              {/* Informações da Turma - Versão Mobile */}
+              {user && (
+                <div className="mb-4">
+                  <StudentClassInfo studentId={getUserId() || ''} />
+                </div>
+              )}
+              
+              {/* Ranking - Versão Mobile Compacta */}
+              <div>
+                <ClassRankingPanel
+                  moduleId="introducao-avaliacao-nutricional"
+                  user={user}
+                  loading={loading}
+                  expanded={false}
+                  showNames={false}
+                  compact={true}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -615,8 +636,7 @@ function JogosPageContent() {
         </AnimatePresence>
 
         <Footer />
-      </div>
-    </StudentProgressProvider>
+    </div>
   );
 }
 
