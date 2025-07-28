@@ -23,6 +23,7 @@ import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { enhancedClassService } from '@/services/enhancedClassService';
 import OptimizedClassService from '@/services/optimizedClassService';
 import ClassRankingService from '@/services/classRankingService';
+import DenormalizedScoreService from '@/services/denormalizedScoreService';
 import ProfessorClassService from '@/services/professorClassService';
 
 interface ClassStudent {
@@ -166,6 +167,10 @@ export function ClassRankingPanel({
   // 🚀 FASE 2: Flag para usar rankings pré-agregados (máxima performance)
   const usePreAggregatedRanking = process.env.NODE_ENV === 'development' || 
     (typeof window !== 'undefined' && localStorage.getItem('enable-preaggregated-ranking') === 'true');
+    
+  // ⚡ FASE 3: Flag para usar dados denormalizados (ultra-performance)
+  const useDenormalizedData = process.env.NODE_ENV === 'development' || 
+    (typeof window !== 'undefined' && localStorage.getItem('enable-denormalized-data') === 'true');
 
   const loadClassRankingData = async () => {
     try {
@@ -219,12 +224,53 @@ export function ClassRankingPanel({
         studentsCount: firstClass.studentsCount
       });
 
-      // 🚀 HIERARQUIA DE OTIMIZAÇÃO: Fase 2 → Fase 1 → Sistema legado
+      // ⚡ HIERARQUIA DE OTIMIZAÇÃO: Fase 3 → Fase 2 → Fase 1 → Sistema legado
       let studentsData;
       
-      if (usePreAggregatedRanking) {
+      if (useDenormalizedData) {
+        // FASE 3: Dados denormalizados (ultra-performance)
+        console.log(`[ClassRankingPanel] ⚡ Usando dados denormalizados para turma ${firstClass.id}`);
+        try {
+          const denormalizedData = await DenormalizedScoreService.getUltraFastRanking(firstClass.id, displayLimit);
+          studentsData = denormalizedData.map(entry => ({
+            studentId: entry.studentId,
+            studentName: entry.userName,
+            email: entry.userEmail,
+            totalNormalizedScore: entry.normalizedScore,
+            completedModules: Object.values(entry.moduleScores || {}).filter((score: any) => score >= 70).length,
+            lastActivity: entry.lastActivity,
+            anonymousId: entry.userAnonymousId,
+            classRank: entry.enrolledClasses?.find(c => c.classId === firstClass.id)?.classRank || 0,
+            name: entry.userName,
+            totalScore: entry.normalizedScore
+          }));
+          console.log(`[ClassRankingPanel] ⚡ Fase 3: ${studentsData.length} estudantes carregados com ultra-performance`);
+        } catch (error) {
+          console.warn(`[ClassRankingPanel] ⚠️ Fase 3 falhou, fallback para Fase 2:`, error);
+          // Fallback para Fase 2
+          try {
+            const preAggregatedData = await ClassRankingService.getPreAggregatedRanking(firstClass.id);
+            studentsData = preAggregatedData.slice(0, displayLimit).map(entry => ({
+              studentId: entry.studentId,
+              studentName: entry.studentName,
+              email: entry.email || '',
+              totalNormalizedScore: entry.totalNormalizedScore,
+              completedModules: entry.completedModules,
+              lastActivity: entry.lastActivity,
+              anonymousId: entry.anonymousId,
+              classRank: entry.classRank,
+              name: entry.studentName,
+              totalScore: entry.totalNormalizedScore
+            }));
+            console.log(`[ClassRankingPanel] 🚀 Fallback Fase 2: ${studentsData.length} estudantes`);
+          } catch (phase2Error) {
+            console.warn(`[ClassRankingPanel] ⚠️ Fase 2 também falhou, fallback para Fase 1:`, phase2Error);
+            studentsData = await OptimizedClassService.getOptimizedClassStudents(firstClass.id, { limit: displayLimit });
+          }
+        }
+      } else if (usePreAggregatedRanking) {
         // FASE 2: Rankings pré-agregados (máxima performance)
-        console.log(`[ClassRankingPanel] ⚡ Usando rankings pré-agregados para turma ${firstClass.id}`);
+        console.log(`[ClassRankingPanel] 🚀 Usando rankings pré-agregados para turma ${firstClass.id}`);
         try {
           const preAggregatedData = await ClassRankingService.getPreAggregatedRanking(firstClass.id);
           studentsData = preAggregatedData.slice(0, displayLimit).map(entry => ({
@@ -271,10 +317,24 @@ export function ClassRankingPanel({
         return;
       }
 
-      // 🚀 TRANSFORMAÇÃO DE DADOS: Unificar formato independente da fonte
+      // ⚡ TRANSFORMAÇÃO DE DADOS: Unificar formato independente da fonte
       let transformedStudents: ClassStudent[];
       
-      if (usePreAggregatedRanking && studentsData.every((s: any) => s.classRank !== undefined)) {
+      if (useDenormalizedData && studentsData.every((s: any) => s.classRank !== undefined)) {
+        // FASE 3: Dados denormalizados (ultra-performance)
+        transformedStudents = studentsData.map((student: any) => ({
+          studentId: student.studentId,
+          studentName: student.studentName || student.name,
+          email: student.email || '',
+          totalScore: student.totalNormalizedScore || student.totalScore || 0,
+          completedModules: student.completedModules || 0,
+          lastActivity: student.lastActivity,
+          isCurrentUser: student.studentId === user.id,
+          anonymousId: student.anonymousId,
+          position: student.classRank || 0
+        }));
+        console.log(`[ClassRankingPanel] ⚡ Fase 3: Dados denormalizados processados com ultra-performance`);
+      } else if (usePreAggregatedRanking && studentsData.every((s: any) => s.classRank !== undefined)) {
         // FASE 2: Dados já vêm pré-agregados e rankeados
         transformedStudents = studentsData.map((student: any) => ({
           studentId: student.studentId,
@@ -287,7 +347,7 @@ export function ClassRankingPanel({
           anonymousId: student.anonymousId,
           position: student.classRank || 0
         }));
-        console.log(`[ClassRankingPanel] 🎯 Fase 2: Dados pré-agregados processados`);
+        console.log(`[ClassRankingPanel] 🚀 Fase 2: Dados pré-agregados processados`);
       } else if (useOptimizedRanking) {
         // FASE 1: Dados já vêm transformados e rankeados do OptimizedClassService
         transformedStudents = studentsData.map((student: any) => ({

@@ -330,6 +330,48 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "unified_scores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "enrolledClasses",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "normalizedScore",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "unified_scores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "denormalized.version",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "denormalized.lastSync",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "unified_scores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "denormalized.dataIntegrity",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "denormalized.lastSync",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
