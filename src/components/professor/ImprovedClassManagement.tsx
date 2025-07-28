@@ -61,7 +61,7 @@ import {
   Archive
 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
+import { collection, getDocs, query, where, orderBy, limit, disableNetwork, enableNetwork } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useResponsive } from '@/hooks/useResponsive'
 
@@ -187,8 +187,10 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       
       showNotification('success', 'Turma Restaurada', `${className} foi restaurada com sucesso!`)
       
-      // Recarregar ambas as listas: turmas ativas e excluídas
-      console.log(`🔄 [ImprovedClassManagement] Recarregando listas após restauração...`)
+      // ✅ CORREÇÃO: Aguardar um pouco antes de recarregar para garantir consistência
+      console.log(`🔄 [ImprovedClassManagement] Aguardando consistência e recarregando listas...`)
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Aguardar 1 segundo
+      
       await Promise.all([
         loadClasses(), // Recarregar turmas ativas
         loadDeletedClasses() // Recarregar turmas excluídas (para remover a restaurada)
@@ -245,13 +247,16 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       setIsLoading(true)
       console.log('🔄 [ImprovedClassManagement] Carregando turmas com sistema inteligente...')
       
-      // Limpar cache do Firestore para garantir dados frescos
+      // ✅ CORREÇÃO: Forçar refresh dos dados para evitar cache stale
       if (typeof window !== 'undefined') {
         try {
-          await db.clearPersistence?.()
+          // Forçar desconexão e reconexão para garantir dados frescos
+          await disableNetwork(db)
+          await new Promise(resolve => setTimeout(resolve, 100))
+          await enableNetwork(db)
+          console.log('✅ [ImprovedClassManagement] Cache do Firestore forçado a renovar')
         } catch (error) {
-          // Ignore cache clear errors
-          console.log('Cache clear skipped (normal behavior)')
+          console.log('⚠️ Cache refresh skipped (normal behavior)', error)
         }
       }
       
@@ -282,10 +287,19 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
       
       // DEBUG: Log turmas carregadas com status
       classesData.forEach(cls => {
-        console.log(`📋 Turma "${cls.name}": status="${cls.status}", id="${cls.id}"`)
+        console.log(`📋 Turma "${cls.name}": status="${cls.status}", id="${cls.id}", estudantes=${cls.studentsCount}`)
       })
       
-      setClasses(classesData)
+      // ✅ CORREÇÃO: Filtrar explicitamente turmas deletadas no frontend como segurança
+      const activeClasses = classesData.filter(cls => 
+        cls.status !== 'deleted' && cls.status !== 'archived'
+      )
+      
+      if (activeClasses.length !== classesData.length) {
+        console.log(`⚠️ [ImprovedClassManagement] Filtrado ${classesData.length - activeClasses.length} turma(s) deletada(s) no frontend`)
+      }
+      
+      setClasses(activeClasses)
       
       // Mostrar notificação de recovery se aplicável
       if (recoveryDetected && recoveredCount > 0) {
@@ -296,8 +310,8 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
           `${recoveredCount} turma(s) foram automaticamente corrigidas e já estão disponíveis.`,
           6000
         )
-      } else if (classesData.length > 0) {
-        showNotification('info', '✅ Turmas Carregadas', `${classesData.length} turma(s) disponíveis`, 3000)
+      } else if (activeClasses.length > 0) {
+        showNotification('info', '✅ Turmas Carregadas', `${activeClasses.length} turma(s) ativa(s) disponíveis`, 3000)
       }
       
     } catch (error) {
