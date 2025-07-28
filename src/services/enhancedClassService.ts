@@ -15,7 +15,8 @@ import {
   serverTimestamp,
   onSnapshot,
   enableNetwork,
-  disableNetwork
+  disableNetwork,
+  FirestoreError
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { 
@@ -31,55 +32,241 @@ import {
   StudentExerciseProgress,
   BasicStudent
 } from '@/types/classes'
-import { modules } from '@/lib/gameData'; // Importar módulos
+import { modules } from '@/data/modules'; // Importar módulos
 import unifiedScoringService from './unifiedScoringService'
 import { parseFirebaseDate } from '@/utils/dateUtils'
+
+// ===============================
+// ERROR HANDLING & RETRY UTILITIES
+// ===============================
+
+type RetryableOperation<T> = () => Promise<T>
+
+interface RetryOptions {
+  maxAttempts?: number
+  baseDelay?: number
+  maxDelay?: number
+  backoffMultiplier?: number
+  retryCondition?: (error: any) => boolean
+}
+
+class ServiceError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public context?: Record<string, any>,
+    public originalError?: Error
+  ) {
+    super(message)
+    this.name = 'ServiceError'
+  }
+}
+
+// Função utilitária para retry com exponential backoff
+async function withRetry<T>(
+  operation: RetryableOperation<T>,
+  options: RetryOptions = {}
+): Promise<T> {
+  const {
+    maxAttempts = 3,
+    baseDelay = 1000,
+    maxDelay = 10000,
+    backoffMultiplier = 2,
+    retryCondition = (error) => 
+      error?.code === 'unavailable' || 
+      error?.code === 'timeout' ||
+      error?.code === 'internal' ||
+      error?.message?.includes('network')
+  } = options
+
+  let lastError: Error | null = null
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error as Error
+      
+      // Se não deve tentar novamente ou é a última tentativa
+      if (!retryCondition(error) || attempt === maxAttempts) {
+        break
+      }
+      
+      // Calcular delay com exponential backoff e jitter
+      const delay = Math.min(
+        baseDelay * Math.pow(backoffMultiplier, attempt - 1) + Math.random() * 1000,
+        maxDelay
+      )
+      
+      console.warn(`[withRetry] Tentativa ${attempt}/${maxAttempts} falhou, tentando novamente em ${delay}ms:`, error)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  
+  throw new ServiceError(
+    `Operação falhou após ${maxAttempts} tentativas`,
+    'MAX_RETRIES_EXCEEDED',
+    { maxAttempts, originalError: lastError?.message },
+    lastError || undefined
+  )
+}
+
+// Função para validar parâmetros de entrada
+function validateRequired<T>(
+  value: T,
+  fieldName: string,
+  additionalChecks?: (value: T) => boolean
+): T {
+  if (value === null || value === undefined) {
+    throw new ServiceError(
+      `Parâmetro obrigatório '${fieldName}' não fornecido`,
+      'MISSING_REQUIRED_PARAM',
+      { fieldName, value }
+    )
+  }
+  
+  if (typeof value === 'string' && value.trim() === '') {
+    throw new ServiceError(
+      `Parâmetro '${fieldName}' não pode ser uma string vazia`,
+      'EMPTY_STRING_PARAM',
+      { fieldName, value }
+    )
+  }
+  
+  if (additionalChecks && !additionalChecks(value)) {
+    throw new ServiceError(
+      `Parâmetro '${fieldName}' falhou na validação adicional`,
+      'VALIDATION_FAILED',
+      { fieldName, value }
+    )
+  }
+  
+  return value
+}
+
+// Função para log estruturado de erros
+function logError(
+  operation: string,
+  error: any,
+  context?: Record<string, any>
+): void {
+  const errorInfo = {
+    timestamp: new Date().toISOString(),
+    operation,
+    error: {
+      name: error?.name || 'UnknownError',
+      message: error?.message || 'Mensagem de erro não disponível',
+      code: error?.code || 'UNKNOWN_CODE',
+      stack: error?.stack
+    },
+    context: context || {}
+  }
+  
+  console.error(`[EnhancedClassService] ❌ ${operation}:`, errorInfo)
+}
 
 export class EnhancedClassService {
   
   // Obter informações detalhadas da turma
   static async getEnhancedClassInfo(classId: string): Promise<EnhancedClass | null> {
+    const operation = 'getEnhancedClassInfo'
+    
     try {
-      const classDoc = await getDoc(doc(db, 'classes', classId))
+      // Validação de entrada robusta
+      validateRequired(classId, 'classId', (id) => 
+        typeof id === 'string' && id.length > 0 && id.length < 100
+      )
+      
+      if (!db) {
+        throw new ServiceError(
+          'Firebase não está inicializado',
+          'FIREBASE_NOT_INITIALIZED',
+          { classId }
+        )
+      }
+
+      // Buscar documento da turma com retry
+      const classDoc = await withRetry(
+        () => getDoc(doc(db, 'classes', classId)),
+        { maxAttempts: 3, baseDelay: 1000 }
+      )
       
       if (!classDoc.exists()) {
+        console.warn(`[${operation}] ⚠️ Turma não encontrada: ${classId}`)
         return null
       }
       
       const data = classDoc.data()
       
-      // Calcular estatísticas em tempo real
-      const students = await this.getClassStudentsBasic(classId)
-      const analytics = await this.calculateClassAnalytics(classId)
+      // Validar dados essenciais da turma
+      if (!data.name) {
+        throw new ServiceError(
+          'Dados da turma estão corrompidos - nome não encontrado',
+          'CORRUPTED_CLASS_DATA',
+          { classId, data }
+        )
+      }
       
-      return {
+      // Calcular estatísticas em tempo real com tratamento de erro
+      let students: any[] = []
+      let analytics: any = null
+      
+      try {
+        students = await this.getClassStudentsBasic(classId)
+      } catch (studentsError) {
+        logError(`${operation}-getStudents`, studentsError, { classId })
+        // Continuar com array vazio em caso de erro
+        students = []
+      }
+      
+      try {
+        analytics = await this.calculateClassAnalytics(classId)
+      } catch (analyticsError) {
+        logError(`${operation}-getAnalytics`, analyticsError, { classId })
+        // Continuar sem analytics em caso de erro
+        analytics = null
+      }
+      
+      const enhancedClass: EnhancedClass = {
         id: classDoc.id,
         name: data.name,
-        description: data.description,
-        semester: data.semester,
-        year: data.year,
-        inviteCode: data.inviteCode,
-        professorId: data.professorId,
-        professorName: data.professorName,
+        description: data.description || '',
+        semester: data.semester || '',
+        year: data.year || new Date().getFullYear(),
+        inviteCode: data.inviteCode || '',
+        professorId: data.professorId || '',
+        professorName: data.professorName || 'Professor não identificado',
         status: data.status || 'open',
-        maxStudents: data.maxStudents,
+        maxStudents: typeof data.maxStudents === 'number' ? data.maxStudents : 100,
         acceptingNewStudents: data.acceptingNewStudents ?? true,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
         settings: data.settings || this.getDefaultClassSettings(),
         
-        // Estatísticas calculadas
+        // Estatísticas calculadas com fallback seguro
         studentsCount: students.length,
-        activeStudents: students.filter(s => s.status === 'active' && 
-          (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000).length,
+        activeStudents: students.filter(s => 
+          s && s.status === 'active' && 
+          (Date.now() - this.getLastActivityTimestamp(s.lastActivity)) < 7 * 24 * 60 * 60 * 1000
+        ).length,
         totalModules: Array.isArray(modules) ? modules.length : 4,
         avgProgress: analytics?.averageProgress || 0,
         avgScore: analytics?.averageScore || 0,
-        lastActivity: analytics?.date
-      } as EnhancedClass
+        lastActivity: analytics?.date || data.updatedAt?.toDate() || new Date()
+      }
+      
+      console.log(`[${operation}] ✅ Turma carregada com sucesso: ${enhancedClass.name} (${enhancedClass.studentsCount} estudantes)`)
+      return enhancedClass
       
     } catch (error) {
-      console.error('Erro ao buscar informações da turma:', error)
+      logError(operation, error, { classId })
+      
+      // Se for um erro de validação ou inicialização, rejeitar
+      if (error instanceof ServiceError) {
+        throw error
+      }
+      
+      // Para outros erros, retornar null mas logar o problema
       return null
     }
   }
@@ -89,63 +276,152 @@ export class EnhancedClassService {
     classId: string,
     filter?: ClassFilter
   ): Promise<EnhancedStudentOverview[]> {
+    const operation = 'getEnhancedClassStudents'
+    
     try {
-      // Validar parâmetros
-      if (!classId) {
-        console.warn('ClassId não fornecido para getEnhancedClassStudents')
-        return []
+      // Validação robusta de parâmetros
+      validateRequired(classId, 'classId', (id) => 
+        typeof id === 'string' && id.length > 0 && id.length < 100
+      )
+
+      if (!db) {
+        throw new ServiceError(
+          'Firebase não está inicializado',
+          'FIREBASE_NOT_INITIALIZED',
+          { classId }
+        )
       }
 
-      console.log(`[EnhancedClassService] 🔄 Buscando estudantes para turma: ${classId}`)
-
-      // Método 1: Query otimizada usando range de document IDs
-      let students = await this.getStudentsMethod1(classId)
-      
-      if (students.length > 0) {
-        console.log(`[EnhancedClassService] ✅ Método 1 bem-sucedido: ${students.length} estudantes encontrados`)
-      } else {
-        console.log(`[EnhancedClassService] ⚠️ Método 1 falhou, tentando Método 2...`)
-        
-        // Método 2: Query por status com filtro posterior
-        students = await this.getStudentsMethod2(classId)
-        
-        if (students.length > 0) {
-          console.log(`[EnhancedClassService] ✅ Método 2 bem-sucedido: ${students.length} estudantes encontrados`)
-        } else {
-          console.log(`[EnhancedClassService] ⚠️ Método 2 falhou, tentando Método 3 (fallback completo)...`)
-          
-          // Método 3: Fallback - buscar todos os documentos da turma
-          students = await this.getStudentsMethod3(classId)
-          
-          console.log(`[EnhancedClassService] ${students.length > 0 ? '✅' : '❌'} Método 3: ${students.length} estudantes encontrados`)
+      // Validar filtro se fornecido
+      if (filter) {
+        if (filter.progressRange && 
+           (typeof filter.progressRange.min !== 'number' || typeof filter.progressRange.max !== 'number' ||
+            filter.progressRange.min < 0 || filter.progressRange.max > 100 ||
+            filter.progressRange.min > filter.progressRange.max)) {
+          throw new ServiceError(
+            'Filtro de progressRange inválido',
+            'INVALID_FILTER',
+            { filter }
+          )
         }
       }
 
-      // Aplicar filtros
-      let filteredStudents = students || []
+      console.log(`[${operation}] 🔄 Buscando estudantes para turma: ${classId}`)
 
+      let students: EnhancedStudentOverview[] = []
+      let lastError: Error | null = null
+
+      // Método 1: Query otimizada usando range de document IDs
+      try {
+        students = await withRetry(
+          () => this.getStudentsMethod1(classId),
+          { maxAttempts: 2, baseDelay: 500 }
+        )
+        
+        if (students.length > 0) {
+          console.log(`[${operation}] ✅ Método 1 bem-sucedido: ${students.length} estudantes encontrados`)
+        }
+      } catch (method1Error) {
+        lastError = method1Error as Error
+        logError(`${operation}-Method1`, method1Error, { classId })
+      }
+      
+      // Método 2: Query por status com filtro posterior
+      if (students.length === 0) {
+        try {
+          console.log(`[${operation}] ⚠️ Método 1 falhou, tentando Método 2...`)
+          students = await withRetry(
+            () => this.getStudentsMethod2(classId),
+            { maxAttempts: 2, baseDelay: 500 }
+          )
+          
+          if (students.length > 0) {
+            console.log(`[${operation}] ✅ Método 2 bem-sucedido: ${students.length} estudantes encontrados`)
+          }
+        } catch (method2Error) {
+          lastError = method2Error as Error
+          logError(`${operation}-Method2`, method2Error, { classId })
+        }
+      }
+      
+      // Método 3: Fallback - buscar todos os documentos da turma
+      if (students.length === 0) {
+        try {
+          console.log(`[${operation}] ⚠️ Método 2 falhou, tentando Método 3 (fallback completo)...`)
+          students = await this.getStudentsMethod3(classId)
+          
+          console.log(`[${operation}] ${students.length > 0 ? '✅' : '❌'} Método 3: ${students.length} estudantes encontrados`)
+        } catch (method3Error) {
+          lastError = method3Error as Error
+          logError(`${operation}-Method3`, method3Error, { classId })
+        }
+      }
+
+      // Se todos os métodos falharam, lançar erro
+      if (students.length === 0 && lastError) {
+        throw new ServiceError(
+          'Falha ao buscar estudantes usando todos os métodos disponíveis',
+          'ALL_METHODS_FAILED',
+          { classId, lastErrorMessage: lastError.message },
+          lastError
+        )
+      }
+
+      // Aplicar filtros com tratamento de erro
+      let filteredStudents = students
       if (filter && filteredStudents.length > 0) {
-        filteredStudents = this.applyFilters(filteredStudents, filter)
+        try {
+          filteredStudents = this.applyFilters(filteredStudents, filter)
+        } catch (filterError) {
+          logError(`${operation}-applyFilters`, filterError, { classId, filter })
+          // Em caso de erro no filtro, retornar dados sem filtro
+          console.warn(`[${operation}] ⚠️ Erro ao aplicar filtros, retornando dados não filtrados`)
+          filteredStudents = students
+        }
       }
 
-      // Calcular rankings
+      // Calcular rankings com tratamento de erro
       if (filteredStudents.length > 0) {
-        filteredStudents = this.calculateClassRankings(filteredStudents)
+        try {
+          filteredStudents = this.calculateClassRankings(filteredStudents)
+        } catch (rankingError) {
+          logError(`${operation}-calculateRankings`, rankingError, { classId })
+          // Em caso de erro no ranking, continuar sem rankings
+          console.warn(`[${operation}] ⚠️ Erro ao calcular rankings, continuando sem rankings`)
+        }
       }
 
-      console.log(`[EnhancedClassService] 📊 Total final de estudantes: ${filteredStudents.length}`)
-      return filteredStudents || []
+      console.log(`[${operation}] 📊 Total final de estudantes: ${filteredStudents.length}`)
+      return filteredStudents
 
     } catch (error) {
-      console.error('[EnhancedClassService] ❌ Erro crítico ao buscar alunos da turma:', error)
+      logError(operation, error, { classId, filter })
+      
+      // Se for um erro de validação, rejeitar
+      if (error instanceof ServiceError) {
+        throw error
+      }
+      
+      // Para outros erros, retornar array vazio
       return []
     }
   }
 
   // Método 1: Query otimizada usando range de document IDs (mais eficiente)
   private static async getStudentsMethod1(classId: string): Promise<EnhancedStudentOverview[]> {
+    const operation = 'getStudentsMethod1'
+    
     try {
-      console.log(`[Método 1] Buscando com range query para ${classId}`)
+      // Validar entrada
+      if (!classId || typeof classId !== 'string') {
+        throw new ServiceError(
+          'ClassId inválido para método 1',
+          'INVALID_CLASS_ID',
+          { classId }
+        )
+      }
+
+      console.log(`[${operation}] Buscando com range query para ${classId}`)
 
       // Query usando range para documentos que começam com classId_
       const studentsQuery = query(
@@ -157,49 +433,95 @@ export class EnhancedClassService {
       const studentsSnapshot = await getDocs(studentsQuery)
       const students: EnhancedStudentOverview[] = []
 
-      console.log(`[Método 1] ${studentsSnapshot.docs.length} documentos encontrados`)
+      console.log(`[${operation}] ${studentsSnapshot.docs.length} documentos encontrados`)
 
-      for (const doc of studentsSnapshot.docs) {
-        const studentData = doc.data()
-
-        // Filtrar apenas documentos ativos (se o campo existir)
-        if (studentData.status === 'removed') {
-          console.log(`[Método 1] Ignorando estudante removido: ${doc.id}`)
-          continue
-        }
-
-        // ✅ CORREÇÃO: Criar objeto de estudante diretamente se getStudentDetailedProgress falhar
-        try {
-          const studentProgress = await this.getStudentDetailedProgress(
-            studentData.studentId,
-            classId
-          )
-
-          if (studentProgress) {
-            students.push(studentProgress)
-          } else {
-            // Fallback: criar objeto básico do estudante
-            console.log(`[Método 1] Criando objeto básico para estudante: ${studentData.studentId}`)
-            const basicStudent = await this.createBasicStudentObject(studentData, classId)
-            if (basicStudent) {
-              students.push(basicStudent)
-            }
-          }
-        } catch (progressError) {
-          console.warn(`[Método 1] Erro ao buscar progresso do estudante ${studentData.studentId}:`, progressError)
-          // Fallback: criar objeto básico do estudante
-          const basicStudent = await this.createBasicStudentObject(studentData, classId)
-          if (basicStudent) {
-            students.push(basicStudent)
-          }
-        }
+      if (studentsSnapshot.empty) {
+        console.log(`[${operation}] ⚠️ Nenhum documento encontrado para turma ${classId}`)
+        return []
       }
 
+      // Processar estudantes com controle de erro individual
+      const processingPromises = studentsSnapshot.docs.map(async (doc) => {
+        try {
+          const studentData = doc.data()
+
+          // Validar dados básicos do estudante
+          if (!studentData.studentId) {
+            console.warn(`[${operation}] ⚠️ Documento sem studentId ignorado: ${doc.id}`)
+            return null
+          }
+
+          // Filtrar apenas documentos ativos
+          if (studentData.status === 'removed') {
+            console.log(`[${operation}] Ignorando estudante removido: ${doc.id}`)
+            return null
+          }
+
+          // Tentar buscar progresso detalhado
+          try {
+            const studentProgress = await this.getStudentDetailedProgress(
+              studentData.studentId,
+              classId
+            )
+
+            if (studentProgress) {
+              return studentProgress
+            }
+          } catch (progressError) {
+            logError(`${operation}-getStudentDetailedProgress`, progressError, { 
+              studentId: studentData.studentId, 
+              classId 
+            })
+          }
+
+          // Fallback: criar objeto básico do estudante
+          try {
+            console.log(`[${operation}] Criando objeto básico para estudante: ${studentData.studentId}`)
+            const basicStudent = await this.createBasicStudentObject(studentData, classId)
+            return basicStudent
+          } catch (basicError) {
+            logError(`${operation}-createBasicStudentObject`, basicError, { 
+              studentId: studentData.studentId, 
+              classId 
+            })
+            return null
+          }
+
+        } catch (docError) {
+          logError(`${operation}-processDocument`, docError, { 
+            docId: doc.id, 
+            classId 
+          })
+          return null
+        }
+      })
+
+      // Aguardar processamento de todos os estudantes
+      const results = await Promise.allSettled(processingPromises)
+      
+      // Filtrar resultados válidos
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          students.push(result.value)
+        } else if (result.status === 'rejected') {
+          logError(`${operation}-promise`, result.reason, { 
+            docIndex: index, 
+            classId 
+          })
+        }
+      })
+
+      console.log(`[${operation}] ✅ ${students.length} estudantes processados com sucesso`)
       return students
 
     } catch (error) {
-      console.error('[Método 1] Erro:', error)
-      return []
+      logError(operation, error, { classId })
+      throw new ServiceError(
+        'Falha no método 1 de busca de estudantes',
+        'METHOD1_FAILED',
+        { classId },
+        error as Error
+      )
     }
   }
 
@@ -307,114 +629,241 @@ export class EnhancedClassService {
     studentId: string,
     classId: string
   ): Promise<EnhancedStudentOverview | null> {
+    const operation = 'getStudentDetailedProgress'
+    
     try {
-      // 1. Buscar dados do usuário (fonte principal de informações)
-      let userDoc = await getDoc(doc(db, 'users', studentId))
-      let userData = null
-      let enrollmentData = null
-
-      // 2. Buscar dados de matrícula na turma (sempre necessário)
-      const enrollmentQuery = query(
-        collection(db, 'classStudents'),
-        where('classId', '==', classId),
-        where('studentId', '==', studentId),
-        limit(1)
+      // Validação robusta de parâmetros
+      validateRequired(studentId, 'studentId', (id) => 
+        typeof id === 'string' && id.length > 0 && id.length < 100
       )
-      const enrollmentSnapshot = await getDocs(enrollmentQuery)
+      validateRequired(classId, 'classId', (id) => 
+        typeof id === 'string' && id.length > 0 && id.length < 100
+      )
 
-      if (enrollmentSnapshot.empty) {
-        console.warn(`[getStudentDetailedProgress] ❌ Matrícula não encontrada para estudante ${studentId} na turma ${classId}`)
-        return null
+      if (!db) {
+        throw new ServiceError(
+          'Firebase não está inicializado',
+          'FIREBASE_NOT_INITIALIZED',
+          { studentId, classId }
+        )
       }
-      enrollmentData = enrollmentSnapshot.docs[0].data()
 
-      if (!userDoc.exists()) {
-        console.warn(`[getStudentDetailedProgress] ❌ Usuário não encontrado: ${studentId}`)
-        console.log(`[getStudentDetailedProgress] 🔧 Criando usuário automaticamente para: ${enrollmentData.studentName}`)
+      console.log(`[${operation}] 🔄 Processando estudante ${studentId} da turma ${classId}`)
 
-        // 🚀 AUTO-CORREÇÃO: Criar usuário automaticamente
-        const newUserData = {
-          uid: studentId,
-          email: enrollmentData.studentEmail || `${studentId}@temp.unicamp.br`,
-          fullName: enrollmentData.studentName,
-          name: enrollmentData.studentName,
-          role: 'student',
-          status: 'active',
-          createdAt: serverTimestamp(),
-          lastActivity: serverTimestamp(),
-          anonymousId: `EST${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-          displayName: enrollmentData.studentName,
-          photoURL: null,
-          emailVerified: false,
-          source: 'auto-created-from-enrollment',
-          version: '1.0'
+      let userData: any = null
+      let enrollmentData: any = null
+
+      // 1. Buscar dados de matrícula (sempre necessário e crítico)
+      try {
+        const enrollmentQuery = query(
+          collection(db, 'classStudents'),
+          where('classId', '==', classId),
+          where('studentId', '==', studentId),
+          limit(1)
+        )
+        
+        const enrollmentSnapshot = await withRetry(
+          () => getDocs(enrollmentQuery),
+          { maxAttempts: 3, baseDelay: 500 }
+        )
+
+        if (enrollmentSnapshot.empty) {
+          console.warn(`[${operation}] ❌ Matrícula não encontrada para estudante ${studentId} na turma ${classId}`)
+          return null
+        }
+        
+        enrollmentData = enrollmentSnapshot.docs[0].data()
+        
+        // Validar dados críticos da matrícula
+        if (!enrollmentData.studentName && !enrollmentData.name) {
+          throw new ServiceError(
+            'Dados de matrícula corrompidos - nome do estudante não encontrado',
+            'CORRUPTED_ENROLLMENT_DATA',
+            { studentId, classId, enrollmentData }
+          )
         }
 
-        await setDoc(doc(db, 'users', studentId), newUserData)
-        userData = newUserData
-        console.log(`[getStudentDetailedProgress] ✅ Usuário criado automaticamente com anonymousId: ${newUserData.anonymousId}`)
-      } else {
-        userData = userDoc.data()
+      } catch (enrollmentError) {
+        logError(`${operation}-enrollment`, enrollmentError, { studentId, classId })
+        throw new ServiceError(
+          'Falha ao buscar dados de matrícula do estudante',
+          'ENROLLMENT_FETCH_FAILED',
+          { studentId, classId },
+          enrollmentError as Error
+        )
       }
 
-      // 3. Buscar progresso unificado (fonte de pontuação primária)
-      console.log(`[getStudentDetailedProgress] 🔄 Buscando pontuação unificada para ${studentId}`)
-      const unifiedScore = await unifiedScoringService.getUnifiedScore(studentId)
-      if (unifiedScore) {
-        console.log(`[getStudentDetailedProgress] ✅ Pontuação unificada encontrada.`)
-      } else {
-        console.log(`[getStudentDetailedProgress] ⚠️ Pontuação unificada não encontrada, continuará com cálculo legado.`)
+      // 2. Buscar dados do usuário com fallback para criação automática
+      try {
+        const userDoc = await withRetry(
+          () => getDoc(doc(db, 'users', studentId)),
+          { maxAttempts: 2, baseDelay: 500 }
+        )
+
+        if (!userDoc.exists()) {
+          console.warn(`[${operation}] ❌ Usuário não encontrado: ${studentId}`)
+          console.log(`[${operation}] 🔧 Criando usuário automaticamente para: ${enrollmentData.studentName}`)
+
+          // 🚀 AUTO-CORREÇÃO: Criar usuário automaticamente com validação
+          const newUserData = {
+            uid: studentId,
+            email: enrollmentData.studentEmail || enrollmentData.email || `${studentId}@temp.unicamp.br`,
+            fullName: enrollmentData.studentName || enrollmentData.name,
+            name: enrollmentData.studentName || enrollmentData.name,
+            role: 'student',
+            status: 'active',
+            createdAt: serverTimestamp(),
+            lastActivity: serverTimestamp(),
+            anonymousId: `EST${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+            displayName: enrollmentData.studentName || enrollmentData.name,
+            photoURL: null,
+            emailVerified: false,
+            source: 'auto-created-from-enrollment',
+            version: '1.0'
+          }
+
+          await withRetry(
+            () => setDoc(doc(db, 'users', studentId), newUserData),
+            { maxAttempts: 3, baseDelay: 1000 }
+          )
+          
+          userData = newUserData
+          console.log(`[${operation}] ✅ Usuário criado automaticamente com anonymousId: ${newUserData.anonymousId}`)
+        } else {
+          userData = userDoc.data()
+        }
+      } catch (userError) {
+        logError(`${operation}-user`, userError, { studentId, classId })
+        // Continuar sem dados do usuário, usar apenas dados de matrícula
+        console.warn(`[${operation}] ⚠️ Continuando sem dados do usuário, usando apenas matrícula`)
+        userData = {
+          fullName: enrollmentData.studentName || enrollmentData.name,
+          email: enrollmentData.studentEmail || enrollmentData.email,
+          anonymousId: `EST${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        }
+      }
+
+      // 3. Buscar progresso unificado com tratamento de erro
+      let unifiedScore: any = null
+      try {
+        console.log(`[${operation}] 🔄 Buscando pontuação unificada para ${studentId}`)
+        unifiedScore = await unifiedScoringService.getUnifiedScore(studentId)
+        
+        if (unifiedScore) {
+          console.log(`[${operation}] ✅ Pontuação unificada encontrada`)
+        } else {
+          console.log(`[${operation}] ⚠️ Pontuação unificada não encontrada, usando cálculo legado`)
+        }
+      } catch (scoreError) {
+        logError(`${operation}-unifiedScore`, scoreError, { studentId })
+        console.warn(`[${operation}] ⚠️ Erro ao buscar pontuação unificada, continuando com dados legados`)
       }
       
-      // 4. Buscar progresso detalhado dos módulos (dados legados)
-      const moduleProgress = await this.getLegacyModuleProgress(studentId)
+      // 4. Buscar progresso detalhado dos módulos com tratamento de erro
+      let moduleProgress: any[] = []
+      try {
+        moduleProgress = await this.getLegacyModuleProgress(studentId)
+      } catch (moduleError) {
+        logError(`${operation}-moduleProgress`, moduleError, { studentId })
+        console.warn(`[${operation}] ⚠️ Erro ao buscar progresso dos módulos, usando valores padrão`)
+        moduleProgress = []
+      }
 
-      // 5. Consolidar e calcular métricas
-      const { totalScore, completedModules, totalTimeSpent, overallProgress, moduleScores } = this.consolidateStudentMetrics(
-        unifiedScore,
-        moduleProgress
-      )
+      // 5. Consolidar e calcular métricas com validação
+      let metrics: any = {}
+      try {
+        metrics = this.consolidateStudentMetrics(unifiedScore, moduleProgress)
+      } catch (metricsError) {
+        logError(`${operation}-consolidateMetrics`, metricsError, { studentId })
+        // Usar valores padrão em caso de erro
+        metrics = {
+          totalScore: 0,
+          completedModules: 0,
+          totalTimeSpent: 0,
+          overallProgress: 0,
+          moduleScores: {}
+        }
+      }
 
-      // 6. Calcular métricas de engajamento (simulado por enquanto)
-      const engagementMetrics = await this.calculateStudentEngagement(studentId)
+      // 6. Calcular métricas de engajamento com fallback
+      let engagementMetrics: any = {}
+      try {
+        engagementMetrics = await this.calculateStudentEngagement(studentId)
+      } catch (engagementError) {
+        logError(`${operation}-engagement`, engagementError, { studentId })
+        engagementMetrics = {
+          activeDays: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          averageSessionTime: 0
+        }
+      }
 
-      // 7. Montar o objeto de retorno final
+      // 7. Buscar badges e achievements com tratamento de erro
+      let badges: string[] = []
+      let achievements: any[] = []
+      
+      try {
+        badges = await this.getStudentBadges(studentId)
+      } catch (badgesError) {
+        logError(`${operation}-badges`, badgesError, { studentId })
+        badges = []
+      }
+
+      try {
+        achievements = await this.getStudentAchievements(studentId)
+      } catch (achievementsError) {
+        logError(`${operation}-achievements`, achievementsError, { studentId })
+        achievements = []
+      }
+
+      // 8. Montar o objeto de retorno final com validação
       const studentOverview: EnhancedStudentOverview = {
         studentId,
-        studentName: userData.fullName || userData.name || enrollmentData.studentName || 'Nome não encontrado',
-        email: userData.email || enrollmentData.email,
-        anonymousId: userData.anonymousId, // Adicionar anonymousId para exibição no ranking
-        avatarUrl: userData.avatarUrl,
-        enrolledAt: parseFirebaseDate(enrollmentData.enrolledAt) || new Date(),
-        lastActivity: parseFirebaseDate(userData.lastActivity) || new Date(),
-        status: enrollmentData.status || 'active',
+        studentName: userData?.fullName || userData?.name || enrollmentData?.studentName || enrollmentData?.name || 'Nome não encontrado',
+        email: userData?.email || enrollmentData?.studentEmail || enrollmentData?.email || '',
+        anonymousId: userData?.anonymousId || `EST${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        avatarUrl: userData?.avatarUrl || null,
+        enrolledAt: parseFirebaseDate(enrollmentData?.enrolledAt) || new Date(),
+        lastActivity: parseFirebaseDate(userData?.lastActivity) || new Date(),
+        status: enrollmentData?.status || 'active',
         role: 'student',
 
-        overallProgress: overallProgress,
-        totalNormalizedScore: totalScore,
+        overallProgress: metrics.overallProgress || 0,
+        totalNormalizedScore: metrics.totalScore || 0,
         classRank: 0, // Calculado posteriormente
-        completedModules,
-        totalTimeSpent,
+        completedModules: metrics.completedModules || 0,
+        totalTimeSpent: metrics.totalTimeSpent || 0,
 
         ...engagementMetrics,
         
-        moduleProgress,
-        badges: await this.getStudentBadges(studentId),
-        achievements: await this.getStudentAchievements(studentId),
-        notes: enrollmentData.notes,
+        moduleProgress: moduleProgress,
+        badges: badges,
+        achievements: achievements,
+        notes: enrollmentData?.notes || '',
         
         // Campos para compatibilidade e UI
-        moduleScores: moduleScores,
-        normalizedScore: totalScore,
-        name: userData.fullName || userData.name || enrollmentData.studentName,
-        totalScore: totalScore,
+        moduleScores: metrics.moduleScores || {},
+        normalizedScore: metrics.totalScore || 0,
+        name: userData?.fullName || userData?.name || enrollmentData?.studentName || enrollmentData?.name || 'Nome não encontrado',
+        totalScore: metrics.totalScore || 0,
       }
 
-      console.log(`[getStudentDetailedProgress] ✅ Progresso detalhado de ${studentId} montado com sucesso. Score: ${totalScore}`)
+      console.log(`[${operation}] ✅ Progresso detalhado de ${studentId} montado com sucesso. Score: ${metrics.totalScore || 0}`)
       return studentOverview
 
     } catch (error) {
-      console.error(`[getStudentDetailedProgress] ❌ Erro crítico ao buscar progresso detalhado para ${studentId} na turma ${classId}:`, error)
+      logError(operation, error, { studentId, classId })
+      
+      // Se for um erro de validação crítica, rejeitar
+      if (error instanceof ServiceError && 
+         (error.code === 'MISSING_REQUIRED_PARAM' || 
+          error.code === 'FIREBASE_NOT_INITIALIZED' ||
+          error.code === 'ENROLLMENT_FETCH_FAILED')) {
+        throw error
+      }
+      
+      // Para outros erros, retornar null
       return null
     }
   }
@@ -430,7 +879,8 @@ export class EnhancedClassService {
 
     for (const moduleDoc of moduleProgressSnapshot.docs) {
       const moduleData = moduleDoc.data()
-      const module = modules.find(m => m.id === moduleData.moduleId)
+      // 🛡️ SAFE GUARD: Verificar se modules está disponível antes do find
+      const module = modules && Array.isArray(modules) ? modules.find(m => m && m.id === moduleData.moduleId) : null
       if (module) {
         const exerciseProgress = await this.getStudentExerciseProgress(studentId, moduleData.moduleId)
         const moduleProgressData: StudentModuleProgress = {
@@ -517,9 +967,19 @@ export class EnhancedClassService {
       const exerciseProgressSnapshot = await getDocs(exerciseProgressQuery)
       const exerciseProgress: StudentExerciseProgress[] = []
       
-      const module = modules.find(m => m.id === moduleId)
-      if (!module) return []
+      // 🛡️ SAFE GUARD: Verificar se modules está disponível antes do find
+      const module = modules && Array.isArray(modules) ? modules.find(m => m && m.id === moduleId) : null
+      if (!module) {
+        console.warn(`[getStudentExerciseProgress] ⚠️ Módulo não encontrado para ID: ${moduleId}`)
+        return []
+      }
       
+      // 🛡️ SAFE GUARD: Verificar se module.exercises é um array
+      if (!Array.isArray(module.exercises)) {
+        console.warn(`[getStudentExerciseProgress] ⚠️ Module.exercises não é um array para módulo ${moduleId}`)
+        return []
+      }
+
       for (const exercise of module.exercises) {
         const progressDoc = exerciseProgressSnapshot.docs.find(
           doc => doc.data().exerciseId === exercise.id

@@ -5,6 +5,7 @@ import { ModuleProgressProvider } from '@/contexts/ModuleProgressContext'
 import EnhancedProfessorDashboard from '@/components/professor/EnhancedProfessorDashboard'
 import ImprovedClassManagement from '@/components/professor/ImprovedClassManagement'
 import AnalyticsDashboard from '@/components/professor/AnalyticsDashboard'
+import ErrorBoundary from '@/components/error/ErrorBoundary'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect'
 import { useResponsive } from '@/hooks/useResponsive'
@@ -13,8 +14,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { modules } from '@/data/modules'
-import { useState, useEffect } from 'react'
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
+import { useState, useEffect, useCallback } from 'react'
+import { doc, getDoc, setDoc, onSnapshot, FirestoreError } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { 
   BookOpen, 
@@ -46,39 +47,122 @@ export default function ProfessorDashboardPage() {
   const { signOut } = useFirebaseAuth()
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1'])
   const [moduleLoading, setModuleLoading] = useState(true)
+  const [moduleError, setModuleError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { isMobile, isTablet } = useResponsive()
 
-  // Carregar módulos desbloqueados do Firebase - Otimizado
+  // Error handler para módulos
+  const handleModuleError = useCallback((error: any) => {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar módulos'
+    console.error('🚨 Erro crítico no carregamento de módulos:', {
+      error,
+      timestamp: new Date().toISOString(),
+      user: user?.id,
+      errorType: error?.code || 'unknown'
+    })
+    
+    setModuleError(errorMessage)
+    setUnlockedModules(['module-1']) // Fallback seguro
+    setModuleLoading(false)
+  }, [user?.id])
+
+  // Carregar módulos desbloqueados do Firebase - Com error handling robusto
   useEffect(() => {
-    if (!db) {
-      setModuleLoading(false)
-      return
+    let unsubscribe: (() => void) | null = null
+    
+    const loadModules = async () => {
+      try {
+        // Validar Firebase
+        if (!db) {
+          throw new Error('Firebase não está inicializado')
+        }
+
+        // Resetar estados de erro
+        setModuleError(null)
+        setModuleLoading(true)
+
+        // Setup listener com timeout
+        const timeoutId = setTimeout(() => {
+          handleModuleError(new Error('Timeout ao carregar módulos'))
+        }, 10000) // 10 segundos timeout
+
+        unsubscribe = onSnapshot(
+          doc(db, 'settings', 'modules'), 
+          (docSnapshot) => {
+            try {
+              clearTimeout(timeoutId)
+              
+              if (docSnapshot.exists()) {
+                const data = docSnapshot.data()
+                const unlockedList = data?.unlocked
+                
+                // Validar formato dos dados
+                if (Array.isArray(unlockedList)) {
+                  // Validar que todos os elementos são strings válidas
+                  const validModules = unlockedList.filter(module => 
+                    typeof module === 'string' && 
+                    module.startsWith('module-') && 
+                    module.length < 50
+                  )
+                  
+                  if (validModules.length > 0) {
+                    setUnlockedModules(validModules)
+                  } else {
+                    console.warn('Nenhum módulo válido encontrado, usando padrão')
+                    setUnlockedModules(['module-1'])
+                  }
+                } else {
+                  console.warn('Formato inválido de módulos, usando padrão')
+                  setUnlockedModules(['module-1'])
+                }
+              } else {
+                // Criar documento padrão se não existir
+                console.log('Documento de módulos não existe, criando padrão...')
+                setDoc(docSnapshot.ref, { 
+                  unlocked: ['module-1'], 
+                  lastUpdated: new Date(),
+                  createdBy: user?.id || 'system'
+                }, { merge: true }).catch(createError => {
+                  console.error('Erro ao criar documento padrão:', createError)
+                })
+                
+                setUnlockedModules(['module-1'])
+              }
+              
+              setModuleLoading(false)
+              
+            } catch (processingError) {
+              console.error('Erro ao processar dados dos módulos:', processingError)
+              handleModuleError(processingError)
+            }
+          }, 
+          (firestoreError: FirestoreError) => {
+            clearTimeout(timeoutId)
+            console.error('Erro do Firestore ao buscar módulos:', {
+              code: firestoreError.code,
+              message: firestoreError.message,
+              name: firestoreError.name
+            })
+            handleModuleError(firestoreError)
+          }
+        )
+
+      } catch (setupError) {
+        console.error('Erro na configuração do listener de módulos:', setupError)
+        handleModuleError(setupError)
+      }
     }
 
-    const unsubscribe = onSnapshot(doc(db, 'settings', 'modules'), (doc) => {
-      try {
-        if (doc.exists()) {
-          setUnlockedModules(doc.data().unlocked || ['module-1'])
-        } else {
-          // Criar documento padrão se não existir
-          setDoc(doc.ref, { unlocked: ['module-1'], lastUpdated: new Date() }, { merge: true })
-        }
-      } catch (error) {
-        console.error('Erro ao processar módulos:', error)
-        setUnlockedModules(['module-1']) // Fallback seguro
-      } finally {
-        setModuleLoading(false)
-      }
-    }, (error) => {
-      console.error('Erro ao buscar módulos desbloqueados:', error)
-      setUnlockedModules(['module-1']) // Fallback em caso de erro
-      setModuleLoading(false)
-    })
+    loadModules()
 
-    return () => unsubscribe()
-  }, [])
+    // Cleanup
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
+  }, [handleModuleError, user?.id])
 
   const handleNotificationClick = () => {
     console.log('Abrir notificações')
@@ -142,43 +226,112 @@ export default function ProfessorDashboardPage() {
     }
   }
 
-  const toggleModuleAccess = async (moduleId: string) => {
+  const toggleModuleAccess = useCallback(async (moduleId: string) => {
+    // Validações de entrada
+    if (!moduleId || typeof moduleId !== 'string') {
+      console.error('❌ ModuleId inválido:', moduleId)
+      alert('Erro: ID do módulo inválido')
+      return
+    }
+
+    if (!moduleId.startsWith('module-') || moduleId.length > 50) {
+      console.error('❌ Formato de moduleId inválido:', moduleId)
+      alert('Erro: Formato do ID do módulo inválido')
+      return
+    }
+
     if (!db) {
-      console.error('Firebase não inicializado')
-      alert('Erro: Firebase não está configurado')
+      console.error('❌ Firebase não inicializado')
+      alert('Erro: Firebase não está configurado. Recarregue a página e tente novamente.')
       return
     }
 
     if (!user?.id) {
-      console.error('Usuário não autenticado')
-      alert('Erro: Usuário não autenticado')
+      console.error('❌ Usuário não autenticado')
+      alert('Erro: Você precisa estar autenticado para alterar módulos')
       return
     }
 
+    // Verificar se o módulo existe na lista de módulos disponíveis
+    const moduleExists = modules.some(m => m.id === moduleId)
+    if (!moduleExists) {
+      console.error('❌ Módulo não encontrado na lista:', moduleId)
+      alert('Erro: Módulo não encontrado')
+      return
+    }
+
+    const operation = unlockedModules.includes(moduleId) ? 'bloquear' : 'desbloquear'
+    
     try {
+      console.log(`🔄 Tentando ${operation} módulo ${moduleId}...`)
+      
       const isCurrentlyUnlocked = unlockedModules.includes(moduleId)
       const newUnlocked = isCurrentlyUnlocked 
         ? unlockedModules.filter(id => id !== moduleId)
-        : [...unlockedModules, moduleId]
+        : [...new Set([...unlockedModules, moduleId])] // Usar Set para evitar duplicatas
+
+      // Validar que sempre há pelo menos um módulo desbloqueado
+      if (newUnlocked.length === 0) {
+        console.warn('⚠️ Tentativa de bloquear todos os módulos impedida')
+        alert('Erro: Pelo menos um módulo deve permanecer ativo')
+        return
+      }
 
       const updateData = {
         unlocked: newUnlocked,
         lastUpdated: new Date(),
-        lastUpdatedBy: user.id
+        lastUpdatedBy: user.id,
+        lastUpdateType: operation,
+        moduleId: moduleId
       }
 
-      await setDoc(doc(db, 'settings', 'modules'), updateData, { merge: true })
+      // Usar timeout para operação
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na operação')), 10000)
+      })
+
+      const updatePromise = setDoc(doc(db, 'settings', 'modules'), updateData, { merge: true })
+
+      await Promise.race([updatePromise, timeoutPromise])
       
-      console.log(`✅ Módulo ${moduleId} ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`)
+      console.log(`✅ Módulo ${moduleId} ${operation}ado com sucesso`)
       
-      // Notificação visual de sucesso (opcional)
-      // toast.success(`Módulo ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso!`)
+      // Log da operação para auditoria
+      console.log(`📊 Audit Log - Module Access Change:`, {
+        moduleId,
+        operation,
+        userId: user.id,
+        userName: user.fullName || user.name,
+        timestamp: new Date().toISOString(),
+        previousState: isCurrentlyUnlocked,
+        newState: !isCurrentlyUnlocked,
+        newUnlockedList: newUnlocked
+      })
       
     } catch (error) {
-      console.error(`❌ Erro ao alterar acesso do módulo ${moduleId}:`, error)
-      alert(`Erro ao ${unlockedModules.includes(moduleId) ? 'bloquear' : 'desbloquear'} módulo. Tente novamente.`)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      
+      console.error(`❌ Erro crítico ao ${operation} módulo ${moduleId}:`, {
+        error,
+        moduleId,
+        operation,
+        userId: user.id,
+        timestamp: new Date().toISOString(),
+        errorType: error instanceof Error ? error.name : 'unknown'
+      })
+
+      // Mostrar erro específico baseado no tipo
+      if (errorMessage.includes('permission')) {
+        alert('Erro: Você não tem permissão para alterar este módulo')
+      } else if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
+        alert('Erro de conexão. Verifique sua internet e tente novamente.')
+      } else if (errorMessage.includes('unavailable')) {
+        alert('Serviço temporariamente indisponível. Tente novamente em alguns segundos.')
+      } else {
+        alert(`Erro ao ${operation} módulo: ${errorMessage}. Tente novamente ou recarregue a página.`)
+      }
     }
-  }
+  }, [unlockedModules, user, modules])
 
   const handleLogout = async () => {
     try {
@@ -209,8 +362,22 @@ export default function ProfessorDashboardPage() {
   }
 
   return (
-    <ModuleProgressProvider>
-      <div className="min-h-screen bg-gray-50">
+    <ErrorBoundary
+      showDetails={process.env.NODE_ENV === 'development'}
+      resetKeys={[user?.id, activeTab]}
+      onError={(error, errorInfo) => {
+        console.error('🚨 Error Boundary ativado na página do professor:', {
+          error: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+          user: user?.id,
+          activeTab,
+          timestamp: new Date().toISOString()
+        })
+      }}
+    >
+      <ModuleProgressProvider>
+        <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -374,38 +541,91 @@ export default function ProfessorDashboardPage() {
               {/* Main Content */}
               <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
                 <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
-                  {/* Welcome Banner */}
-                  <Card className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-0">
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex-1">
-                          <h2 className="text-xl sm:text-2xl font-bold mb-2">
-                            Bem-vindo ao Dashboard do Professor!
-                          </h2>
-                          <p className="text-sm sm:text-base text-indigo-100">
-                            Gerencie suas turmas, monitore o progresso dos estudantes e configure módulos.
+                  <ErrorBoundary
+                    resetKeys={[user?.id]}
+                    fallback={
+                      <Card className="border-red-200">
+                        <CardContent className="p-6 text-center">
+                          <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                          <h3 className="font-semibold text-red-800 mb-2">Erro no Dashboard</h3>
+                          <p className="text-red-600 text-sm mb-4">
+                            Ocorreu um erro ao carregar o dashboard principal.
                           </p>
+                          <Button onClick={() => window.location.reload()} size="sm">
+                            Recarregar Dashboard
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    }
+                  >
+                    {/* Welcome Banner */}
+                    <Card className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-0">
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-2">
+                              Bem-vindo ao Dashboard do Professor!
+                            </h2>
+                            <p className="text-sm sm:text-base text-indigo-100">
+                              Gerencie suas turmas, monitore o progresso dos estudantes e configure módulos.
+                            </p>
+                          </div>
+                          <div className="hidden sm:block">
+                            <GraduationCap className="w-12 sm:w-16 h-12 sm:h-16 text-indigo-200" />
+                          </div>
                         </div>
-                        <div className="hidden sm:block">
-                          <GraduationCap className="w-12 sm:w-16 h-12 sm:h-16 text-indigo-200" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
 
-                  {/* Dashboard Principal */}
-                  <EnhancedProfessorDashboard onNavigateToTab={setActiveTab} />
+                    {/* Dashboard Principal */}
+                    <EnhancedProfessorDashboard onNavigateToTab={setActiveTab} />
+                  </ErrorBoundary>
                 </TabsContent>
 
                 <TabsContent value="classes" className="space-y-6">
-                  {/* Gerenciamento de turmas */}
-                  <ImprovedClassManagement 
-                    professorId={user?.id || 'demo'} 
-                    professorName={user?.fullName || 'Prof. Dr. Dennys Esper'}
-                  />
+                  <ErrorBoundary
+                    resetKeys={[user?.id]}
+                    fallback={
+                      <Card className="border-red-200">
+                        <CardContent className="p-6 text-center">
+                          <Users className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                          <h3 className="font-semibold text-red-800 mb-2">Erro no Gerenciamento de Turmas</h3>
+                          <p className="text-red-600 text-sm mb-4">
+                            Não foi possível carregar o sistema de turmas. Tente recarregar a página.
+                          </p>
+                          <Button onClick={() => window.location.reload()} size="sm">
+                            Recarregar Turmas
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    }
+                  >
+                    {/* Gerenciamento de turmas */}
+                    <ImprovedClassManagement 
+                      professorId={user?.id || 'demo'} 
+                      professorName={user?.fullName || 'Prof. Dr. Dennys Esper'}
+                    />
+                  </ErrorBoundary>
                 </TabsContent>
 
                 <TabsContent value="modules" className="space-y-4 sm:space-y-6">
+                  <ErrorBoundary
+                    resetKeys={[user?.id, unlockedModules]}
+                    fallback={
+                      <Card className="border-red-200">
+                        <CardContent className="p-6 text-center">
+                          <BookOpen className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                          <h3 className="font-semibold text-red-800 mb-2">Erro no Gerenciamento de Módulos</h3>
+                          <p className="text-red-600 text-sm mb-4">
+                            Não foi possível carregar o sistema de módulos.
+                          </p>
+                          <Button onClick={() => window.location.reload()} size="sm">
+                            Recarregar Módulos
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    }
+                  >
                   {/* Header da seção */}
                   <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
                     <CardContent className="p-4 sm:p-6">
@@ -642,35 +862,72 @@ export default function ProfessorDashboardPage() {
                       </div>
                     </CardContent>
                   </Card>
+                  </ErrorBoundary>
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-6">
-                  <AnalyticsDashboard professorId={user?.id || 'demo'} />
+                  <ErrorBoundary
+                    resetKeys={[user?.id]}
+                    fallback={
+                      <Card className="border-red-200">
+                        <CardContent className="p-6 text-center">
+                          <BarChart3 className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                          <h3 className="font-semibold text-red-800 mb-2">Erro no Analytics</h3>
+                          <p className="text-red-600 text-sm mb-4">
+                            Não foi possível carregar o dashboard de analytics.
+                          </p>
+                          <Button onClick={() => window.location.reload()} size="sm">
+                            Recarregar Analytics
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    }
+                  >
+                    <AnalyticsDashboard professorId={user?.id || 'demo'} />
+                  </ErrorBoundary>
                 </TabsContent>
 
                 <TabsContent value="system" className="space-y-6">
-                  {/* Header da seção */}
-                  <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-3">
-                        <Monitor className="w-8 h-8 text-blue-600" />
-                        <div>
-                          <h2 className="text-xl font-bold text-blue-900">
-                            Monitoramento do Sistema
-                          </h2>
-                          <p className="text-blue-700">
-                            Acompanhe a saúde e performance da plataforma em tempo real
+                  <ErrorBoundary
+                    resetKeys={[user?.id]}
+                    fallback={
+                      <Card className="border-red-200">
+                        <CardContent className="p-6 text-center">
+                          <Monitor className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                          <h3 className="font-semibold text-red-800 mb-2">Erro no Sistema</h3>
+                          <p className="text-red-600 text-sm mb-4">
+                            Não foi possível carregar o monitoramento do sistema.
                           </p>
+                          <Button onClick={() => window.location.reload()} size="sm">
+                            Recarregar Sistema
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    }
+                  >
+                    {/* Header da seção */}
+                    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                      <CardContent className="p-6">
+                        <div className="flex items-center space-x-3">
+                          <Monitor className="w-8 h-8 text-blue-600" />
+                          <div>
+                            <h2 className="text-xl font-bold text-blue-900">
+                              Monitoramento do Sistema
+                            </h2>
+                            <p className="text-blue-700">
+                              Acompanhe a saúde e performance da plataforma em tempo real
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
 
-                  {/* Dashboard de Saúde */}
-                  <HealthDashboard 
-                    professorId={user?.id || 'demo'} 
-                    compactMode={false}
-                  />
+                    {/* Dashboard de Saúde */}
+                    <HealthDashboard 
+                      professorId={user?.id || 'demo'} 
+                      compactMode={false}
+                    />
+                  </ErrorBoundary>
                 </TabsContent>
               </main>
             </Tabs>
@@ -689,7 +946,8 @@ export default function ProfessorDashboardPage() {
             </div>
           </div>
         </footer>
-      </div>
-    </ModuleProgressProvider>
+        </div>
+      </ModuleProgressProvider>
+    </ErrorBoundary>
   )
 }
