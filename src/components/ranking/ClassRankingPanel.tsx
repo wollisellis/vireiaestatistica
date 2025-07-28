@@ -365,19 +365,19 @@ export function ClassRankingPanel({
   }
 
   return (
-    <Card className={`${className} border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50`}>
+    <Card className={`${className} bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <GraduationCap className="w-5 h-5 text-blue-600" />
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+              <Trophy className="w-5 h-5 text-yellow-600" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <h3 className="font-bold text-gray-900 text-base">
                 🏆 Ranking da Turma
               </h3>
               {classInfo && (
-                <p className="text-sm text-gray-600 mt-1 font-medium">
+                <p className="text-sm text-gray-600 mt-1 font-medium truncate">
                   {classInfo.name}
                   {classInfo.semester && classInfo.year && (
                     <span className="text-gray-400"> • {classInfo.semester}/{classInfo.year}</span>
@@ -386,7 +386,7 @@ export function ClassRankingPanel({
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
@@ -396,56 +396,55 @@ export function ClassRankingPanel({
             >
               <TrendingUp className="w-4 h-4" />
             </Button>
-
-        </div>
+          </div>
         </div>
         
         {showStats && classInfo && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="mt-3 space-y-2"
+            className="mt-3 space-y-3"
           >
             <div className="flex items-center justify-between text-xs text-gray-600">
               <div className="flex items-center space-x-1">
-                <Users className="w-3 h-3" />
-                <span>{classInfo.studentsCount} estudantes</span>
+                <Users className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{classInfo.studentsCount} estudantes</span>
               </div>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 flex-shrink-0">
                 <Activity className="w-3 h-3" />
                 <span>Ativo</span>
               </div>
             </div>
-            
+
             {/* Posição do usuário atual */}
             {classStudents.find(s => s.isCurrentUser) && (
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-3 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-xs font-bold">#{classStudents.find(s => s.isCurrentUser)?.position}</span>
                     </div>
-                    <p className="text-sm font-bold text-blue-900">
+                    <p className="text-sm font-bold text-blue-900 truncate">
                       Sua Posição
                     </p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                  <div className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
                     (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 90 ? 'bg-green-100 text-green-700' :
                     (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'bg-blue-100 text-blue-700' :
                     'bg-orange-100 text-orange-700'
                   }`}>
                     {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)} pts
                     {(classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 && (
-                      <span className="ml-2">✅</span>
+                      <span className="ml-1">✅</span>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-xs text-blue-700">
-                  <span className="font-medium">
+                  <span className="font-medium truncate">
                     ID: ...{user?.id?.slice(-6)}
                   </span>
-                  <span className="font-medium">
-                    {classStudents.find(s => s.isCurrentUser)?.completedModules || 0} módulo(s) concluído(s)
+                  <span className="font-medium flex-shrink-0">
+                    {classStudents.find(s => s.isCurrentUser)?.completedModules || 0} módulo(s)
                   </span>
                 </div>
               </div>
@@ -471,10 +470,10 @@ export function ClassRankingPanel({
                     `}
                   >
                     {/* Lado Esquerdo: Posição e Info */}
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
                       {/* Posição */}
                       <div className={`
-                        w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md
+                        w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md flex-shrink-0
                         ${getPositionColor(student.position || 0)}
                       `}>
                         {(student.position || 0) <= 3 ? getRankIcon(student.position || 0) : student.position}
@@ -482,23 +481,24 @@ export function ClassRankingPanel({
 
                       {/* Informações do estudante */}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center space-x-2">
-                          <p className="text-base font-semibold text-gray-900 truncate">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <p className="text-sm font-semibold text-gray-900 truncate flex-1">
                             {student.studentName}
                           </p>
                           {student.isCurrentUser && (
-                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 font-semibold">
+                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 font-semibold flex-shrink-0">
                               Você
                             </Badge>
                           )}
-                          {/* 🏦 Mostrar ID parcial para identificação */}
-                          <span className="text-sm text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded">
-                            ...{student.studentId.slice(-6)}
-                          </span>
                         </div>
-                        <div className="flex items-center space-x-2 mt-1">
+
+                        {/* Segunda linha: ID e pontuação */}
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
-                            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-bold ${
+                            <span className="text-xs text-gray-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                              ...{student.studentId.slice(-6)}
+                            </span>
+                            <div className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-bold ${
                               student.totalScore >= 90 ? 'bg-green-100 text-green-700' :
                               student.totalScore >= 70 ? 'bg-blue-100 text-blue-700' :
                               student.totalScore >= 50 ? 'bg-yellow-100 text-yellow-700' :
@@ -508,10 +508,11 @@ export function ClassRankingPanel({
                               <span>{formatScore(student.totalScore)} pts</span>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-1">
+
+                          <div className="flex items-center space-x-1 flex-shrink-0">
                             <Target className="w-3 h-3 text-green-500" />
                             <span className="text-xs text-gray-600">
-                              {student.completedModules}/1 módulo{student.completedModules !== 1 ? 's' : ''}
+                              {student.completedModules}/1
                               {student.totalScore >= 70 && <span className="ml-1 text-green-600">✓</span>}
                             </span>
                           </div>
@@ -520,7 +521,7 @@ export function ClassRankingPanel({
                     </div>
 
                     {/* Lado Direito: Indicador de atividade */}
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-center flex-shrink-0 w-6">
                       {student.lastActivity && (
                         <div className={`
                           w-2 h-2 rounded-full

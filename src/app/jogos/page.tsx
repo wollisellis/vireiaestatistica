@@ -586,21 +586,11 @@ function JogosPageContent() {
               {user && <StudentClassInfo studentId={getUserId() || ''} />}
               
               {/* 🎯 RANKING DA TURMA */}
-              <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center space-x-2">
-                    <Trophy className="w-5 h-5 text-yellow-600" />
-                    <h3 className="font-semibold text-gray-900">🏆 Ranking da Turma</h3>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <ClassRankingPanel
-                    moduleId="introducao-avaliacao-nutricional"
-                    user={user}
-                    loading={loading}
-                  />
-                </CardContent>
-              </Card>
+              <ClassRankingPanel
+                moduleId="introducao-avaliacao-nutricional"
+                user={user}
+                loading={loading}
+              />
             </div>
           </div>
         </div>
