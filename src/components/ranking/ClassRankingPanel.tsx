@@ -371,13 +371,17 @@ export function ClassRankingPanel({
   }
 
   return (
-    <Card className={`${className} bg-gradient-to-br from-white to-gray-50 backdrop-blur-sm border border-gray-200 shadow-2xl hover:shadow-3xl transition-shadow duration-300 ${expanded ? 'lg:max-w-3xl' : ''}`}>
+    <Card className={`${className} bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-gray-900 text-lg">
-              🏆 Ranking da Turma
-            </h3>
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+              <Trophy className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-bold text-gray-900 text-base">
+                🏆 Ranking da Turma
+              </h3>
               {classInfo && (
                 <p className="text-sm text-gray-600 mt-1 font-medium truncate">
                   {classInfo.name}
