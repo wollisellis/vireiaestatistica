@@ -22,6 +22,7 @@ import { isRecentActivity } from '@/utils/dateUtils';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { enhancedClassService } from '@/services/enhancedClassService';
 import OptimizedClassService from '@/services/optimizedClassService';
+import ClassRankingService from '@/services/classRankingService';
 import ProfessorClassService from '@/services/professorClassService';
 
 interface ClassStudent {
@@ -158,9 +159,13 @@ export function ClassRankingPanel({
     };
   }, [user?.id]);
 
-  // ✅ OTIMIZAÇÃO: Flag para usar o novo sistema otimizado
+  // ✅ OTIMIZAÇÃO: Flags para usar sistemas otimizados
   const useOptimizedRanking = process.env.NODE_ENV === 'development' || 
     (typeof window !== 'undefined' && localStorage.getItem('enable-optimized-ranking') === 'true');
+    
+  // 🚀 FASE 2: Flag para usar rankings pré-agregados (máxima performance)
+  const usePreAggregatedRanking = process.env.NODE_ENV === 'development' || 
+    (typeof window !== 'undefined' && localStorage.getItem('enable-preaggregated-ranking') === 'true');
 
   const loadClassRankingData = async () => {
     try {
@@ -214,15 +219,44 @@ export function ClassRankingPanel({
         studentsCount: firstClass.studentsCount
       });
 
-      // ✅ OTIMIZAÇÃO: Usar serviço otimizado se flag ativa
+      // 🚀 HIERARQUIA DE OTIMIZAÇÃO: Fase 2 → Fase 1 → Sistema legado
       let studentsData;
-      if (useOptimizedRanking) {
-        console.log(`[ClassRankingPanel] 🚀 Usando versão otimizada para turma ${firstClass.id}`);
+      
+      if (usePreAggregatedRanking) {
+        // FASE 2: Rankings pré-agregados (máxima performance)
+        console.log(`[ClassRankingPanel] ⚡ Usando rankings pré-agregados para turma ${firstClass.id}`);
+        try {
+          const preAggregatedData = await ClassRankingService.getPreAggregatedRanking(firstClass.id);
+          studentsData = preAggregatedData.slice(0, displayLimit).map(entry => ({
+            studentId: entry.studentId,
+            studentName: entry.studentName,
+            email: entry.email || '',
+            totalNormalizedScore: entry.totalNormalizedScore,
+            completedModules: entry.completedModules,
+            lastActivity: entry.lastActivity,
+            anonymousId: entry.anonymousId,
+            classRank: entry.classRank,
+            name: entry.studentName,
+            totalScore: entry.totalNormalizedScore
+          }));
+          console.log(`[ClassRankingPanel] ✅ Fase 2: ${studentsData.length} estudantes carregados instantaneamente`);
+        } catch (error) {
+          console.warn(`[ClassRankingPanel] ⚠️ Fase 2 falhou, fallback para Fase 1:`, error);
+          // Fallback para Fase 1
+          studentsData = await OptimizedClassService.getOptimizedClassStudents(
+            firstClass.id,
+            { limit: displayLimit }
+          );
+        }
+      } else if (useOptimizedRanking) {
+        // FASE 1: Queries otimizadas com cache
+        console.log(`[ClassRankingPanel] 🚀 Usando versão otimizada (Fase 1) para turma ${firstClass.id}`);
         studentsData = await OptimizedClassService.getOptimizedClassStudents(
           firstClass.id,
           { limit: displayLimit }
         );
       } else {
+        // SISTEMA LEGADO: Fallback para compatibilidade
         console.log(`[ClassRankingPanel] 📊 Usando versão legada para turma ${firstClass.id}`);
         studentsData = await enhancedClassService.getClassStudents(firstClass.id);
 
@@ -237,24 +271,39 @@ export function ClassRankingPanel({
         return;
       }
 
-      // ✅ OTIMIZAÇÃO: Dados já vêm otimizados do novo serviço
+      // 🚀 TRANSFORMAÇÃO DE DADOS: Unificar formato independente da fonte
       let transformedStudents: ClassStudent[];
       
-      if (useOptimizedRanking) {
-        // Dados já vêm transformados e rankeados do OptimizedClassService
+      if (usePreAggregatedRanking && studentsData.every((s: any) => s.classRank !== undefined)) {
+        // FASE 2: Dados já vêm pré-agregados e rankeados
         transformedStudents = studentsData.map((student: any) => ({
           studentId: student.studentId,
-          studentName: student.studentName,
-          email: student.email,
-          totalScore: student.totalNormalizedScore || 0,
+          studentName: student.studentName || student.name,
+          email: student.email || '',
+          totalScore: student.totalNormalizedScore || student.totalScore || 0,
           completedModules: student.completedModules || 0,
           lastActivity: student.lastActivity,
           isCurrentUser: student.studentId === user.id,
           anonymousId: student.anonymousId,
           position: student.classRank || 0
         }));
+        console.log(`[ClassRankingPanel] 🎯 Fase 2: Dados pré-agregados processados`);
+      } else if (useOptimizedRanking) {
+        // FASE 1: Dados já vêm transformados e rankeados do OptimizedClassService
+        transformedStudents = studentsData.map((student: any) => ({
+          studentId: student.studentId,
+          studentName: student.studentName || student.name,
+          email: student.email || '',
+          totalScore: student.totalNormalizedScore || student.totalScore || 0,
+          completedModules: student.completedModules || 0,
+          lastActivity: student.lastActivity,
+          isCurrentUser: student.studentId === user.id,
+          anonymousId: student.anonymousId,
+          position: student.classRank || 0
+        }));
+        console.log(`[ClassRankingPanel] 🚀 Fase 1: Dados otimizados processados`);
       } else {
-        // Transformação legada
+        // SISTEMA LEGADO: Transformação completa necessária
         transformedStudents = studentsData.map((student: any) => {
           const studentScore = student.normalizedScore || student.totalScore || 0;
           const studentId = student.studentId || student.id || student.uid || '';
@@ -280,6 +329,8 @@ export function ClassRankingPanel({
             position: index + 1
           }))
           .slice(0, displayLimit);
+          
+        console.log(`[ClassRankingPanel] 📊 Sistema legado: Dados transformados e ordenados`);
       }
 
       setClassStudents(transformedStudents);

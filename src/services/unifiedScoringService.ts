@@ -19,6 +19,22 @@ import { AdvancedScoringSystem } from '@/lib/scoringSystem'
 import { ModuleProgressSystem } from '@/lib/moduleProgressSystem'
 import { optimizedCache } from './optimizedCacheService'
 
+// ✅ FASE 2: Importar serviço de rankings pré-agregados 
+let ClassRankingService: any = null
+
+// Lazy loading para evitar circular imports
+const getClassRankingService = async () => {
+  if (!ClassRankingService) {
+    try {
+      const module = await import('./classRankingService')
+      ClassRankingService = module.default
+    } catch (error) {
+      console.warn('[UnifiedScoringService] ClassRankingService não disponível:', error.message)
+    }
+  }
+  return ClassRankingService
+}
+
 export interface UnifiedScore {
   studentId: string
   userId: string // Alias para compatibilidade
@@ -633,6 +649,33 @@ class UnifiedScoringService {
         if (enrolledClasses.length > 0) {
           await optimizedCache.invalidateStudentRankings(studentId, enrolledClasses);
           console.log(`[UnifiedScoring] 🎯 Cache invalidado para ${enrolledClasses.length} turmas específicas`);
+          
+          // 🚀 FASE 2: Atualizar rankings pré-agregados se disponível
+          try {
+            const ClassRankingService = await getClassRankingService();
+            if (ClassRankingService && enrolledClasses.length > 0) {
+              // Atualizar rankings pré-agregados em background
+              const rankingPromises = enrolledClasses.map(async (classId) => {
+                try {
+                  await ClassRankingService.updateStudentInRanking(classId, studentId, {
+                    totalNormalizedScore: score.normalizedScore || 0,
+                    completedModules: Object.values(score.moduleScores || {}).filter((s: any) => s >= 70).length,
+                    lastActivity: new Date()
+                  });
+                  console.log(`[UnifiedScoring] ✅ Ranking pré-agregado atualizado para turma ${classId}`);
+                } catch (rankingError) {
+                  console.warn(`[UnifiedScoring] ⚠️ Erro ao atualizar ranking pré-agregado da turma ${classId}:`, rankingError.message);
+                }
+              });
+              
+              // Executar em paralelo sem bloquear
+              Promise.all(rankingPromises).catch(error => 
+                console.warn(`[UnifiedScoring] ⚠️ Erro geral nos rankings pré-agregados:`, error.message)
+              );
+            }
+          } catch (rankingServiceError) {
+            console.warn(`[UnifiedScoring] ⚠️ ClassRankingService não disponível:`, rankingServiceError.message);
+          }
         }
 
       } catch (cacheError) {
