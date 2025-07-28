@@ -355,7 +355,7 @@ export default function EnhancedClassDashboard() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/professor/turma/${classId}/estudante/${student.studentId}`)}
+            onClick={() => router.push(`/professor/turma/${classId}/aluno/${student.studentId}`)}
           >
             <Eye className="h-4 w-4 mr-1" />
             Ver
@@ -653,7 +653,7 @@ export default function EnhancedClassDashboard() {
               data={filteredStudents}
               columns={studentColumns}
               keyExtractor={(student) => student.studentId || Math.random().toString()}
-              onRowClick={(student) => router.push(`/professor/turma/${classId}/estudante/${student.studentId}`)}
+              onRowClick={(student) => router.push(`/professor/turma/${classId}/aluno/${student.studentId}`)}
               emptyMessage="Nenhum estudante encontrado"
               loading={false}
               tabletVisibleColumns={4}
