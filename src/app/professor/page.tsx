@@ -7,6 +7,7 @@ import ImprovedClassManagement from '@/components/professor/ImprovedClassManagem
 import AnalyticsDashboard from '@/components/professor/AnalyticsDashboard'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect'
+import { useResponsive } from '@/hooks/useResponsive'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -32,7 +33,9 @@ import {
   Play,
   Lock,
   CheckCircle,
-  Monitor
+  Monitor,
+  Menu,
+  X
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 import { HealthIndicator } from '@/components/system/HealthIndicator'
@@ -44,6 +47,8 @@ export default function ProfessorDashboardPage() {
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1'])
   const [moduleLoading, setModuleLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { isMobile, isTablet } = useResponsive()
 
   // Carregar módulos desbloqueados do Firebase - Otimizado
   useEffect(() => {
@@ -214,17 +219,18 @@ export default function ProfessorDashboardPage() {
                 <div className="flex items-center space-x-2">
                   <GraduationCap className="w-8 h-8 text-indigo-600" />
                   <div>
-                    <h1 className="text-xl font-bold text-gray-900">AvaliaNutri</h1>
-                    <p className="text-xs text-gray-600">Dashboard do Professor</p>
+                    <h1 className="text-lg sm:text-xl font-bold text-gray-900">AvaliaNutri</h1>
+                    <p className="text-xs text-gray-600 hidden sm:block">Dashboard do Professor</p>
                   </div>
                 </div>
-                <Badge variant="info" className="hidden sm:inline-flex">
+                <Badge variant="info" className="hidden lg:inline-flex">
                   UNICAMP - NT600
                 </Badge>
               </div>
 
-              <div className="flex items-center space-x-4">
-                <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex items-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <span>Bem-vindo,</span>
                   <span className="font-medium">
                     {user.fullName ? 
@@ -261,69 +267,127 @@ export default function ProfessorDashboardPage() {
                   </Button>
                 </div>
               </div>
+
+              {/* Mobile Menu Button */}
+              <div className="md:hidden flex items-center space-x-2">
+                <NotificationCenter role="professor" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2"
+                >
+                  {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </Button>
+              </div>
             </div>
+
+            {/* Mobile Menu */}
+            {mobileMenuOpen && (
+              <div className="md:hidden py-4 border-t">
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600">
+                    Bem-vindo, <span className="font-medium">
+                      {user.fullName ? `Prof. ${user.fullName.split(' ')[0]}` : 'Professor'}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleHelpClick}
+                      className="w-full justify-start"
+                    >
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      Ajuda
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSettingsClick}
+                      className="w-full justify-start"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Configurações
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="w-full justify-start border-red-200 text-red-700 hover:bg-red-50"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sair
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </header>
 
         {/* Navigation */}
         <nav className="bg-white border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="w-full justify-start bg-transparent border-0 h-auto p-0">
-                <TabsTrigger 
-                  value="dashboard" 
-                  className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-4 py-4"
-                >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Dashboard
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="classes" 
-                  className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-4 py-4"
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Turmas
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="modules" 
-                  className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-4 py-4"
-                >
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Módulos
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="analytics" 
-                  className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-4 py-4"
-                >
-                  <Activity className="w-4 h-4 mr-2" />
-                  Analytics
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="system" 
-                  className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-4 py-4"
-                >
-                  <Monitor className="w-4 h-4 mr-2" />
-                  Sistema
-                </TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto scrollbar-hide">
+                <TabsList className="w-full justify-start bg-transparent border-0 h-auto p-0 inline-flex min-w-full px-4 sm:px-6 lg:px-8">
+                  <TabsTrigger 
+                    value="dashboard" 
+                    className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-3 sm:px-4 py-4 whitespace-nowrap flex-shrink-0"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="text-sm sm:text-base">Dashboard</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="classes" 
+                    className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-3 sm:px-4 py-4 whitespace-nowrap flex-shrink-0"
+                  >
+                    <Users className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="text-sm sm:text-base">Turmas</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="modules" 
+                    className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-3 sm:px-4 py-4 whitespace-nowrap flex-shrink-0"
+                  >
+                    <BookOpen className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="text-sm sm:text-base">Módulos</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="analytics" 
+                    className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-3 sm:px-4 py-4 whitespace-nowrap flex-shrink-0"
+                  >
+                    <Activity className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="text-sm sm:text-base">Analytics</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="system" 
+                    className="border-b-2 border-transparent data-[state=active]:border-indigo-500 rounded-none px-3 sm:px-4 py-4 whitespace-nowrap flex-shrink-0"
+                  >
+                    <Monitor className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="text-sm sm:text-base">Sistema</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               {/* Main Content */}
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <TabsContent value="dashboard" className="space-y-6">
+              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+                <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
                   {/* Welcome Banner */}
                   <Card className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-0">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h2 className="text-2xl font-bold mb-2">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <h2 className="text-xl sm:text-2xl font-bold mb-2">
                             Bem-vindo ao Dashboard do Professor!
                           </h2>
-                          <p className="text-indigo-100">
+                          <p className="text-sm sm:text-base text-indigo-100">
                             Gerencie suas turmas, monitore o progresso dos estudantes e configure módulos.
                           </p>
                         </div>
-                        <div className="hidden md:block">
-                          <GraduationCap className="w-16 h-16 text-indigo-200" />
+                        <div className="hidden sm:block">
+                          <GraduationCap className="w-12 sm:w-16 h-12 sm:h-16 text-indigo-200" />
                         </div>
                       </div>
                     </CardContent>
@@ -341,17 +405,17 @@ export default function ProfessorDashboardPage() {
                   />
                 </TabsContent>
 
-                <TabsContent value="modules" className="space-y-6">
+                <TabsContent value="modules" className="space-y-4 sm:space-y-6">
                   {/* Header da seção */}
                   <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-3">
-                        <BookOpen className="w-8 h-8 text-emerald-600" />
-                        <div>
-                          <h2 className="text-xl font-bold text-emerald-900">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:space-x-3">
+                        <BookOpen className="w-6 sm:w-8 h-6 sm:h-8 text-emerald-600 flex-shrink-0" />
+                        <div className="flex-1">
+                          <h2 className="text-lg sm:text-xl font-bold text-emerald-900">
                             Status Real dos Módulos
                           </h2>
-                          <p className="text-emerald-700">
+                          <p className="text-sm sm:text-base text-emerald-700 mt-1">
                             Veja exatamente o que está disponível para os estudantes em <strong>/jogos</strong>
                           </p>
                         </div>
@@ -361,16 +425,16 @@ export default function ProfessorDashboardPage() {
 
                   {/* Card de Realidade vs Expectativa */}
                   <Card className="border-l-4 border-blue-500 bg-blue-50">
-                    <CardContent className="p-6">
-                      <div className="flex items-start space-x-4">
-                        <div className="p-3 bg-blue-100 rounded-lg flex-shrink-0">
-                          <Target className="w-6 h-6 text-blue-600" />
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row items-start gap-3 sm:space-x-4">
+                        <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                          <Target className="w-5 sm:w-6 h-5 sm:h-6 text-blue-600" />
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-blue-900 mb-2">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-blue-900 mb-2 text-base sm:text-lg">
                             📊 Situação Atual da Plataforma
                           </h3>
-                          <div className="text-blue-800 text-sm space-y-2">
+                          <div className="text-blue-800 text-xs sm:text-sm space-y-1 sm:space-y-2">
                             <p><strong>✅ IMPLEMENTADO E FUNCIONAL:</strong> Apenas 1 módulo (Módulo 1)</p>
                             <p><strong>🔒 ESTRUTURA PLANEJADA:</strong> Módulos 2, 3 e 4 existem apenas como plano/estrutura</p>
                             <p><strong>👨‍🎓 O que os estudantes veem:</strong> Página /jogos mostra apenas o Módulo 1 ativo</p>
@@ -391,31 +455,31 @@ export default function ProfessorDashboardPage() {
                       const isUnlocked = unlockedModules.includes(module.id)
                       return (
                         <Card key={module.id} className="border-2 border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50">
-                          <CardContent className="p-8">
-                            <div className="flex items-start space-x-6">
-                              <div className="p-4 rounded-xl flex-shrink-0 shadow-md bg-emerald-100 text-emerald-600">
+                          <CardContent className="p-4 sm:p-6 lg:p-8">
+                            <div className="flex flex-col lg:flex-row items-start gap-4 lg:gap-6">
+                              <div className="p-3 sm:p-4 rounded-xl flex-shrink-0 shadow-md bg-emerald-100 text-emerald-600">
                                 {getModuleIcon(module.icon)}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center space-x-3 mb-3">
-                                  <h3 className="text-2xl font-bold text-emerald-900 leading-tight">
+                              <div className="flex-1 min-w-0 w-full">
+                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-900 leading-tight">
                                     {module.title}
                                   </h3>
-                                  <Badge variant="default" className="bg-emerald-600 text-white">
+                                  <Badge variant="default" className="bg-emerald-600 text-white text-xs">
                                     ✅ FUNCIONAL
                                   </Badge>
-                                  <Badge variant="outline" className="border-emerald-400 text-emerald-700">
+                                  <Badge variant="outline" className="border-emerald-400 text-emerald-700 text-xs hidden sm:inline-flex">
                                     Disponível em /jogos
                                   </Badge>
                                 </div>
-                                <p className="text-emerald-800 text-lg mb-6 leading-relaxed font-medium">
+                                <p className="text-emerald-800 text-sm sm:text-base lg:text-lg mb-4 sm:mb-6 leading-relaxed font-medium">
                                   {module.description}
                                 </p>
                                 
                                 {/* Status real de funcionamento */}
-                                <div className="mb-6 p-4 bg-emerald-100 rounded-lg border border-emerald-300">
-                                  <h4 className="font-semibold text-emerald-900 mb-2">🎯 Status Real de Funcionamento:</h4>
-                                  <div className="space-y-2 text-emerald-800 text-sm">
+                                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-emerald-100 rounded-lg border border-emerald-300">
+                                  <h4 className="font-semibold text-emerald-900 mb-2 text-sm sm:text-base">🎯 Status Real de Funcionamento:</h4>
+                                  <div className="space-y-1 sm:space-y-2 text-emerald-800 text-xs sm:text-sm">
                                     <p>✅ <strong>Quiz implementado:</strong> 14 questões → 7 sorteadas aleatoriamente</p>
                                     <p>✅ <strong>Sistema de pontuação:</strong> Integrado com unifiedScoringService</p>
                                     <p>✅ <strong>Progresso do estudante:</strong> Salvo no Firebase</p>
@@ -425,35 +489,35 @@ export default function ProfessorDashboardPage() {
                                 </div>
                                 
                                 {/* Estatísticas reais */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-white rounded-lg border border-emerald-200">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 bg-white rounded-lg border border-emerald-200">
                                   <div className="text-center">
-                                    <div className="text-2xl font-bold text-emerald-600">14</div>
-                                    <div className="text-sm text-gray-600">Questões no Banco</div>
+                                    <div className="text-lg sm:text-2xl font-bold text-emerald-600">14</div>
+                                    <div className="text-xs sm:text-sm text-gray-600">Questões no Banco</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="text-2xl font-bold text-emerald-600">7</div>
-                                    <div className="text-sm text-gray-600">Por Quiz</div>
+                                    <div className="text-lg sm:text-2xl font-bold text-emerald-600">7</div>
+                                    <div className="text-xs sm:text-sm text-gray-600">Por Quiz</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="text-2xl font-bold text-emerald-600">{module.estimatedTime}</div>
-                                    <div className="text-sm text-gray-600">Min. Estimados</div>
+                                    <div className="text-lg sm:text-2xl font-bold text-emerald-600">{module.estimatedTime}</div>
+                                    <div className="text-xs sm:text-sm text-gray-600">Min. Estimados</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="text-2xl font-bold text-emerald-600">100%</div>
-                                    <div className="text-sm text-gray-600">Implementado</div>
+                                    <div className="text-lg sm:text-2xl font-bold text-emerald-600">100%</div>
+                                    <div className="text-xs sm:text-sm text-gray-600">Implementado</div>
                                   </div>
                                 </div>
                                 
                                 {/* Controle de acesso simplificado */}
-                                <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-emerald-200">
-                                  <div className="flex items-center space-x-3">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-white rounded-lg border border-emerald-200">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                                     <Badge 
                                       variant="default"
-                                      className="bg-emerald-600 text-white px-3 py-1"
+                                      className="bg-emerald-600 text-white px-2 sm:px-3 py-1 text-xs sm:text-sm"
                                     >
                                       {isUnlocked ? '🟢 ATIVO para Estudantes' : '🔴 BLOQUEADO'}
                                     </Badge>
-                                    <span className="text-sm text-emerald-700">
+                                    <span className="text-xs sm:text-sm text-emerald-700">
                                       {isUnlocked ? 'Visível na página /jogos' : 'Não aparece em /jogos'}
                                     </span>
                                   </div>
@@ -461,16 +525,16 @@ export default function ProfessorDashboardPage() {
                                     size="sm"
                                     variant={isUnlocked ? "destructive" : "default"}
                                     onClick={() => toggleModuleAccess(module.id)}
-                                    className={`min-w-[140px] ${!isUnlocked ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                                    className={`w-full sm:w-auto min-w-[120px] sm:min-w-[140px] ${!isUnlocked ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
                                   >
                                     {isUnlocked ? (
                                       <>
-                                        <Lock className="w-4 h-4 mr-2" />
+                                        <Lock className="w-3 sm:w-4 h-3 sm:h-4 mr-2" />
                                         Desativar
                                       </>
                                     ) : (
                                       <>
-                                        <Play className="w-4 h-4 mr-2" />
+                                        <Play className="w-3 sm:w-4 h-3 sm:h-4 mr-2" />
                                         Ativar
                                       </>
                                     )}
@@ -485,28 +549,28 @@ export default function ProfessorDashboardPage() {
 
                     {/* Outros módulos - STATUS PLANEJADO */}
                     <Card className="border-2 border-gray-300 bg-gray-50">
-                      <CardContent className="p-6">
-                        <div className="flex items-start space-x-4">
-                          <div className="p-3 bg-gray-200 rounded-lg flex-shrink-0">
-                            <Lock className="w-6 h-6 text-gray-500" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                          <div className="p-2 sm:p-3 bg-gray-200 rounded-lg flex-shrink-0">
+                            <Lock className="w-5 sm:w-6 h-5 sm:h-6 text-gray-500" />
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-800 mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-800 mb-2 text-base sm:text-lg">
                               📋 Módulos 2, 3 e 4 - Estrutura Planejada
                             </h3>
-                            <p className="text-gray-600 text-sm mb-4">
-                              Existem apenas como estrutura de dados em <code>modules.ts</code> - não há implementação funcional.
+                            <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4">
+                              Existem apenas como estrutura de dados em <code className="text-xs">modules.ts</code> - não há implementação funcional.
                             </p>
                             
-                            <div className="space-y-3">
+                            <div className="space-y-2 sm:space-y-3">
                               {modules.filter(m => m.id !== 'module-1').map(module => (
-                                <div key={module.id} className="p-3 bg-white rounded border border-gray-200">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <h4 className="font-medium text-gray-800">{module.title}</h4>
-                                      <p className="text-sm text-gray-600">{module.description}</p>
+                                <div key={module.id} className="p-2 sm:p-3 bg-white rounded border border-gray-200">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                    <div className="flex-1">
+                                      <h4 className="font-medium text-gray-800 text-sm sm:text-base">{module.title}</h4>
+                                      <p className="text-xs sm:text-sm text-gray-600 mt-1">{module.description}</p>
                                     </div>
-                                    <Badge variant="secondary" className="bg-gray-200 text-gray-600">
+                                    <Badge variant="secondary" className="bg-gray-200 text-gray-600 text-xs mt-2 sm:mt-0">
                                       🔒 APENAS ESTRUTURA
                                     </Badge>
                                   </div>
@@ -514,8 +578,8 @@ export default function ProfessorDashboardPage() {
                               ))}
                             </div>
                             
-                            <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
-                              <p className="text-yellow-800 text-sm">
+                            <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-yellow-50 rounded border border-yellow-200">
+                              <p className="text-yellow-800 text-xs sm:text-sm">
                                 <strong>⚠️ Nota:</strong> Estes módulos não aparecem em <strong>/jogos</strong> pois são filtrados programaticamente. 
                                 Para implementá-los, seria necessário criar os bancos de questões, rotas e componentes correspondentes.
                               </p>
@@ -529,33 +593,33 @@ export default function ProfessorDashboardPage() {
 
                   {/* Resumo Final Realista */}
                   <Card className="bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200">
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold text-emerald-900 mb-4">
+                    <CardContent className="p-4 sm:p-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-emerald-900 mb-3 sm:mb-4">
                         📊 Status Real da Plataforma bioestat-platform
                       </h3>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
                         <div className="text-center">
-                          <div className="text-3xl font-bold text-emerald-600">1</div>
-                          <div className="text-sm text-emerald-700">Módulo Funcional</div>
+                          <div className="text-2xl sm:text-3xl font-bold text-emerald-600">1</div>
+                          <div className="text-xs sm:text-sm text-emerald-700">Módulo Funcional</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-3xl font-bold text-emerald-600">14</div>
-                          <div className="text-sm text-emerald-700">Questões Reais</div>
+                          <div className="text-2xl sm:text-3xl font-bold text-emerald-600">14</div>
+                          <div className="text-xs sm:text-sm text-emerald-700">Questões Reais</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-3xl font-bold text-emerald-600">100%</div>
-                          <div className="text-sm text-emerald-700">Implementação</div>
+                          <div className="text-2xl sm:text-3xl font-bold text-emerald-600">100%</div>
+                          <div className="text-xs sm:text-sm text-emerald-700">Implementação</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-3xl font-bold text-emerald-600">1</div>
-                          <div className="text-sm text-emerald-700">Quiz Ativo</div>
+                          <div className="text-2xl sm:text-3xl font-bold text-emerald-600">1</div>
+                          <div className="text-xs sm:text-sm text-emerald-700">Quiz Ativo</div>
                         </div>
                       </div>
                       
-                      <div className="bg-white p-4 rounded-lg border border-emerald-200">
-                        <h4 className="font-semibold text-gray-900 mb-3">🎯 O que funciona de verdade:</h4>
-                        <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div className="bg-white p-3 sm:p-4 rounded-lg border border-emerald-200">
+                        <h4 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">🎯 O que funciona de verdade:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                           <div>
                             <span className="font-medium text-emerald-700">✅ Implementado e Testado:</span>
                             <ul className="mt-1 text-gray-600 space-y-1">

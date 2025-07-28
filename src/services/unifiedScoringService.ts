@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore'
 import { AdvancedScoringSystem } from '@/lib/scoringSystem'
 import { ModuleProgressSystem } from '@/lib/moduleProgressSystem'
+import { optimizedCache } from './optimizedCacheService'
 
 export interface UnifiedScore {
   studentId: string
@@ -588,7 +589,7 @@ class UnifiedScoringService {
     }
   }
 
-  // 🚀 UTILITÁRIO: Sincronizar dados manualmente (para migração)
+  // 🚀 UTILITÁRIO: Sincronizar dados manualmente (para migração) - OTIMIZADO
   async updateStudentRanking(studentId: string): Promise<void> {
     if (!db || !studentId) return;
 
@@ -613,9 +614,35 @@ class UnifiedScoringService {
 
       await batch.commit();
 
-      console.log(`[UnifiedScoring] Ranking atualizado para estudante ${studentId}`);
+      // ✅ OTIMIZAÇÃO: Invalidação inteligente do cache
+      try {
+        // 1. Invalidar cache do próprio estudante
+        optimizedCache.invalidateUser(studentId);
+
+        // 2. Buscar turmas do estudante para invalidação granular
+        const enrollmentsQuery = query(
+          collection(db, 'classStudents'),
+          where('studentId', '==', studentId),
+          where('status', '==', 'active')
+        );
+
+        const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
+        const enrolledClasses = enrollmentsSnapshot.docs.map(doc => doc.data().classId);
+
+        // 3. Invalidar apenas rankings das turmas específicas
+        if (enrolledClasses.length > 0) {
+          await optimizedCache.invalidateStudentRankings(studentId, enrolledClasses);
+          console.log(`[UnifiedScoring] 🎯 Cache invalidado para ${enrolledClasses.length} turmas específicas`);
+        }
+
+      } catch (cacheError) {
+        console.warn(`[UnifiedScoring] ⚠️ Erro na invalidação do cache:`, cacheError);
+        // Não quebrar o fluxo por erro de cache
+      }
+
+      console.log(`[UnifiedScoring] ✅ Ranking atualizado para estudante ${studentId}`);
     } catch (error) {
-      console.error(`[UnifiedScoring] Erro ao atualizar ranking:`, error);
+      console.error(`[UnifiedScoring] ❌ Erro ao atualizar ranking:`, error);
       // Não propagar erro para não quebrar o fluxo
     }
   }

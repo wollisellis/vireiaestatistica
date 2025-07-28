@@ -18,6 +18,8 @@ import { DeleteClassModal } from '@/components/professor/DeleteClassModal';
 import { ClassTrashService } from '@/services/classTrashService';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { safeToLocaleDateString } from '@/utils/dateUtils';
+import { useResponsive } from '@/hooks/useResponsive';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable';
 
 interface EnhancedStudent extends ClassEnrollment {
   name?: string;
@@ -37,6 +39,7 @@ export default function EnhancedClassDashboard() {
   const router = useRouter();
   const classId = params.classId as string;
   const { user } = useFirebaseAuth();
+  const { isMobile, isTablet } = useResponsive();
   
   const [classData, setClassData] = useState<EnhancedClass | null>(null);
   const [students, setStudents] = useState<EnhancedStudent[]>([]);
@@ -257,6 +260,119 @@ export default function EnhancedClassDashboard() {
   
   const stats = getProgressStats();
 
+  // Configuração das colunas para a ResponsiveTable
+  const studentColumns = [
+    {
+      key: 'student',
+      header: 'Estudante',
+      priority: 1,
+      render: (student: EnhancedStudent) => {
+        const raNumber = extractRANumber(student.email || '');
+        const studentId = getStudentId(student);
+        const displayName = formatStudentName(student);
+        
+        return (
+          <div className="space-y-1">
+            <div className="font-medium text-gray-900">{displayName}</div>
+            <div className="text-sm text-gray-500">{student.email || 'Email não disponível'}</div>
+            <div className="flex items-center space-x-2">
+              <div className="text-xs text-blue-600 font-semibold">RA: {raNumber}</div>
+              <div className="text-xs font-mono font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded border border-emerald-200">
+                #{studentId}
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'progress',
+      header: 'Progresso Geral',
+      priority: 2,
+      render: (student: EnhancedStudent) => {
+        const totalModulesInSystem = classData?.totalModules || 1;
+        const progressPercentage = ((student.completedModules || 0) / totalModulesInSystem) * 100;
+        
+        return (
+          <div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(Math.max(progressPercentage, 0), 100)}%` }}
+              />
+            </div>
+            <span className="text-sm text-gray-600">
+              {student.completedModules || 0}/{totalModulesInSystem} Módulos
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'score',
+      header: 'Pontuação Total',
+      priority: 3,
+      render: (student: EnhancedStudent) => (
+        <div className="text-center">
+          <div className="font-semibold text-lg text-blue-600">
+            {student.normalizedScore || student.totalScore || 0}
+          </div>
+          <div className="text-sm text-gray-500">pontos</div>
+        </div>
+      ),
+    },
+    {
+      key: 'lastActivity',
+      header: 'Última Atividade',
+      priority: 4,
+      hideOnMobile: true,
+      render: (student: EnhancedStudent) => (
+        <span className={`text-sm ${student.lastActivity ? 'text-gray-700' : 'text-gray-400'}`}>
+          {student.lastActivity
+            ? safeToLocaleDateString(student.lastActivity, 'pt-BR')
+            : 'Sem atividade'}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      priority: 5,
+      render: (student: EnhancedStudent) => (
+        <Badge
+          variant={student.status === 'active' ? 'default' : student.status === 'inactive' ? 'secondary' : 'destructive'}
+        >
+          {student.status === 'active' ? 'Ativo' : student.status === 'inactive' ? 'Inativo' : 'Removido'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Ações',
+      priority: 6,
+      render: (student: EnhancedStudent) => (
+        <div className="flex items-center justify-end space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/professor/turma/${classId}/estudante/${student.studentId}`)}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            Ver
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleRemoveStudent(student.studentId)}
+            disabled={student.status === 'removed' || !student.studentId}
+          >
+            <UserMinus className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -293,67 +409,77 @@ export default function EnhancedClassDashboard() {
   }
   
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Enhanced Header */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex justify-between items-start mb-6">
+        <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4 sm:mb-6">
             <div className="flex-1">
-              <div className="flex items-center space-x-3 mb-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/professor')}
-                  className="p-2"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <h1 className="text-3xl font-bold text-gray-900">{classData.name}</h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.push('/professor')}
+                    className="p-1.5 sm:p-2"
+                  >
+                    <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </Button>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{classData.name}</h1>
+                </div>
                 <Badge 
                   variant={classData.status === 'open' ? 'default' : classData.status === 'closed' ? 'secondary' : 'destructive'}
+                  className="self-start sm:self-auto"
                 >
                   {classData.status === 'open' ? 'Aberta' : classData.status === 'closed' ? 'Fechada' : 'Arquivada'}
                 </Badge>
               </div>
-              <p className="text-gray-600 text-lg">{classData.semester} - {classData.year}</p>
+              <p className="text-gray-600 text-sm sm:text-base lg:text-lg pl-9 sm:pl-0">{classData.semester} - {classData.year}</p>
               {classData.description && (
-                <p className="text-gray-700 mt-2">{classData.description}</p>
+                <p className="text-gray-700 mt-2 text-sm sm:text-base pl-9 sm:pl-0">{classData.description}</p>
               )}
             </div>
             
-            <div className="flex space-x-3">
+            <div className={`flex ${isMobile ? 'flex-col' : 'flex-row flex-wrap lg:flex-nowrap'} gap-2 lg:gap-3`}>
               <Button 
                 variant="outline" 
-                size="sm"
+                size={isMobile ? "default" : "sm"}
                 onClick={() => router.push(`/professor/turma/${classId}/analytics`)}
+                className="w-full sm:w-auto"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Analytics
               </Button>
               <Button 
                 variant="outline" 
-                size="sm"
+                size={isMobile ? "default" : "sm"}
                 onClick={() => router.push(`/professor/turma/${classId}/ranking`)}
+                className="w-full sm:w-auto"
               >
                 <Trophy className="h-4 w-4 mr-2" />
                 Ranking
               </Button>
               <Button 
                 variant="outline" 
-                size="sm"
+                size={isMobile ? "default" : "sm"}
                 onClick={() => router.push(`/professor/turma/${classId}/configuracoes`)}
+                className="w-full sm:w-auto"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Configurações
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size={isMobile ? "default" : "sm"}
+                className="w-full sm:w-auto"
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>
               <Button 
                 variant="outline" 
-                size="sm"
+                size={isMobile ? "default" : "sm"}
                 onClick={() => setShowDeleteModal(true)}
-                className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 w-full sm:w-auto"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir
@@ -361,38 +487,38 @@ export default function EnhancedClassDashboard() {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-            <div className="flex items-center space-x-2 text-gray-600">
-              <Users className="h-4 w-4" />
-              <span>{stats.total} estudantes</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 text-xs sm:text-sm">
+            <div className="flex items-center space-x-1 sm:space-x-2 text-gray-600">
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="truncate">{stats.total} estudantes</span>
             </div>
-            <div className="flex items-center space-x-2 text-green-600">
-              <Activity className="h-4 w-4" />
-              <span>{stats.active} ativos</span>
+            <div className="flex items-center space-x-1 sm:space-x-2 text-green-600">
+              <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="truncate">{stats.active} ativos</span>
             </div>
-            <div className="flex items-center space-x-2 text-blue-600">
-              <Target className="h-4 w-4" />
-              <span>{Math.round(stats.avgProgress)}% progresso</span>
+            <div className="flex items-center space-x-1 sm:space-x-2 text-blue-600">
+              <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="truncate">{Math.round(stats.avgProgress)}% progresso</span>
             </div>
-            <div className="flex items-center space-x-2 text-purple-600">
-              <Star className="h-4 w-4" />
-              <span>{stats.avgScore.toFixed(1)} pts médio</span>
+            <div className="flex items-center space-x-1 sm:space-x-2 text-purple-600">
+              <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="truncate">{stats.avgScore.toFixed(1)} pts médio</span>
             </div>
-            <div className="flex items-center space-x-2 text-gray-600">
-              <BookOpen className="h-4 w-4" />
-              <code className="px-2 py-1 bg-gray-100 rounded text-xs">{classData.inviteCode}</code>
+            <div className="flex items-center space-x-1 sm:space-x-2 text-gray-600 col-span-2 sm:col-span-1">
+              <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <code className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-100 rounded text-xs">{classData.inviteCode}</code>
             </div>
           </div>
         </div>
         
         {/* Enhanced Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total de Estudantes</CardTitle>
+            <CardHeader className="pb-2 p-3 sm:p-4">
+              <CardTitle className="text-xs sm:text-sm font-medium opacity-90">Total de Estudantes</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.total}</div>
+            <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+              <div className="text-2xl sm:text-3xl font-bold">{stats.total}</div>
               <p className="text-xs opacity-75 mt-1">
                 {classData.maxStudents ? `de ${classData.maxStudents} máximo` : 'sem limite'}
               </p>
@@ -400,11 +526,11 @@ export default function EnhancedClassDashboard() {
           </Card>
           
           <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Estudantes Ativos</CardTitle>
+            <CardHeader className="pb-2 p-3 sm:p-4">
+              <CardTitle className="text-xs sm:text-sm font-medium opacity-90">Estudantes Ativos</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.active}</div>
+            <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+              <div className="text-2xl sm:text-3xl font-bold">{stats.active}</div>
               <p className="text-xs opacity-75 mt-1">
                 {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% de engajamento
               </p>
@@ -412,21 +538,21 @@ export default function EnhancedClassDashboard() {
           </Card>
           
           <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Progresso Médio</CardTitle>
+            <CardHeader className="pb-2 p-3 sm:p-4">
+              <CardTitle className="text-xs sm:text-sm font-medium opacity-90">Progresso Médio</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{Math.round(stats.avgProgress)}%</div>
+            <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+              <div className="text-2xl sm:text-3xl font-bold">{Math.round(stats.avgProgress)}%</div>
               <p className="text-xs opacity-75 mt-1">dos módulos concluídos</p>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Pontuação Média</CardTitle>
+            <CardHeader className="pb-2 p-3 sm:p-4">
+              <CardTitle className="text-xs sm:text-sm font-medium opacity-90">Pontuação Média</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.avgScore.toFixed(1)}</div>
+            <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+              <div className="text-2xl sm:text-3xl font-bold">{stats.avgScore.toFixed(1)}</div>
               <p className="text-xs opacity-75 mt-1">pontos por estudante</p>
             </CardContent>
           </Card>
@@ -435,18 +561,18 @@ export default function EnhancedClassDashboard() {
         {/* Top Performers */}
         {stats.topPerformers.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center text-lg sm:text-xl">
+                <Trophy className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-yellow-500" />
                 Top 5 Performantes
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="space-y-2 sm:space-y-3">
                 {stats.topPerformers.map((student, index) => (
-                  <div key={student.studentId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                  <div key={student.studentId} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
                         index === 0 ? 'bg-yellow-500 text-white' :
                         index === 1 ? 'bg-gray-400 text-white' :
                         index === 2 ? 'bg-orange-500 text-white' :
@@ -455,13 +581,13 @@ export default function EnhancedClassDashboard() {
                         {index + 1}
                       </div>
                       <div>
-                        <div className="font-medium">{student.name || 'Usuário Anônimo'}</div>
-                        <div className="text-sm text-gray-600">{student.completedModules}/4 módulos</div>
+                        <div className="font-medium text-sm sm:text-base">{student.name || 'Usuário Anônimo'}</div>
+                        <div className="text-xs sm:text-sm text-gray-600">{student.completedModules}/4 módulos</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-lg">{student.totalScore}</div>
-                      <div className="text-sm text-gray-600">pontos</div>
+                      <div className="font-bold text-base sm:text-lg">{student.totalScore}</div>
+                      <div className="text-xs sm:text-sm text-gray-600">pontos</div>
                     </div>
                   </div>
                 ))}
@@ -472,11 +598,11 @@ export default function EnhancedClassDashboard() {
         
         {/* Enhanced Students Management */}
         <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Gerenciamento de Estudantes</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <CardTitle className="text-lg sm:text-xl">Gerenciamento de Estudantes</CardTitle>
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size={isMobile ? "default" : "sm"} className="w-full sm:w-auto">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Convidar
                 </Button>
@@ -484,21 +610,21 @@ export default function EnhancedClassDashboard() {
             </div>
             
             {/* Filters */}
-            <div className="flex flex-wrap gap-4 mt-4">
-              <div className="flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-4">
+              <div className="flex-1 min-w-0 sm:min-w-[200px]">
                 <div className="relative">
                   <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <Input
                     placeholder="Buscar por nome ou email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 text-sm sm:text-base"
                   />
                 </div>
               </div>
               
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-full sm:w-[120px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -510,7 +636,7 @@ export default function EnhancedClassDashboard() {
               </Select>
               
               <Select value={progressFilter} onValueChange={setProgressFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Progresso" />
                 </SelectTrigger>
                 <SelectContent>
@@ -523,130 +649,15 @@ export default function EnhancedClassDashboard() {
           </CardHeader>
           
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium">Estudante</th>
-                    <th className="text-left py-3 px-4 font-medium">Progresso Geral</th>
-                    <th className="text-left py-3 px-4 font-medium">Pontuação Total</th>
-                    <th className="text-left py-3 px-4 font-medium">Última Atividade</th>
-                    <th className="text-left py-3 px-4 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 font-medium">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents && filteredStudents.length > 0 ? filteredStudents.map(student => {
-                    if (!student) return null;
-
-                    // ✅ CORREÇÃO: Usar número real de módulos do sistema
-                    const totalModulesInSystem = classData.totalModules || 1;
-                    const progressPercentage = ((student.completedModules || 0) / totalModulesInSystem) * 100;
-                    const raNumber = extractRANumber(student.email || '');
-                    const studentId = getStudentId(student);
-                    const displayName = formatStudentName(student);
-
-                    return (
-                      <tr key={student.studentId || Math.random()} className="border-b hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-4">
-                          <div className="space-y-1">
-                            {/* Nome formatado */}
-                            <div className="font-medium text-gray-900">
-                              {displayName}
-                            </div>
-                            {/* Email */}
-                            <div className="text-sm text-gray-500">
-                              {student.email || 'Email não disponível'}
-                            </div>
-                            {/* ID do Estudante (4 dígitos) */}
-                            <div className="flex items-center space-x-2">
-                              <div className="text-xs text-blue-600 font-semibold">
-                                RA: {raNumber}
-                              </div>
-                              <div className="text-xs font-mono font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded border border-emerald-200">
-                                #{studentId}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${Math.min(Math.max(progressPercentage, 0), 100)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-600">
-                            {student.completedModules || 0}/{totalModulesInSystem} Módulos
-                          </span>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <div className="text-center">
-                            <div className="font-semibold text-lg text-blue-600">
-                              {student.normalizedScore || student.totalScore || 0}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              pontos
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <span className="text-sm text-gray-600">
-                            {student.lastActivity ?
-                              safeToLocaleDateString(student.lastActivity) :
-                              'Nunca'
-                            }
-                          </span>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <Badge
-                            variant={
-                              student.status === 'active' ? 'default' :
-                              student.status === 'inactive' ? 'secondary' : 'destructive'
-                            }
-                          >
-                            {student.status === 'active' ? 'Ativo' :
-                             student.status === 'inactive' ? 'Inativo' : 'Removido'
-                            }
-                          </Badge>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => router.push(`/professor/turma/${classId}/aluno/${student.studentId}`)}
-                              disabled={!student.studentId}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Ver
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoveStudent(student.studentId)}
-                              disabled={student.status === 'removed' || !student.studentId}
-                            >
-                              <UserMinus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }).filter(Boolean) : (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-gray-500">
-                        Nenhum estudante encontrado
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <ResponsiveTable
+              data={filteredStudents}
+              columns={studentColumns}
+              keyExtractor={(student) => student.studentId || Math.random().toString()}
+              onRowClick={(student) => router.push(`/professor/turma/${classId}/estudante/${student.studentId}`)}
+              emptyMessage="Nenhum estudante encontrado"
+              loading={false}
+              tabletVisibleColumns={4}
+            />
               
               {filteredStudents.length === 0 && students.length > 0 && (
                 <div className="text-center py-8">
@@ -712,51 +723,51 @@ export default function EnhancedClassDashboard() {
         </Card>
         
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           <Card className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => router.push(`/professor/turma/${classId}/analytics`)}>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <BarChart3 className="h-6 w-6 text-blue-600" />
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                  <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">Analytics Detalhados</h3>
-                  <p className="text-sm text-gray-600">Métricas avançadas e insights</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base">Analytics Detalhados</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">Métricas avançadas e insights</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
           
           <Card className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => router.push(`/professor/turma/${classId}/ranking`)}>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-yellow-100 rounded-lg">
-                  <Trophy className="h-6 w-6 text-yellow-600" />
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg flex-shrink-0">
+                  <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">Ranking da Turma</h3>
-                  <p className="text-sm text-gray-600">Competição e gamificação</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base">Ranking da Turma</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">Competição e gamificação</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
           
           <Card className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => router.push(`/professor/turma/${classId}/configuracoes`)}>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gray-100 rounded-lg">
-                  <Settings className="h-6 w-6 text-gray-600" />
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="p-2 sm:p-3 bg-gray-100 rounded-lg flex-shrink-0">
+                  <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">Configurações</h3>
-                  <p className="text-sm text-gray-600">Gerencie a turma</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base">Configurações</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">Gerencie a turma</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>

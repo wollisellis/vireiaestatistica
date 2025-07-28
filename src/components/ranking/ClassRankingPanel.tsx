@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/Badge';
 import { isRecentActivity } from '@/utils/dateUtils';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { enhancedClassService } from '@/services/enhancedClassService';
+import OptimizedClassService from '@/services/optimizedClassService';
 import ProfessorClassService from '@/services/professorClassService';
 
 interface ClassStudent {
@@ -157,6 +158,10 @@ export function ClassRankingPanel({
     };
   }, [user?.id]);
 
+  // ✅ OTIMIZAÇÃO: Flag para usar o novo sistema otimizado
+  const useOptimizedRanking = process.env.NODE_ENV === 'development' || 
+    (typeof window !== 'undefined' && localStorage.getItem('enable-optimized-ranking') === 'true');
+
   const loadClassRankingData = async () => {
     try {
       setLoading(true);
@@ -193,8 +198,6 @@ export function ClassRankingPanel({
       );
 
       if (!targetClasses || targetClasses.length === 0) {
-        // Sem turmas encontradas
-
         setError('Nenhum estudante encontrado no sistema');
         setLoading(false);
         return;
@@ -211,11 +214,22 @@ export function ClassRankingPanel({
         studentsCount: firstClass.studentsCount
       });
 
-      let studentsData = await enhancedClassService.getClassStudents(firstClass.id);
+      // ✅ OTIMIZAÇÃO: Usar serviço otimizado se flag ativa
+      let studentsData;
+      if (useOptimizedRanking) {
+        console.log(`[ClassRankingPanel] 🚀 Usando versão otimizada para turma ${firstClass.id}`);
+        studentsData = await OptimizedClassService.getOptimizedClassStudents(
+          firstClass.id,
+          { limit: displayLimit }
+        );
+      } else {
+        console.log(`[ClassRankingPanel] 📊 Usando versão legada para turma ${firstClass.id}`);
+        studentsData = await enhancedClassService.getClassStudents(firstClass.id);
 
-      // Fallback: Se não encontrar estudantes via users, buscar diretamente de classStudents
-      if (!Array.isArray(studentsData) || studentsData.length === 0) {
-        studentsData = await enhancedClassService.getClassStudentsDirectly(firstClass.id);
+        // Fallback: Se não encontrar estudantes via users, buscar diretamente de classStudents
+        if (!Array.isArray(studentsData) || studentsData.length === 0) {
+          studentsData = await enhancedClassService.getClassStudentsDirectly(firstClass.id);
+        }
       }
 
       if (!Array.isArray(studentsData) || studentsData.length === 0) {
@@ -223,36 +237,55 @@ export function ClassRankingPanel({
         return;
       }
 
-      // Transformar dados usando a mesma lógica da página do professor
-      const transformedStudents: ClassStudent[] = studentsData.map((student: any) => {
-        const studentScore = student.normalizedScore || student.totalScore || 0;
-        const studentId = student.studentId || student.id || student.uid || '';
-        const isCurrentUser = studentId === user.id;
+      // ✅ OTIMIZAÇÃO: Dados já vêm otimizados do novo serviço
+      let transformedStudents: ClassStudent[];
+      
+      if (useOptimizedRanking) {
+        // Dados já vêm transformados e rankeados do OptimizedClassService
+        transformedStudents = studentsData.map((student: any) => ({
+          studentId: student.studentId,
+          studentName: student.studentName,
+          email: student.email,
+          totalScore: student.totalNormalizedScore || 0,
+          completedModules: student.completedModules || 0,
+          lastActivity: student.lastActivity,
+          isCurrentUser: student.studentId === user.id,
+          anonymousId: student.anonymousId,
+          position: student.classRank || 0
+        }));
+      } else {
+        // Transformação legada
+        transformedStudents = studentsData.map((student: any) => {
+          const studentScore = student.normalizedScore || student.totalScore || 0;
+          const studentId = student.studentId || student.id || student.uid || '';
+          const isCurrentUser = studentId === user.id;
 
-        return {
-          studentId,
-          studentName: student.studentName || student.name || student.displayName || `Estudante (${studentId.slice(-6)})`,
-          email: student.email || '',
-          totalScore: Math.min(100, Math.max(0, studentScore)), // Escala 0-100 sem arredondamento
-          completedModules: student.completedModules || (studentScore > 0 ? 1 : 0),
-          lastActivity: student.lastActivity ? new Date(student.lastActivity) : new Date(),
-          isCurrentUser,
-          anonymousId: student.anonymousId || studentId.slice(-4) // Usa anonymousId se disponível
-        };
-      });
+          return {
+            studentId,
+            studentName: student.studentName || student.name || student.displayName || `Estudante (${studentId.slice(-6)})`,
+            email: student.email || '',
+            totalScore: Math.min(100, Math.max(0, studentScore)),
+            completedModules: student.completedModules || (studentScore > 0 ? 1 : 0),
+            lastActivity: student.lastActivity ? new Date(student.lastActivity) : new Date(),
+            isCurrentUser,
+            anonymousId: student.anonymousId || studentId.slice(-4)
+          };
+        });
 
-      // Ordenar por pontuação e definir posições
-      const sortedStudents = transformedStudents
-        .sort((a, b) => b.totalScore - a.totalScore)
-        .map((student, index) => ({
-          ...student,
-          position: index + 1
-        }))
-        .slice(0, displayLimit);
+        // Ordenar e posicionar apenas na versão legada
+        transformedStudents = transformedStudents
+          .sort((a, b) => b.totalScore - a.totalScore)
+          .map((student, index) => ({
+            ...student,
+            position: index + 1
+          }))
+          .slice(0, displayLimit);
+      }
 
-      setClassStudents(sortedStudents);
+      setClassStudents(transformedStudents);
 
     } catch (err) {
+      console.error('[ClassRankingPanel] Erro ao carregar dados:', err);
       setError('Erro ao carregar dados da turma');
     } finally {
       setLoading(false);

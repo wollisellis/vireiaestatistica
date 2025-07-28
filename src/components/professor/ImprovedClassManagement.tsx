@@ -63,6 +63,7 @@ import {
 import { motion } from 'framer-motion'
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { useResponsive } from '@/hooks/useResponsive'
 
 interface ImprovedClassManagementProps {
   professorId: string
@@ -72,6 +73,7 @@ interface ImprovedClassManagementProps {
 
 export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr. Dennys Esper', className = '' }: ImprovedClassManagementProps) {
   const router = useRouter()
+  const { isMobile, isTablet } = useResponsive()
   const [classes, setClasses] = useState<EnhancedClass[]>([])
   const [selectedClass, setSelectedClass] = useState<EnhancedClass | null>(null)
   const [students, setStudents] = useState<EnhancedStudentOverview[]>([])
@@ -674,7 +676,11 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
           initial={{ opacity: 0, y: -50, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
-          className="fixed top-4 right-4 z-50 max-w-sm"
+          className={`fixed z-50 ${
+            isMobile 
+              ? 'top-2 left-4 right-4 max-w-none' 
+              : 'top-4 right-4 max-w-sm'
+          }`}
         >
           <Card className={`border-l-4 shadow-xl ${
             notification.type === 'success' ? 'border-l-green-500 bg-green-50' :
@@ -682,7 +688,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
             notification.type === 'warning' ? 'border-l-yellow-500 bg-yellow-50' :
             'border-l-blue-500 bg-blue-50'
           }`}>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1 mr-3">
                   <h4 className={`font-semibold text-sm ${
@@ -817,25 +823,25 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
 
       {/* Sistema de Filtros com Tabs */}
       <Tabs value={viewFilter} onValueChange={(value) => setViewFilter(value as 'all' | 'active' | 'deleted')} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="all" className="flex items-center gap-2">
+        <TabsList className={`grid w-full mb-4 sm:mb-6 ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-3'}`}>
+          <TabsTrigger value="all" className="flex items-center justify-center gap-2 py-2 sm:py-3">
             <List className="w-4 h-4" />
-            Todas as Turmas
-            <Badge variant="secondary" className="ml-1">
+            <span className="text-sm sm:text-base">Todas as Turmas</span>
+            <Badge variant="secondary" className="ml-1 text-xs">
               {classes.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="active" className="flex items-center gap-2">
+          <TabsTrigger value="active" className="flex items-center justify-center gap-2 py-2 sm:py-3">
             <CheckCircle className="w-4 h-4" />
-            Somente Ativas
-            <Badge variant="secondary" className="ml-1">
+            <span className="text-sm sm:text-base">Somente Ativas</span>
+            <Badge variant="secondary" className="ml-1 text-xs">
               {activeClassesCount}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="deleted" className="flex items-center gap-2">
+          <TabsTrigger value="deleted" className="flex items-center justify-center gap-2 py-2 sm:py-3">
             <Archive className="w-4 h-4" />
-            Turmas Excluídas
-            <Badge variant="secondary" className="ml-1">
+            <span className="text-sm sm:text-base">Turmas Excluídas</span>
+            <Badge variant="secondary" className="ml-1 text-xs">
               {deletedClassesCount}
             </Badge>
           </TabsTrigger>
@@ -1161,11 +1167,14 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
 
       {/* MODAL DE DETALHES DO ESTUDANTE */}
       <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogContent className={`${isMobile ? 'w-[calc(100%-2rem)] mx-auto' : 'sm:max-w-[600px]'} max-h-[80vh] overflow-y-auto`}>
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <User className="w-5 h-5 text-indigo-600" />
-              <span>Detalhes do Estudante - Módulo 1</span>
+            <DialogTitle className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+              <div className="flex items-center space-x-2">
+                <User className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                <span className="text-base sm:text-lg">Detalhes do Estudante</span>
+              </div>
+              <span className="text-sm text-gray-500">Módulo 1</span>
             </DialogTitle>
           </DialogHeader>
           
@@ -1180,28 +1189,28 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
             <div className="space-y-6">
               {/* Informações básicas */}
               <Card className="border-l-4 border-l-indigo-500">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <GraduationCap className="w-6 h-6 text-indigo-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-lg text-gray-900">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-base sm:text-lg text-gray-900 truncate">
                         {studentModule1Data.student.studentName}
                       </h3>
-                      <p className="text-gray-600 text-sm">{studentModule1Data.student.email}</p>
+                      <p className="text-gray-600 text-xs sm:text-sm truncate">{studentModule1Data.student.email}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Estatísticas do Módulo 1 */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Card>
-                  <CardContent className="p-3">
+                  <CardContent className="p-2 sm:p-3">
                     <div className="text-center">
-                      <BarChart3 className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                      <div className="text-lg font-bold text-blue-600">
+                      <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mx-auto mb-1 sm:mb-2" />
+                      <div className="text-base sm:text-lg font-bold text-blue-600">
                         {studentModule1Data.stats.progressPercentage}%
                       </div>
                       <div className="text-xs text-gray-600">Progresso</div>
@@ -1210,10 +1219,10 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                 </Card>
                 
                 <Card>
-                  <CardContent className="p-3">
+                  <CardContent className="p-2 sm:p-3">
                     <div className="text-center">
-                      <Award className="w-6 h-6 text-yellow-600 mx-auto mb-2" />
-                      <div className="text-lg font-bold text-yellow-600">
+                      <Award className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 mx-auto mb-1 sm:mb-2" />
+                      <div className="text-base sm:text-lg font-bold text-yellow-600">
                         {studentModule1Data.stats.bestScore}
                       </div>
                       <div className="text-xs text-gray-600">Melhor Nota</div>
@@ -1222,10 +1231,10 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                 </Card>
                 
                 <Card>
-                  <CardContent className="p-3">
+                  <CardContent className="p-2 sm:p-3">
                     <div className="text-center">
-                      <Activity className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                      <div className="text-lg font-bold text-green-600">
+                      <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 mx-auto mb-1 sm:mb-2" />
+                      <div className="text-base sm:text-lg font-bold text-green-600">
                         {studentModule1Data.stats.totalAttempts}
                       </div>
                       <div className="text-xs text-gray-600">Tentativas</div>
@@ -1234,14 +1243,14 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
                 </Card>
                 
                 <Card>
-                  <CardContent className="p-3">
+                  <CardContent className="p-2 sm:p-3">
                     <div className="text-center">
                       {studentModule1Data.stats.isCompleted ? (
-                        <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 mx-auto mb-1 sm:mb-2" />
                       ) : (
-                        <Clock className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+                        <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 mx-auto mb-1 sm:mb-2" />
                       )}
-                      <div className={`text-lg font-bold ${studentModule1Data.stats.isCompleted ? 'text-green-600' : 'text-orange-600'}`}>
+                      <div className={`text-sm sm:text-lg font-bold ${studentModule1Data.stats.isCompleted ? 'text-green-600' : 'text-orange-600'}`}>
                         {studentModule1Data.stats.isCompleted ? 'Completo' : 'Em Andamento'}
                       </div>
                       <div className="text-xs text-gray-600">Status</div>
@@ -1276,27 +1285,30 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
               {/* Histórico de tentativas */}
               {studentModule1Data.quizAttempts?.length > 0 && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm flex items-center space-x-2">
-                      <BarChart3 className="w-4 h-4" />
-                      <span>Histórico de Tentativas (Últimas {Math.min(5, studentModule1Data.quizAttempts.length)})</span>
+                  <CardHeader className="p-3 sm:p-4">
+                    <CardTitle className="text-sm flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                      <div className="flex items-center space-x-2">
+                        <BarChart3 className="w-4 h-4" />
+                        <span>Histórico de Tentativas</span>
+                      </div>
+                      <span className="text-xs text-gray-500">(Últimas {Math.min(5, studentModule1Data.quizAttempts.length)})</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-3 sm:p-4">
                     <div className="space-y-2">
                       {studentModule1Data.quizAttempts.slice(0, 5).map((attempt: any, index: number) => (
-                        <div key={attempt.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <div className="flex items-center space-x-3">
-                            <Badge variant={attempt.completed ? 'default' : 'secondary'}>
+                        <div key={attempt.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 bg-gray-50 rounded gap-2">
+                          <div className="flex items-center justify-between sm:justify-start sm:space-x-3">
+                            <Badge variant={attempt.completed ? 'default' : 'secondary'} className="text-xs">
                               Tentativa {index + 1}
                             </Badge>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-xs sm:text-sm text-gray-600">
                               {new Date(attempt.timestamp.seconds * 1000).toLocaleDateString('pt-BR')}
                             </span>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium">Nota: {attempt.score || 0}</span>
-                            {attempt.completed && <CheckCircle className="w-4 h-4 text-green-600" />}
+                          <div className="flex items-center justify-end space-x-2">
+                            <span className="font-medium text-sm">Nota: {attempt.score || 0}</span>
+                            {attempt.completed && <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />}
                           </div>
                         </div>
                       ))}
