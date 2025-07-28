@@ -49,8 +49,8 @@ export default function EnhancedClassDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [progressFilter, setProgressFilter] = useState<string>('all');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletingClass, setDeletingClass] = useState(false);
-  
+  const [deletingClass, setDeletingClass] = useState(false);  
+
   useEffect(() => {
     const fetchClassData = async () => {
       try {
@@ -132,7 +132,7 @@ export default function EnhancedClassDashboard() {
     const active = safeStudents.filter(student => (student.completedModules || 0) > 0).length;
 
     // ✅ CORREÇÃO: Usar o número real de módulos do sistema (atualmente 1)
-    const totalModulesInSystem = classData.totalModules || 1; // Atualmente só há 1 módulo
+    const totalModulesInSystem = classData?.totalModules || 1; // Atualmente só há 1 módulo
     const totalProgress = safeStudents.reduce((sum, student) => sum + ((student.completedModules || 0) / totalModulesInSystem) * 100, 0);
     const totalScore = safeStudents.reduce((sum, student) => sum + (student.totalScore || 0), 0);
     const avgProgress = total > 0 ? totalProgress / total : 0;
@@ -143,8 +143,8 @@ export default function EnhancedClassDashboard() {
       .slice(0, 5);
 
     return { total, active, avgProgress, avgScore, topPerformers };
-  };
-  
+  };  
+
   // Função para extrair número de RA do email
   const extractRANumber = (email: string): string => {
     if (!email) return 'N/A';
@@ -485,8 +485,8 @@ export default function EnhancedClassDashboard() {
                 Excluir
               </Button>
             </div>
-          </div>
-          
+          </div>   
+       
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 text-xs sm:text-sm">
             <div className="flex items-center space-x-1 sm:space-x-2 text-gray-600">
               <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
@@ -556,8 +556,8 @@ export default function EnhancedClassDashboard() {
               <p className="text-xs opacity-75 mt-1">pontos por estudante</p>
             </CardContent>
           </Card>
-        </div>
-        
+        </div>    
+    
         {/* Top Performers */}
         {stats.topPerformers.length > 0 && (
           <Card>
@@ -659,69 +659,68 @@ export default function EnhancedClassDashboard() {
               tabletVisibleColumns={4}
             />
               
-              {filteredStudents.length === 0 && students.length > 0 && (
-                <div className="text-center py-8">
-                  <Filter className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum estudante encontrado</h3>
-                  <p className="text-gray-600">Tente ajustar os filtros de busca.</p>
-                </div>
-              )}
+            {filteredStudents.length === 0 && students.length > 0 && (
+              <div className="text-center py-8">
+                <Filter className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum estudante encontrado</h3>
+                <p className="text-gray-600">Tente ajustar os filtros de busca.</p>
+              </div>
+            )}
               
-              {students.length === 0 && (
-                <div className="text-center py-12">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum estudante encontrado</h3>
-                  
-                  {/* Debug Information */}
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-left max-w-2xl mx-auto">
-                    <div className="flex items-start space-x-3">
-                      <div className="text-yellow-600 mt-1">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
+            {students.length === 0 && (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum estudante encontrado</h3>
+                
+                {/* Debug Information */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-left max-w-2xl mx-auto">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-yellow-600 mt-1">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-yellow-800 mb-2">
+                        Diagnóstico de Dados da Turma
+                      </h4>
+                      <div className="text-xs text-yellow-700 space-y-1">
+                        <p><strong>ID da Turma:</strong> <code className="bg-yellow-100 px-2 py-1 rounded">{classId}</code></p>
+                        <p><strong>Código de Convite:</strong> <code className="bg-yellow-100 px-2 py-1 rounded">{classData?.inviteCode || 'N/A'}</code></p>
+                        <p><strong>Status da Turma:</strong> {classData?.status || 'unknown'}</p>
+                        <p><strong>Data de Criação:</strong> {classData?.createdAt?.toLocaleDateString('pt-BR') || 'N/A'}</p>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium text-yellow-800 mb-2">
-                          Diagnóstico de Dados da Turma
-                        </h4>
-                        <div className="text-xs text-yellow-700 space-y-1">
-                          <p><strong>ID da Turma:</strong> <code className="bg-yellow-100 px-2 py-1 rounded">{classId}</code></p>
-                          <p><strong>Código de Convite:</strong> <code className="bg-yellow-100 px-2 py-1 rounded">{classData?.inviteCode || 'N/A'}</code></p>
-                          <p><strong>Status da Turma:</strong> {classData?.status || 'unknown'}</p>
-                          <p><strong>Data de Criação:</strong> {classData?.createdAt?.toLocaleDateString('pt-BR') || 'N/A'}</p>
-                        </div>
-                        <div className="mt-3 text-xs text-yellow-700">
-                          <p className="mb-1"><strong>Possíveis Causas:</strong></p>
-                          <ul className="list-disc list-inside space-y-1 ml-2">
-                            <li>Estudantes ainda não se inscreveram na turma</li>
-                            <li>Problema de sincronização no Firestore</li>
-                            <li>Dados de matrícula em formato incorreto</li>
-                            <li>Verificar logs do console para detalhes técnicos</li>
-                          </ul>
-                        </div>
+                      <div className="mt-3 text-xs text-yellow-700">
+                        <p className="mb-1"><strong>Possíveis Causas:</strong></p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>Estudantes ainda não se inscreveram na turma</li>
+                          <li>Problema de sincronização no Firestore</li>
+                          <li>Dados de matrícula em formato incorreto</li>
+                          <li>Verificar logs do console para detalhes técnicos</li>
+                        </ul>
                       </div>
                     </div>
                   </div>
-                  
-                  <p className="text-gray-600 mb-4">
-                    Se você já adicionou estudantes, verifique os logs do console ou recarregue a página.
-                  </p>
-                  
-                  <div className="flex justify-center space-x-3">
-                    <Button onClick={() => window.location.reload()}>
-                      🔄 Recarregar Página
-                    </Button>
-                    <Button>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Convidar Estudantes
-                    </Button>
-                  </div>
                 </div>
-              )}
-            </div>
+                
+                <p className="text-gray-600 mb-4">
+                  Se você já adicionou estudantes, verifique os logs do console ou recarregue a página.
+                </p>
+                
+                <div className="flex justify-center space-x-3">
+                  <Button onClick={() => window.location.reload()}>
+                    🔄 Recarregar Página
+                  </Button>
+                  <Button>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Convidar Estudantes
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
-        </Card>
-        
+        </Card>   
+     
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           <Card className="hover:shadow-md transition-shadow cursor-pointer"
