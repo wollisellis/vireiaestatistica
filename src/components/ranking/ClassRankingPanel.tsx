@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Trophy,
   Medal,
@@ -454,15 +454,7 @@ export function ClassRankingPanel({
         )}
       </CardHeader>
 
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <CardContent className="pt-0">
+      <CardContent className="pt-0">
               <div className="space-y-2">
                 {classStudents.map((student, index) => (
                   <motion.div
@@ -573,10 +565,7 @@ export function ClassRankingPanel({
                   </div>
                 )}
               </div>
-            </CardContent>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </CardContent>
     </Card>
   );
 }
