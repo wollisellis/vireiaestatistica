@@ -49,6 +49,8 @@ interface ClassRankingPanelProps {
   moduleId?: string;
   user?: any; // 🔧 NOVO: Usuário passado como prop
   loading?: boolean; // 🔧 NOVO: Estado de loading
+  expanded?: boolean; // 🔧 NOVO: Layout expandido para desktop
+  showNames?: boolean; // 🔧 NOVO: Controle de exibição de nomes
 }
 
 export function ClassRankingPanel({
@@ -57,7 +59,9 @@ export function ClassRankingPanel({
   showStats = true,
   moduleId,
   user: propUser,
-  loading: propLoading
+  loading: propLoading,
+  expanded = false,
+  showNames = false
 }: ClassRankingPanelProps) {
   console.log(`🔧 [ClassRankingPanel] Componente renderizado! moduleId: ${moduleId}`);
 
@@ -70,7 +74,7 @@ export function ClassRankingPanel({
   const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const displayLimit = compact ? 5 : 8;
+  const displayLimit = compact ? 5 : (expanded ? 10 : 8);
 
   // 🎯 HYDRATION EFFECT - Carrega localStorage após hidratação
   useEffect(() => {
@@ -117,7 +121,7 @@ export function ClassRankingPanel({
       const interval = setInterval(() => {
         console.log('🔄 Atualização automática do ranking (60s)...');
         loadClassRankingData();
-      }, 60000); // Otimizado: 60 segundos para melhor performance
+      }, 180000); // Atualizado: 3 minutos (180 segundos) para reduzir atualizações
 
       return () => clearInterval(interval);
     }
@@ -243,7 +247,7 @@ export function ClassRankingPanel({
           studentId,
           studentName: student.studentName || student.name || student.displayName || `Estudante (${studentId.slice(-6)})`,
           email: student.email || '',
-          totalScore: Math.round(Math.max(0, studentScore)),
+          totalScore: Math.min(100, Math.max(0, studentScore)), // Escala 0-100 sem arredondamento
           completedModules: student.completedModules || (studentScore > 0 ? 1 : 0),
           lastActivity: student.lastActivity ? new Date(student.lastActivity) : new Date(),
           isCurrentUser
@@ -295,7 +299,9 @@ export function ClassRankingPanel({
   };
 
   const formatScore = (score: number) => {
-    return Math.round(score).toLocaleString('pt-BR');
+    // Mostrar até 1 casa decimal se necessário, sem arredondamento
+    const truncated = Math.trunc(score * 10) / 10;
+    return truncated % 1 === 0 ? truncated.toString() : truncated.toFixed(1);
   };
 
   if (loading || !isHydrated) {
@@ -365,17 +371,13 @@ export function ClassRankingPanel({
   }
 
   return (
-    <Card className={`${className} bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg`}>
+    <Card className={`${className} bg-gradient-to-br from-white to-gray-50 backdrop-blur-sm border border-gray-200 shadow-2xl hover:shadow-3xl transition-shadow duration-300 ${expanded ? 'lg:max-w-3xl' : ''}`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
-              <Trophy className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-bold text-gray-900 text-base">
-                🏆 Ranking da Turma
-              </h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-bold text-gray-900 text-lg">
+              🏆 Ranking da Turma
+            </h3>
               {classInfo && (
                 <p className="text-sm text-gray-600 mt-1 font-medium truncate">
                   {classInfo.name}
@@ -428,10 +430,10 @@ export function ClassRankingPanel({
                       Sua Posição
                     </p>
                   </div>
-                  <div className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
-                    (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 90 ? 'bg-green-100 text-green-700' :
-                    (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'bg-blue-100 text-blue-700' :
-                    'bg-orange-100 text-orange-700'
+                  <div className={`px-3 py-1.5 rounded-full text-sm font-bold flex-shrink-0 ${
+                    (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 90 ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800' :
+                    (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800' :
+                    'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800'
                   }`}>
                     {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)} pts
                     {(classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 && (
@@ -439,12 +441,12 @@ export function ClassRankingPanel({
                     )}
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-blue-700">
-                  <span className="font-medium truncate">
-                    ID: ...{user?.id?.slice(-6)}
+                <div className="flex items-center justify-between text-xs text-blue-700 mt-1">
+                  <span className="font-mono font-bold bg-blue-100 px-2 py-0.5 rounded">
+                    {user?.id?.slice(-4) || '0000'}
                   </span>
                   <span className="font-medium flex-shrink-0">
-                    {classStudents.find(s => s.isCurrentUser)?.completedModules || 0} módulo(s)
+                    {classStudents.find(s => s.isCurrentUser)?.completedModules || 0}/1 módulo
                   </span>
                 </div>
               </div>
@@ -454,7 +456,7 @@ export function ClassRankingPanel({
       </CardHeader>
 
       <CardContent className="pt-0">
-              <div className="space-y-2">
+              <div className={`space-y-2 ${expanded ? 'lg:space-y-3' : ''}`}>
                 {classStudents.map((student, index) => (
                   <motion.div
                     key={student.studentId}
@@ -462,10 +464,10 @@ export function ClassRankingPanel({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     className={`
-                      flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-300 shadow-sm hover:shadow-md
+                      flex items-center justify-between ${expanded ? 'p-5' : 'p-4'} rounded-xl border-2 transition-all duration-300 shadow-sm hover:shadow-lg transform hover:-translate-y-0.5
                       ${student.isCurrentUser
-                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 ring-2 ring-blue-200'
-                        : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                        ? 'bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-blue-400 ring-2 ring-blue-300 shadow-blue-100'
+                        : 'bg-gradient-to-r from-white to-gray-50 border-gray-200 hover:border-gray-300 hover:from-gray-50 hover:to-gray-100'
                       }
                     `}
                   >
@@ -473,7 +475,7 @@ export function ClassRankingPanel({
                     <div className="flex items-center space-x-3 min-w-0 flex-1">
                       {/* Posição */}
                       <div className={`
-                        w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md flex-shrink-0
+                        ${expanded ? 'w-12 h-12' : 'w-10 h-10'} rounded-full flex items-center justify-center font-bold ${expanded ? 'text-base' : 'text-sm'} shadow-lg flex-shrink-0 transform transition-transform hover:scale-110
                         ${getPositionColor(student.position || 0)}
                       `}>
                         {(student.position || 0) <= 3 ? getRankIcon(student.position || 0) : student.position}
@@ -483,7 +485,7 @@ export function ClassRankingPanel({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <p className="text-sm font-semibold text-gray-900 truncate flex-1">
-                            {student.studentName}
+                            {showNames ? student.studentName : `ID: ${student.studentId.slice(-4) || '0000'}`}
                           </p>
                           {student.isCurrentUser && (
                             <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 font-semibold flex-shrink-0">
@@ -492,36 +494,34 @@ export function ClassRankingPanel({
                           )}
                         </div>
 
-                        {/* Segunda linha: ID e pontuação */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
-                              ...{student.studentId.slice(-6)}
-                            </span>
-                            <div className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-bold ${
-                              student.totalScore >= 90 ? 'bg-green-100 text-green-700' :
-                              student.totalScore >= 70 ? 'bg-blue-100 text-blue-700' :
-                              student.totalScore >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-600'
-                            }`}>
-                              <Star className="w-3 h-3" />
-                              <span>{formatScore(student.totalScore)} pts</span>
-                            </div>
+                        {/* Segunda linha: Pontuação e Módulos */}
+                        <div className="flex items-center justify-between mt-1">
+                          <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-bold ${
+                            student.totalScore >= 90 ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800' :
+                            student.totalScore >= 70 ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800' :
+                            student.totalScore >= 50 ? 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800' :
+                            'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700'
+                          }`}>
+                            <span className="text-base">{formatScore(student.totalScore)}</span>
+                            <span className="text-xs">pts</span>
                           </div>
 
-                          <div className="flex items-center space-x-1 flex-shrink-0">
-                            <Target className="w-3 h-3 text-green-500" />
-                            <span className="text-xs text-gray-600">
-                              {student.completedModules}/1
-                              {student.totalScore >= 70 && <span className="ml-1 text-green-600">✓</span>}
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">
+                              {student.completedModules}/1 módulo
                             </span>
+                            {student.totalScore >= 70 && (
+                              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs">✓</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Lado Direito: Indicador de atividade */}
-                    <div className="flex items-center justify-center flex-shrink-0 w-6">
+                    <div className="flex items-center justify-center flex-shrink-0 w-8">
                       {student.lastActivity && (
                         <div className={`
                           w-2 h-2 rounded-full
@@ -534,7 +534,7 @@ export function ClassRankingPanel({
                               if (isNaN(activityDate.getTime())) return 'bg-gray-300';
 
                               return Date.now() - activityDate.getTime() < 24 * 60 * 60 * 1000
-                                ? 'bg-green-400' : 'bg-gray-300';
+                                ? 'bg-green-400 animate-pulse' : 'bg-gray-300';
                             } catch (error) {
                               return 'bg-gray-300';
                             }

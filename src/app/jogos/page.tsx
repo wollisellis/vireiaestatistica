@@ -531,11 +531,11 @@ function JogosPageContent() {
         </div>
 
         {/* 🎯 MAIN CONTENT */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
             
             {/* 🎯 MÓDULOS - COL PRINCIPAL */}
-            <div className="xl:col-span-3 space-y-8">
+            <div className="xl:col-span-2 2xl:col-span-3 space-y-8">
               <div>
                 <div className="flex items-center space-x-3 mb-6">
                   <div className="p-2 bg-emerald-100 rounded-lg">
@@ -590,6 +590,8 @@ function JogosPageContent() {
                 moduleId="introducao-avaliacao-nutricional"
                 user={user}
                 loading={loading}
+                expanded={true}
+                showNames={false}
               />
             </div>
           </div>
