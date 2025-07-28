@@ -47,8 +47,8 @@ export class QuizScoringService {
 
     // Calcular pontuação
     const pointsPerQuestion = totalPoints / questions.length;
-    const score = Math.round((correctAnswers * pointsPerQuestion) * 100) / 100;
-    const percentage = Math.round((correctAnswers / questions.length) * 100);
+    const score = (correctAnswers * pointsPerQuestion); // Removido Math.round para manter precisão decimal
+    const percentage = (correctAnswers / questions.length) * 100; // Removido Math.round para manter precisão
     const passed = percentage >= 70;
 
     return {
@@ -270,8 +270,8 @@ export class QuizScoringService {
       totalAttempts: attempts.length,
       bestScore: Math.max(...scores),
       bestPercentage: Math.max(...percentages),
-      averageScore: Math.round((scores.reduce((sum, s) => sum + s, 0) / scores.length) * 100) / 100,
-      averagePercentage: Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length),
+      averageScore: scores.reduce((sum, s) => sum + s, 0) / scores.length, // Removido Math.round para manter precisão
+      averagePercentage: percentages.reduce((sum, p) => sum + p, 0) / percentages.length, // Removido Math.round para manter precisão
       totalTimeSpent: totalTime,
       firstAttemptDate: sortedAttempts[0].startedAt,
       lastAttemptDate: sortedAttempts[sortedAttempts.length - 1].startedAt,

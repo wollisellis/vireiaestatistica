@@ -195,14 +195,17 @@ export default function EnhancedClassDashboard() {
   const getModuleScore = (student: EnhancedStudent, moduleId: string): string => {
     // Primeiro: tentar usar dados do sistema unificado
     if (student.moduleScores && student.moduleScores[moduleId]) {
-      return `${Math.round(student.moduleScores[moduleId])}%`;
+      const score = student.moduleScores[moduleId];
+      // Mostrar com 1 casa decimal se não for número inteiro
+      return score % 1 === 0 ? `${score}%` : `${score.toFixed(1)}%`;
     }
     
     // Segundo: verificar moduleProgress (dados detalhados)
     if (student.moduleProgress && Array.isArray(student.moduleProgress)) {
       const moduleData = student.moduleProgress.find(m => m.moduleId === moduleId);
       if (moduleData && moduleData.isCompleted && moduleData.maxScore > 0) {
-        return `${Math.round((moduleData.score / moduleData.maxScore) * 100)}%`;
+        const percentage = (moduleData.score / moduleData.maxScore) * 100;
+        return percentage % 1 === 0 ? `${percentage}%` : `${percentage.toFixed(1)}%`;
       }
     }
     
@@ -210,7 +213,8 @@ export default function EnhancedClassDashboard() {
     if (student.progress?.modules && student.progress.modules[moduleId]) {
       const moduleProgress = student.progress.modules[moduleId];
       if (moduleProgress.completed && moduleProgress.maxScore > 0) {
-        return `${Math.round((moduleProgress.score / moduleProgress.maxScore) * 100)}%`;
+        const percentage = (moduleProgress.score / moduleProgress.maxScore) * 100;
+        return percentage % 1 === 0 ? `${percentage}%` : `${percentage.toFixed(1)}%`;
       }
     }
     
@@ -372,7 +376,7 @@ export default function EnhancedClassDashboard() {
             </div>
             <div className="flex items-center space-x-2 text-purple-600">
               <Star className="h-4 w-4" />
-              <span>{Math.round(stats.avgScore)} pts médio</span>
+              <span>{stats.avgScore.toFixed(1)} pts médio</span>
             </div>
             <div className="flex items-center space-x-2 text-gray-600">
               <BookOpen className="h-4 w-4" />
@@ -422,7 +426,7 @@ export default function EnhancedClassDashboard() {
               <CardTitle className="text-sm font-medium opacity-90">Pontuação Média</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{Math.round(stats.avgScore)}</div>
+              <div className="text-3xl font-bold">{stats.avgScore.toFixed(1)}</div>
               <p className="text-xs opacity-75 mt-1">pontos por estudante</p>
             </CardContent>
           </Card>
