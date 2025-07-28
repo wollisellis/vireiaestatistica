@@ -1276,7 +1276,7 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
 }
 
 interface EnhancedClassCardProps {
-  classInfo: ClassInfo
+  classInfo: EnhancedClass
   isSelected: boolean
   onSelect: () => void
   onCopyCode: () => void

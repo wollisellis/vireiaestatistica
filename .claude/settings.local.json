@@ -52,7 +52,8 @@
       "Bash(pip install:*)",
       "Bash(pip3 install:*)",
       "Bash(sudo apt:*)",
-      "Bash(sudo apt install:*)"
+      "Bash(sudo apt install:*)",
+      "Bash(timeout 30s npx tsc --noEmit)"
     ],
     "deny": []
   }
