@@ -894,20 +894,15 @@ export default function DocenteDashboard() {
           <p className="text-gray-600 mt-1">Visão unificada de todos os estudantes da plataforma</p>
         </div>
         
-        <div className="flex items-center space-x-3">
-          <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            {stats?.totalStudients || 0} estudantes
-          </Badge>
-          <Button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Atualizando...' : 'Atualizar'}
-          </Button>
-        </div>
+        <Button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Atualizando...' : 'Atualizar'}
+        </Button>
       </div>
 
       {/* 🎯 STATS CARDS OTIMIZADOS */}

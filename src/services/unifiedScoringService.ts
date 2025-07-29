@@ -245,7 +245,21 @@ class UnifiedScoringService {
       )
 
       // Atualizar pontuações
+      console.log(`[updateExerciseScore] 📝 Salvando pontuação do módulo:`, {
+        moduleId,
+        normalizedScore: moduleProgress.normalizedScore,
+        exerciseScore,
+        currentModuleScoresBefore: currentScore.moduleScores
+      })
+      
       currentScore.moduleScores[moduleId] = moduleProgress.normalizedScore
+      
+      console.log(`[updateExerciseScore] ✅ Pontuação salva:`, {
+        moduleId,
+        savedScore: currentScore.moduleScores[moduleId],
+        allModuleScores: currentScore.moduleScores
+      })
+      
       currentScore.totalScore = this.calculateTotalScore(currentScore)
       currentScore.normalizedScore = this.calculateNormalizedScore(currentScore)
       currentScore.lastActivity = new Date()
