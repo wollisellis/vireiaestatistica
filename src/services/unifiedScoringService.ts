@@ -786,65 +786,131 @@ class UnifiedScoringService {
     }
   }
 
-  // 🌍 NOVO: Buscar ranking de todos os estudantes do sistema
+  // 🌍 NOVO: Buscar ranking de todos os estudantes do sistema (OTIMIZADO)
   async getAllStudentsRanking(limit: number = 100): Promise<any[]> {
     try {
+      console.log('[UnifiedScoringService] 🔍 Iniciando busca do ranking global...');
+
       // Buscar todos os usuários com role 'student'
       const usersQuery = query(
         collection(db, 'users'),
         where('role', '==', 'student')
-      )
+      );
       
-      const usersSnapshot = await getDocs(usersQuery)
+      const usersSnapshot = await getDocs(usersQuery);
       
       if (usersSnapshot.empty) {
-        console.log('[UnifiedScoringService] Nenhum estudante encontrado no sistema')
-        return []
+        console.log('[UnifiedScoringService] ❌ Nenhum estudante encontrado na coleção users');
+        return [];
       }
 
-      const studentsData = []
+      console.log(`[UnifiedScoringService] 👥 Encontrados ${usersSnapshot.size} estudantes na coleção users`);
 
-      // Para cada estudante, buscar seu score unificado
+      const studentsData = [];
+
+      // Para cada estudante, buscar seu score unificado OU dados de quiz_attempts
       for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data()
-        const studentId = userDoc.id
+        const userData = userDoc.data();
+        const studentId = userDoc.id;
 
-        // Buscar score unificado
-        const scoreDoc = await getDoc(doc(db, 'unified_scores', studentId))
-        const scoreData = scoreDoc.exists() ? scoreDoc.data() : null
+        try {
+          let studentScore = 0;
+          let completedModules = 0;
+          let lastActivity = userData.lastActivity?.toDate?.() || new Date();
 
-        // Criar objeto do estudante com dados disponíveis
-        const studentInfo = {
-          studentId: studentId,
-          studentName: userData.fullName || userData.name || userData.displayName || 'Estudante',
-          email: userData.email || '',
-          anonymousId: userData.anonymousId || studentId.slice(-4),
-          totalScore: scoreData?.normalizedScore || 0,
-          totalNormalizedScore: scoreData?.normalizedScore || 0,
-          completedModules: scoreData ? Object.values(scoreData.moduleScores || {}).filter((score: any) => score >= 70).length : 0,
-          lastActivity: scoreData?.lastActivity?.toDate?.() || userData.lastActivity?.toDate?.() || new Date(),
-          isCurrentUser: false, // Será definido no componente
-          classRank: 0 // Será calculado após ordenação
+          // 1. Tentar buscar score unificado primeiro (fonte primária)
+          const scoreDoc = await getDoc(doc(db, 'unified_scores', studentId));
+          
+          if (scoreDoc.exists()) {
+            const scoreData = scoreDoc.data();
+            studentScore = scoreData.normalizedScore || 0;
+            completedModules = Object.values(scoreData.moduleScores || {}).filter((score: any) => score >= 70).length;
+            lastActivity = scoreData.lastActivity?.toDate?.() || lastActivity;
+            
+            console.log(`[UnifiedScoringService] ✅ Score unificado encontrado para ${studentId}: ${studentScore}`);
+          } else {
+            // 2. Se não há score unificado, buscar em quiz_attempts (fonte secundária)
+            const attemptsQuery = query(
+              collection(db, 'quiz_attempts'),
+              where('studentId', '==', studentId),
+              where('passed', '==', true)
+            );
+            
+            const attemptsSnapshot = await getDocs(attemptsQuery);
+            
+            if (!attemptsSnapshot.empty) {
+              // Calcular média das pontuações dos quizes passados
+              const scores = attemptsSnapshot.docs.map(doc => doc.data().percentage || 0);
+              studentScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+              completedModules = new Set(attemptsSnapshot.docs.map(doc => doc.data().moduleId)).size;
+              
+              // Buscar última atividade dos quizes
+              const latestAttempt = attemptsSnapshot.docs
+                .map(doc => doc.data().completedAt?.toDate?.() || doc.data().startedAt?.toDate?.())
+                .filter(date => date)
+                .sort((a, b) => b.getTime() - a.getTime())[0];
+              
+              if (latestAttempt) {
+                lastActivity = latestAttempt;
+              }
+              
+              console.log(`[UnifiedScoringService] 📝 Score de quiz_attempts calculado para ${studentId}: ${studentScore.toFixed(1)}`);
+            } else {
+              console.log(`[UnifiedScoringService] ⚠️ Nenhum score encontrado para ${studentId}`);
+            }
+          }
+
+          // Incluir estudantes com pontuação > 0 OU criar entrada básica para todos os estudantes cadastrados
+          const studentInfo = {
+            studentId: studentId,
+            studentName: userData.fullName || userData.name || userData.displayName || 'Estudante',
+            fullName: userData.fullName || userData.name || userData.displayName || 'Estudante',
+            email: userData.email || '',
+            anonymousId: userData.anonymousId || studentId.slice(-4),
+            totalScore: Math.round(studentScore),
+            totalNormalizedScore: Math.round(studentScore),
+            completedModules: completedModules,
+            lastActivity: lastActivity,
+            isCurrentUser: false, // Será definido no componente
+            classRank: 0, // Será calculado após ordenação
+            position: 0   // Será calculado após ordenação
+          };
+
+          // Incluir estudante no ranking (mesmo com score 0 para mostrar que está registrado)
+          studentsData.push(studentInfo);
+
+        } catch (studentError) {
+          console.error(`[UnifiedScoringService] ❌ Erro ao processar estudante ${studentId}:`, studentError);
+          // Continuar com próximo estudante
         }
+      }
 
-        studentsData.push(studentInfo)
+      console.log(`[UnifiedScoringService] 📊 Total de estudantes registrados: ${studentsData.length}`);
+
+      if (studentsData.length === 0) {
+        console.log('[UnifiedScoringService] ⚠️ Nenhum estudante encontrado no sistema');
+        return [];
       }
 
       // Ordenar por pontuação (maior para menor)
-      studentsData.sort((a, b) => b.totalScore - a.totalScore)
+      studentsData.sort((a, b) => b.totalScore - a.totalScore);
 
       // Atribuir posições
       studentsData.forEach((student, index) => {
-        student.classRank = index + 1
-        student.position = index + 1
-      })
+        student.classRank = index + 1;
+        student.position = index + 1;
+      });
 
       // Limitar resultados
-      return studentsData.slice(0, limit)
+      const limitedResults = studentsData.slice(0, limit);
+      
+      console.log(`[UnifiedScoringService] 🏆 Ranking final: ${limitedResults.length} estudantes`);
+      
+      return limitedResults;
 
     } catch (error) {
-      console.error('[UnifiedScoringService] Erro ao buscar ranking global:', error)
-      return []
+      console.error('[UnifiedScoringService] ❌ Erro crítico ao buscar ranking global:', error);
+      return [];
     }
   }
 

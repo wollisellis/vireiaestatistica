@@ -122,34 +122,52 @@ export function ClassRankingPanel({
       setError(null);
 
       if (!user?.id) {
+        console.log('[ClassRankingPanel] Usuário não disponível');
+        setError('Usuário não encontrado');
         return;
       }
 
-      // 🌍 SISTEMA SIMPLIFICADO: Buscar todos os estudantes do sistema
-      const studentsData = await unifiedScoringService.getAllStudentsRanking(displayLimit);
+      console.log('[ClassRankingPanel] 🔍 Carregando dados do ranking...');
+
+      // 🌍 SISTEMA GLOBAL OTIMIZADO: Buscar todos os estudantes do sistema
+      const studentsData = await unifiedScoringService.getAllStudentsRanking(displayLimit * 2); // Buscar mais dados para melhor seleção
       
-      if (!Array.isArray(studentsData) || studentsData.length === 0) {
+      console.log('[ClassRankingPanel] 📊 Dados recebidos:', studentsData?.length || 0, 'estudantes');
+
+      if (!Array.isArray(studentsData)) {
+        console.error('[ClassRankingPanel] Dados inválidos recebidos:', typeof studentsData);
+        setError('Formato de dados inválido');
+        return;
+      }
+
+      if (studentsData.length === 0) {
+        console.log('[ClassRankingPanel] ❌ Nenhum estudante encontrado');
         setError('Nenhum estudante encontrado no sistema');
         return;
       }
 
       // Marcar o usuário atual e transformar dados
-      const transformedStudents: ClassStudent[] = studentsData.map((student: any) => ({
-        studentId: student.studentId,
-        studentName: student.studentName,
-        email: student.email || '',
-        totalScore: student.totalScore || 0,
-        completedModules: student.completedModules || 0,
-        lastActivity: student.lastActivity,
-        isCurrentUser: student.studentId === user.id,
-        anonymousId: student.anonymousId,
-        position: student.position || student.classRank || 0
-      }));
+      const transformedStudents: ClassStudent[] = studentsData
+        .filter(student => student && student.studentId) // Filtrar dados válidos
+        .slice(0, displayLimit) // Limitar quantidade para UI
+        .map((student: any, index: number) => ({
+          studentId: student.studentId,
+          studentName: student.studentName || student.fullName || 'Estudante',
+          email: student.email || '',
+          totalScore: Math.round(student.totalScore || student.totalNormalizedScore || 0),
+          completedModules: student.completedModules || 0,
+          lastActivity: student.lastActivity,
+          isCurrentUser: student.studentId === user.id,
+          anonymousId: student.anonymousId || student.studentId?.slice(-4) || '0000',
+          position: index + 1 // Reordenar posições baseado na ordem filtrada
+        }));
 
+      console.log('[ClassRankingPanel] ✅ Dados transformados:', transformedStudents.length, 'estudantes válidos');
+      
       setClassStudents(transformedStudents);
 
     } catch (err) {
-      console.error('[ClassRankingPanel] Erro ao carregar dados:', err);
+      console.error('[ClassRankingPanel] ❌ Erro ao carregar dados:', err);
       setError('Erro ao carregar dados dos estudantes');
     } finally {
       setLoading(false);
