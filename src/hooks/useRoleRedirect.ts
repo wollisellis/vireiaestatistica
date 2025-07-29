@@ -24,7 +24,7 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
     redirectTo,
     allowGuests = false,
     studentRedirect = '/jogos',
-    professorRedirect = '/professor'
+    professorRedirect = '/docente'
   } = config
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function useRoleRedirect(config: RedirectConfig = {}) {
       // Only redirect if there's a specific role requirement and user doesn't meet it
       if (requiredRole && effectiveRole !== requiredRole) {
         if (effectiveRole === 'professor') {
-          if (!currentPath.startsWith('/professor')) {
+          if (!currentPath.startsWith('/docente')) {
             router.push(professorRedirect)
           }
         } else {
@@ -120,7 +120,7 @@ export function useStudentAccess() {
     requiredRole: 'student',
     allowGuests: false,
     studentRedirect: '/jogos',
-    professorRedirect: '/professor'
+    professorRedirect: '/docente'
   })
 }
 
@@ -129,7 +129,7 @@ export function useProfessorAccess() {
     requiredRole: 'professor',
     allowGuests: false,
     studentRedirect: '/jogos',
-    professorRedirect: '/professor'
+    professorRedirect: '/docente'
   })
 }
 
@@ -137,7 +137,7 @@ export function useAuthRedirect() {
   return useRoleRedirect({
     allowGuests: false,
     studentRedirect: '/jogos',
-    professorRedirect: '/professor'
+    professorRedirect: '/docente'
   })
 }
 

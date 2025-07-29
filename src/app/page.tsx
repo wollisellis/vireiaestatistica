@@ -69,7 +69,7 @@ function LoginPageContent() {
               <button
                 onClick={() => {
                   // Navegação usando Next.js router para melhor performance
-                  router.push('/professor')
+                  router.push('/docente')
                 }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
               >

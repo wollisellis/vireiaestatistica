@@ -79,11 +79,6 @@ export default function DocenteLayout({ children }: DocenteLayoutProps) {
                     Fazer Login como Professor
                   </Button>
                 </Link>
-                <Link href="/professor">
-                  <Button variant="outline" className="w-full">
-                    Ir para Dashboard Professor
-                  </Button>
-                </Link>
               </div>
             </CardContent>
           </Card>
@@ -116,14 +111,6 @@ export default function DocenteLayout({ children }: DocenteLayoutProps) {
               {/* Navigation e User Info */}
               <div className="flex items-center space-x-4">
                 {/* Navigation Links */}
-                <div className="hidden md:flex items-center space-x-2">
-                  <Link href="/professor">
-                    <Button variant="ghost" size="sm">
-                      <Home className="w-4 h-4 mr-2" />
-                      Dashboard Completo
-                    </Button>
-                  </Link>
-                </div>
 
                 {/* User Info */}
                 <div className="flex items-center space-x-2 text-sm text-gray-600">

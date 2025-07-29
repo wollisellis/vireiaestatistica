@@ -102,7 +102,7 @@ export function AuthForm() {
 
         // Simple redirect based on role
         if (data.role === 'professor' || selectedRole === 'professor') {
-          window.location.href = '/professor'
+          window.location.href = '/docente'
         } else {
           window.location.href = '/jogos'
         }
@@ -115,7 +115,7 @@ export function AuthForm() {
         
         // Force a hard redirect to ensure role is properly applied
         if (selectedRole === 'professor') {
-          window.location.replace('/professor')
+          window.location.replace('/docente')
         } else {
           window.location.replace('/jogos')
         }
@@ -197,7 +197,7 @@ export function AuthForm() {
       // Simple redirect based on role
       console.log('🔄 Redirecionando para dashboard...')
       if (selectedRole === 'professor') {
-        window.location.href = '/professor'
+        window.location.href = '/docente'
       } else {
         window.location.href = '/jogos'
       }
@@ -259,7 +259,7 @@ export function AuthForm() {
                   console.log('🚀 Acesso direto como professor...')
                   localStorage.setItem('selected-role', 'professor')
                   localStorage.setItem('dev-professor-access', 'true')
-                  window.location.href = '/professor'
+                  window.location.href = '/docente'
                 }}
                 className="w-full h-12 text-left bg-amber-600 hover:bg-amber-700 text-white"
                 size="sm"
@@ -509,7 +509,7 @@ export function AuthForm() {
                 <div className="border-t border-gray-200 pt-3">
                   <p className="text-xs text-gray-500 mb-2">Precisa se cadastrar como docente?</p>
                   <a
-                    href="/professor/registro"
+                    href="/docente/registro"
                     className="text-green-600 hover:text-green-700 text-sm font-medium"
                   >
                     Cadastre-se como Docente
