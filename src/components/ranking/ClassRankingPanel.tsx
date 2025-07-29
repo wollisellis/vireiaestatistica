@@ -177,29 +177,47 @@ export function ClassRankingPanel({
       setLoading(true);
       setError(null);
 
-      if (!user?.id) return;
+      console.log(`[ClassRankingPanel] 🚀 Iniciando carregamento do ranking...`);
+      console.log(`[ClassRankingPanel] 👤 Usuário:`, {
+        id: user?.id || user?.uid,
+        role: user?.role,
+        email: user?.email,
+        name: user?.displayName || user?.name,
+        moduleId: moduleId
+      });
+
+      if (!user?.id) {
+        console.warn(`[ClassRankingPanel] ❌ Usuário sem ID válido:`, user);
+        return;
+      }
 
       let targetClasses = [];
       let allClasses = [];
 
       // Buscar como professor (turmas que administra)
       try {
+        console.log(`[ClassRankingPanel] 🔍 Buscando turmas como professor para usuário: ${user.id}`);
         const professorClasses = await ProfessorClassService.getProfessorClasses(user.id);
+        console.log(`[ClassRankingPanel] 📚 Turmas como professor encontradas:`, professorClasses?.length || 0);
         if (professorClasses && professorClasses.length > 0) {
           allClasses.push(...professorClasses);
+          console.log(`[ClassRankingPanel] ✅ Adicionadas ${professorClasses.length} turmas como professor`);
         }
       } catch (error) {
-        // Silently handle error
+        console.error(`[ClassRankingPanel] ❌ Erro ao buscar turmas como professor:`, error);
       }
 
       // Buscar como estudante (turmas em que está matriculado)
       try {
+        console.log(`[ClassRankingPanel] 🔍 Buscando turmas como estudante para usuário: ${user.id}`);
         const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
+        console.log(`[ClassRankingPanel] 📚 Turmas como estudante encontradas:`, studentClasses?.length || 0);
         if (studentClasses && studentClasses.length > 0) {
           allClasses.push(...studentClasses);
+          console.log(`[ClassRankingPanel] ✅ Adicionadas ${studentClasses.length} turmas como estudante`);
         }
       } catch (error) {
-        // Silently handle error
+        console.error(`[ClassRankingPanel] ❌ Erro ao buscar turmas como estudante:`, error);
       }
 
       // Remover duplicatas (caso esteja como professor e estudante na mesma turma)
@@ -207,7 +225,11 @@ export function ClassRankingPanel({
         index === self.findIndex(c => c.id === classe.id)
       );
 
+      console.log(`[ClassRankingPanel] 🎯 Total de turmas únicas encontradas: ${targetClasses.length}`);
+      console.log(`[ClassRankingPanel] 📋 Turmas encontradas:`, targetClasses.map(c => ({ id: c.id, name: c.name })));
+
       if (!targetClasses || targetClasses.length === 0) {
+        console.log(`[ClassRankingPanel] ❌ Nenhuma turma encontrada para o usuário ${user.id}`);
         setError('Nenhum estudante encontrado no sistema');
         setLoading(false);
         return;
@@ -215,6 +237,7 @@ export function ClassRankingPanel({
 
       // Usar a primeira turma encontrada
       const firstClass = targetClasses[0];
+      console.log(`[ClassRankingPanel] 🎯 Usando primeira turma: ${firstClass.id} - ${firstClass.name}`);
 
       setClassInfo({
         id: firstClass.id,
@@ -301,20 +324,100 @@ export function ClassRankingPanel({
           firstClass.id,
           { limit: displayLimit }
         );
+        console.log(`[ClassRankingPanel] 🚀 Sistema otimizado retornou ${studentsData?.length || 0} estudantes`);
       } else {
         // SISTEMA LEGADO: Fallback para compatibilidade
         console.log(`[ClassRankingPanel] 📊 Usando versão legada para turma ${firstClass.id}`);
-        studentsData = await enhancedClassService.getClassStudents(firstClass.id);
+        console.log(`[ClassRankingPanel] 📊 Flags de otimização:`, {
+          useOptimizedRanking,
+          usePreAggregatedRanking,
+          useDenormalizedData,
+          displayLimit
+        });
+        
+        try {
+          studentsData = await enhancedClassService.getClassStudents(firstClass.id);
+          console.log(`[ClassRankingPanel] 📊 Sistema legado (getClassStudents) retornou ${studentsData?.length || 0} estudantes`);
+          
+          if (studentsData && studentsData.length > 0) {
+            console.log(`[ClassRankingPanel] 📊 Primeira amostra de estudante:`, {
+              studentId: studentsData[0]?.studentId,
+              studentName: studentsData[0]?.studentName,
+              totalScore: studentsData[0]?.totalNormalizedScore || studentsData[0]?.totalScore,
+              completedModules: studentsData[0]?.completedModules
+            });
+          }
+        } catch (legacyError) {
+          console.error(`[ClassRankingPanel] ❌ Erro no sistema legado getClassStudents:`, legacyError);
+          studentsData = [];
+        }
 
         // Fallback: Se não encontrar estudantes via users, buscar diretamente de classStudents
         if (!Array.isArray(studentsData) || studentsData.length === 0) {
-          studentsData = await enhancedClassService.getClassStudentsDirectly(firstClass.id);
+          console.log(`[ClassRankingPanel] 🔄 Tentando fallback direto para turma ${firstClass.id}`);
+          console.log(`[ClassRankingPanel] 🔄 Motivo do fallback:`, {
+            isArray: Array.isArray(studentsData),
+            length: studentsData?.length || 0,
+            studentsData: studentsData
+          });
+          
+          try {
+            studentsData = await enhancedClassService.getClassStudentsDirectly(firstClass.id);
+            console.log(`[ClassRankingPanel] 🔄 Sistema direto retornou ${studentsData?.length || 0} estudantes`);
+            
+            if (studentsData && studentsData.length > 0) {
+              console.log(`[ClassRankingPanel] 🔄 Primeira amostra do sistema direto:`, {
+                studentId: studentsData[0]?.studentId,
+                studentName: studentsData[0]?.fullName || studentsData[0]?.name,
+                totalScore: studentsData[0]?.totalScore,
+                source: studentsData[0]?.source
+              });
+            }
+          } catch (directError) {
+            console.error(`[ClassRankingPanel] ❌ Erro no sistema direto getClassStudentsDirectly:`, directError);
+            studentsData = [];
+          }
         }
       }
 
+      console.log(`[ClassRankingPanel] 📊 Total final de estudantes encontrados: ${studentsData?.length || 0}`);
       if (!Array.isArray(studentsData) || studentsData.length === 0) {
-        setError('Nenhum estudante encontrado na turma');
-        return;
+        console.log(`[ClassRankingPanel] ❌ Nenhum estudante encontrado na turma ${firstClass.id}`);
+        
+        // 🔄 RECUPERAÇÃO AUTOMÁTICA: Tentar migrar dados inconsistentes
+        console.log(`[ClassRankingPanel] 🔄 Tentando recuperação automática de dados...`);
+        try {
+          const recoverySuccess = await enhancedClassService.autoFixInconsistentData(firstClass.id);
+          
+          if (recoverySuccess) {
+            console.log(`[ClassRankingPanel] ✅ Recuperação bem-sucedida, tentando buscar estudantes novamente...`);
+            
+            // Tentar buscar novamente após a recuperação
+            try {
+              const recoveredStudentsData = await enhancedClassService.getClassStudents(firstClass.id);
+              if (recoveredStudentsData && recoveredStudentsData.length > 0) {
+                console.log(`[ClassRankingPanel] 🎉 Estudantes encontrados após recuperação: ${recoveredStudentsData.length}`);
+                studentsData = recoveredStudentsData;
+              } else {
+                console.log(`[ClassRankingPanel] ⚠️ Nenhum estudante encontrado mesmo após recuperação`);
+                setError('Nenhum estudante encontrado na turma');
+                return;
+              }
+            } catch (retryError) {
+              console.error(`[ClassRankingPanel] ❌ Erro ao tentar buscar após recuperação:`, retryError);
+              setError('Nenhum estudante encontrado na turma');
+              return;
+            }
+          } else {
+            console.log(`[ClassRankingPanel] ❌ Recuperação automática não conseguiu encontrar dados`);
+            setError('Nenhum estudante encontrado na turma');
+            return;
+          }
+        } catch (recoveryError) {
+          console.error(`[ClassRankingPanel] ❌ Erro na recuperação automática:`, recoveryError);
+          setError('Nenhum estudante encontrado na turma');
+          return;
+        }
       }
 
       // ⚡ TRANSFORMAÇÃO DE DADOS: Unificar formato independente da fonte

@@ -489,21 +489,20 @@ function JogosPageContent() {
                       const userId = getUserId();
                       if (!userId || userId.includes('guest')) return null;
 
-                      // Priorizar anonymousId (4 dígitos) se disponível
+                      // Sempre mostrar Anonymous ID (será gerado automaticamente se não existir)
                       const anonymousId = (user as any)?.anonymousId;
-                      if (anonymousId) {
+                      if (anonymousId && /^\d{4}$/.test(anonymousId)) {
                         return (
                           <span className="text-xs sm:text-sm text-emerald-700 font-mono font-bold bg-emerald-100 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-emerald-200 shadow-sm">
-                            #{anonymousId}
+                            Anonymous ID: {anonymousId}
                           </span>
                         );
                       }
 
-                      // Fallback para userId truncado (como antes)
-                      const displayId = userId.length <= 4 ? userId : userId.slice(-8);
+                      // Mostrar loading enquanto anonymousId está sendo gerado
                       return (
-                        <span className="text-xs sm:text-sm text-gray-600 font-mono bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border">
-                          ID:{displayId.toUpperCase()}
+                        <span className="text-xs sm:text-sm text-blue-700 font-mono font-bold bg-blue-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-blue-200">
+                          <span className="animate-pulse">Gerando ID...</span>
                         </span>
                       );
                     })()}

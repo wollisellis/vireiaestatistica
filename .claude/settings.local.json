@@ -53,7 +53,8 @@
       "Bash(pip3 install:*)",
       "Bash(sudo apt:*)",
       "Bash(sudo apt install:*)",
-      "Bash(timeout 30s npx tsc --noEmit)"
+      "Bash(timeout 30s npx tsc --noEmit)",
+      "mcp__browser-tools__getConsoleLogs"
     ],
     "deny": []
   }

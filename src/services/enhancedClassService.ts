@@ -425,7 +425,7 @@ export class EnhancedClassService {
 
       // Query usando range para documentos que começam com classId_
       const studentsQuery = query(
-        collection(db, 'classStudents'),
+        collection(db, 'class_students'),
         where('__name__', '>=', `${classId}_`),
         where('__name__', '<', `${classId}_\uf8ff`)
       )
@@ -531,7 +531,7 @@ export class EnhancedClassService {
       console.log(`[Método 2] Buscando por status ativo para ${classId}`)
       
       const studentsQuery = query(
-        collection(db, 'classStudents'),
+        collection(db, 'class_students'),
         where('status', '==', 'active')
       )
 
@@ -588,7 +588,7 @@ export class EnhancedClassService {
       console.log(`[Método 3] Fallback completo para ${classId}`)
       
       // Buscar TODOS os documentos (sem filtro de status)
-      const studentsQuery = query(collection(db, 'classStudents'))
+      const studentsQuery = query(collection(db, 'class_students'))
       const studentsSnapshot = await getDocs(studentsQuery)
       const students: EnhancedStudentOverview[] = []
 
@@ -655,24 +655,42 @@ export class EnhancedClassService {
 
       // 1. Buscar dados de matrícula (sempre necessário e crítico)
       try {
-        const enrollmentQuery = query(
-          collection(db, 'classStudents'),
-          where('classId', '==', classId),
-          where('studentId', '==', studentId),
-          limit(1)
-        )
+        // MÉTODO 1: Busca direta por ID composto (mais eficiente)
+        const directDocId = `${classId}_${studentId}`
+        console.log(`[${operation}] 🎯 Tentando busca direta por ID: ${directDocId}`)
         
-        const enrollmentSnapshot = await withRetry(
-          () => getDocs(enrollmentQuery),
-          { maxAttempts: 3, baseDelay: 500 }
+        const directDoc = await withRetry(
+          () => getDoc(doc(db, 'class_students', directDocId)),
+          { maxAttempts: 2, baseDelay: 300 }
         )
 
-        if (enrollmentSnapshot.empty) {
-          console.warn(`[${operation}] ❌ Matrícula não encontrada para estudante ${studentId} na turma ${classId}`)
-          return null
+        if (directDoc.exists()) {
+          enrollmentData = directDoc.data()
+          console.log(`[${operation}] ✅ Matrícula encontrada via busca direta`)
+        } else {
+          // MÉTODO 2: Fallback para query tradicional
+          console.log(`[${operation}] ⚠️ Busca direta falhou, tentando query tradicional...`)
+          
+          const enrollmentQuery = query(
+            collection(db, 'class_students'),
+            where('classId', '==', classId),
+            where('studentId', '==', studentId),
+            limit(1)
+          )
+          
+          const enrollmentSnapshot = await withRetry(
+            () => getDocs(enrollmentQuery),
+            { maxAttempts: 3, baseDelay: 500 }
+          )
+
+          if (enrollmentSnapshot.empty) {
+            console.warn(`[${operation}] ❌ Matrícula não encontrada em nenhum método para estudante ${studentId} na turma ${classId}`)
+            return null
+          }
+          
+          enrollmentData = enrollmentSnapshot.docs[0].data()
+          console.log(`[${operation}] ✅ Matrícula encontrada via query tradicional`)
         }
-        
-        enrollmentData = enrollmentSnapshot.docs[0].data()
         
         // Validar dados críticos da matrícula
         if (!enrollmentData.studentName && !enrollmentData.name) {
@@ -1256,7 +1274,7 @@ export class EnhancedClassService {
       // Método 1: Query otimizada com índice composto
       try {
         const q = query(
-          collection(db, 'classStudents'),
+          collection(db, 'class_students'),
           where('classId', '==', classId),
           where('status', 'in', ['active', 'inactive'])
         )
@@ -1287,7 +1305,7 @@ export class EnhancedClassService {
       // Método 2: Fallback usando apenas classId
       try {
         const q = query(
-          collection(db, 'classStudents'),
+          collection(db, 'class_students'),
           where('classId', '==', classId)
         )
 
@@ -1320,7 +1338,7 @@ export class EnhancedClassService {
 
       // Método 3: Fallback usando range de document IDs
       const q = query(
-        collection(db, 'classStudents'),
+        collection(db, 'class_students'),
         where('__name__', '>=', `${classId}_`),
         where('__name__', '<', `${classId}_\uf8ff`)
       )
@@ -1674,8 +1692,8 @@ export class EnhancedClassService {
   
   static async getStudentDetail(classId: string, studentId: string) {
     try {
-      // Buscar dados do estudante na turma na coleção 'classStudents'
-      const enrollmentDoc = await getDoc(doc(db, 'classStudents', `${classId}_${studentId}`))
+      // Buscar dados do estudante na turma na coleção 'class_students'
+      const enrollmentDoc = await getDoc(doc(db, 'class_students', `${classId}_${studentId}`))
       
       if (!enrollmentDoc.exists()) {
         return null
@@ -2016,8 +2034,8 @@ export class EnhancedClassService {
   
   static async removeStudentFromClass(classId: string, studentId: string) {
     try {
-      // Buscar o enrollment na coleção 'classStudents'
-      const enrollmentRef = doc(db, 'classStudents', `${classId}_${studentId}`)
+      // Buscar o enrollment na coleção 'class_students'
+      const enrollmentRef = doc(db, 'class_students', `${classId}_${studentId}`)
       const enrollmentDoc = await getDoc(enrollmentRef)
       
       if (enrollmentDoc.exists()) {
@@ -2034,14 +2052,14 @@ export class EnhancedClassService {
     }
   }
 
-  // 🚀 NOVO: Busca direta de estudantes da coleção classStudents (fallback)
+  // 🚀 NOVO: Busca direta de estudantes da coleção class_students (fallback)
   static async getClassStudentsDirectly(classId: string) {
     console.log(`[getClassStudentsDirectly] 🔍 Buscando estudantes diretamente para turma: ${classId}`)
 
     try {
       // Buscar matrículas ativas na turma
       const enrollmentsQuery = query(
-        collection(db, 'classStudents'),
+        collection(db, 'class_students'),
         where('classId', '==', classId),
         where('status', '!=', 'removed')
       )
@@ -2119,7 +2137,7 @@ export class EnhancedClassService {
       
       // Método 1: Buscar todas as matrículas ativas de uma vez
       const allEnrollmentsQuery = query(
-        collection(db, 'classStudents'),
+        collection(db, 'class_students'),
         where('status', 'in', ['active', 'pending'])
       )
       
@@ -2155,6 +2173,130 @@ export class EnhancedClassService {
       })
       
       return countsMap
+    }
+  }
+
+  // 🔄 MÉTODO DE RECUPERAÇÃO AUTOMÁTICA: Migrar dados inconsistentes
+  static async recoverInconsistentEnrollmentData(classId: string): Promise<{ migrated: number, errors: string[] }> {
+    const operation = 'recoverInconsistentEnrollmentData'
+    const results = { migrated: 0, errors: [] as string[] }
+    
+    try {
+      console.log(`[${operation}] 🔄 Iniciando recuperação automática para turma: ${classId}`)
+      
+      // Buscar dados na coleção antiga 'classStudents' (se existir)
+      try {
+        const oldCollectionQuery = query(
+          collection(db, 'classStudents'),
+          where('classId', '==', classId)
+        )
+        
+        const oldSnapshot = await getDocs(oldCollectionQuery)
+        
+        if (!oldSnapshot.empty) {
+          console.log(`[${operation}] 📋 Encontrados ${oldSnapshot.size} documentos na coleção antiga`)
+          
+          const batch = writeBatch(db)
+          let batchCount = 0
+          
+          for (const oldDoc of oldSnapshot.docs) {
+            try {
+              const oldData = oldDoc.data()
+              const newDocId = `${classId}_${oldData.studentId}`
+              
+              // Verificar se já existe na coleção nova
+              const newDocRef = doc(db, 'class_students', newDocId)
+              const newDocExists = await getDoc(newDocRef)
+              
+              if (!newDocExists.exists()) {
+                // Migrar para coleção nova com formato correto
+                batch.set(newDocRef, {
+                  ...oldData,
+                  migratedAt: serverTimestamp(),
+                  migratedFrom: 'classStudents',
+                  status: oldData.status || 'active'
+                })
+                
+                batchCount++
+                results.migrated++
+                
+                // Executar batch a cada 400 documentos (limite do Firestore é 500)
+                if (batchCount >= 400) {
+                  await batch.commit()
+                  console.log(`[${operation}] ✅ Migrados ${batchCount} documentos em batch`)
+                  // Criar novo batch
+                  const newBatch = writeBatch(db)
+                  batchCount = 0
+                }
+              }
+            } catch (docError) {
+              const errorMsg = `Erro ao migrar documento ${oldDoc.id}: ${docError.message}`
+              console.error(`[${operation}] ❌ ${errorMsg}`)
+              results.errors.push(errorMsg)
+            }
+          }
+          
+          // Executar último batch se houver documentos pendentes
+          if (batchCount > 0) {
+            await batch.commit()
+            console.log(`[${operation}] ✅ Migrados ${batchCount} documentos no batch final`)
+          }
+        }
+      } catch (oldCollectionError) {
+        const errorMsg = `Erro ao acessar coleção antiga: ${oldCollectionError.message}`
+        console.warn(`[${operation}] ⚠️ ${errorMsg}`)
+        results.errors.push(errorMsg)
+      }
+      
+      console.log(`[${operation}] 🎉 Recuperação concluída:`, {
+        classId,
+        migrated: results.migrated,
+        errors: results.errors.length
+      })
+      
+      return results
+      
+    } catch (error) {
+      const errorMsg = `Erro crítico na recuperação: ${error.message}`
+      console.error(`[${operation}] ❌ ${errorMsg}`)
+      results.errors.push(errorMsg)
+      return results
+    }
+  }
+
+  // 🔄 MÉTODO AUXILIAR: Verificar e corrigir inconsistências automaticamente
+  static async autoFixInconsistentData(classId: string): Promise<boolean> {
+    try {
+      console.log(`[autoFixInconsistentData] 🔧 Verificando inconsistências na turma: ${classId}`)
+      
+      // Verificar se há dados na coleção correta
+      const correctQuery = query(
+        collection(db, 'class_students'),
+        where('classId', '==', classId),
+        limit(1)
+      )
+      
+      const correctSnapshot = await getDocs(correctQuery)
+      
+      if (correctSnapshot.empty) {
+        console.log(`[autoFixInconsistentData] ⚠️ Nenhum dado encontrado na coleção correta, tentando recuperação...`)
+        
+        const recoveryResult = await this.recoverInconsistentEnrollmentData(classId)
+        
+        if (recoveryResult.migrated > 0) {
+          console.log(`[autoFixInconsistentData] ✅ Recuperação bem-sucedida: ${recoveryResult.migrated} documentos migrados`)
+          return true
+        } else {
+          console.log(`[autoFixInconsistentData] ❌ Nenhum dado foi migrado`)
+          return false
+        }
+      } else {
+        console.log(`[autoFixInconsistentData] ✅ Dados encontrados na coleção correta`)
+        return true
+      }
+    } catch (error) {
+      console.error(`[autoFixInconsistentData] ❌ Erro na verificação automática:`, error)
+      return false
     }
   }
 }

@@ -613,13 +613,35 @@ export function useFirebaseProfile(userId: string) {
 
         if (docSnap.exists()) {
           const data = docSnap.data()
+          let anonymousId = data.anonymousId
+
+          // 🆔 AUTO-GENERATE ANONYMOUS ID: Se usuário é estudante e não tem anonymousId, gerar automaticamente
+          if (data.role === 'student' && !anonymousId) {
+            console.log('🆔 Gerando anonymousId automaticamente para estudante...')
+            anonymousId = generateAnonymousId()
+
+            try {
+              // Atualizar no Firestore
+              await setDoc(doc(db, 'users', userId), {
+                anonymousId: anonymousId,
+                anonymousIdGeneratedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+              }, { merge: true })
+
+              console.log(`✅ AnonymousId gerado: ${anonymousId}`)
+            } catch (error) {
+              console.error('❌ Erro ao salvar anonymousId:', error)
+              // Continuar mesmo se falhar ao salvar
+            }
+          }
+
           setProfile({
             id: docSnap.id,
             email: data.email,
             fullName: data.fullName,
             role: data.role || 'student',
             roleHistory: data.roleHistory || [data.role || 'student'],
-            anonymousId: data.anonymousId,
+            anonymousId: anonymousId, // Usar o anonymousId gerado ou existente
             institutionId: data.institutionId || 'unicamp',
             totalScore: data.totalScore || 0,
             levelReached: data.levelReached || 1,
