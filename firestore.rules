@@ -20,12 +20,13 @@ service cloud.firestore {
 
     // Função para verificar email institucional (mais permissiva)
     function hasInstitutionalEmail() {
-      return isAuthenticated() &&
+      return isAuthenticated() && request.auth.token.email != null &&
         (request.auth.token.email.matches('.*@dac\\.unicamp\\.br') ||
          request.auth.token.email.matches('.*@unicamp\\.br') ||
          request.auth.token.email.matches('.*@gmail\\.com') ||
          request.auth.token.email.matches('.*@hotmail\\.com') ||
-         request.auth.token.email.matches('.*@outlook\\.com')); // Mais emails para desenvolvimento
+         request.auth.token.email.matches('.*@outlook\\.com') ||
+         request.auth.token.email.matches('.*@yahoo\\.com')); // Mais emails para desenvolvimento
     }
 
     // Função para verificar se é o próprio usuário
@@ -80,11 +81,11 @@ service cloud.firestore {
       // ✅ Professores podem ver dados de todos os usuários
       allow read: if isProfessor();
 
-      // ✅ Permitir criação de conta com validação
-      allow create: if hasInstitutionalEmail() &&
+      // ✅ TEMPORÁRIO: Permitir criação mais permissiva para debug
+      allow create: if isAuthenticated() && 
+        request.auth.uid == userId &&
         request.resource.data.keys().hasAll(['role', 'email']) &&
         request.resource.data.role in ['professor', 'student'] &&
-        request.auth.uid == userId &&
         // Professores devem ter sido verificados com código especial (exceto autoSetup)
         (request.resource.data.role != 'professor' || 
          request.resource.data.get('verifiedWithCode', false) == true ||

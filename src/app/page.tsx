@@ -8,6 +8,7 @@ import { isFirebaseConfigured } from '@/lib/firebase'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { useRBAC } from '@/hooks/useRBAC'
 import { safeLocalStorage, safeSessionStorage, clearMultipleCookies, removeMultipleFromStorage } from '@/utils/safeStorage'
+import { debugFirebaseState } from '@/utils/firebaseDebug'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 function LoginPageContent() {
@@ -36,6 +37,11 @@ function LoginPageContent() {
     // Verificação do Firebase configurado apenas se necessário
     if (!isFirebaseConfigured()) {
       setShowFirebaseWarning(true)
+    }
+
+    // Debug Firebase state (only in development)
+    if (process.env.NODE_ENV === 'development' && isFirebaseConfigured()) {
+      debugFirebaseState()
     }
 
     setIsReady(true)

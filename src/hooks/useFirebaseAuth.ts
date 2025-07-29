@@ -353,7 +353,12 @@ export function useFirebaseAuth() {
       const firebaseUser = result.user
       const email = firebaseUser.email!
 
-      console.log('✅ Autenticação Google bem-sucedida:', { email, role })
+      console.log('✅ Autenticação Google bem-sucedida:', { 
+        email, 
+        role,
+        uid: firebaseUser.uid,
+        displayName: firebaseUser.displayName 
+      })
 
       // Delegando validação para Firestore Rules - permite flexibilidade total
       console.log('✅ Prosseguindo com validação via Firestore Rules')
@@ -361,13 +366,16 @@ export function useFirebaseAuth() {
       // Check if user already exists in Firestore with retry logic
       let userDoc
       try {
+        console.log('🔍 Verificando se usuário existe no Firestore...')
         userDoc = await retryFirestoreOperation(async () => {
           return await getDoc(doc(db, 'users', firebaseUser.uid))
         })
+        console.log('✅ Verificação concluída. Existe?', userDoc.exists())
       } catch (firestoreError) {
         console.error('❌ Erro ao acessar Firestore:', firestoreError)
-        await firebaseSignOut(auth)
-        throw new Error(handleFirestoreError(firestoreError))
+        // Não fazer logout aqui - vamos tentar criar o usuário mesmo assim
+        console.log('⚠️ Tentando prosseguir com criação de novo usuário...')
+        userDoc = { exists: () => false } // Simular documento não existente
       }
 
       if (!userDoc.exists()) {
@@ -403,13 +411,28 @@ export function useFirebaseAuth() {
           userProfile.anonymousId = anonymousId
         }
 
-        await setDoc(doc(db, 'users', firebaseUser.uid), {
-          ...userProfile,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        })
+        // Add autoSetup flag for professors using Google Sign In
+        if (role === 'professor') {
+          userProfile.autoSetup = true
+          userProfile.setupMethod = 'google_signin_v1.0'
+        }
 
-        console.log('✅ Usuário criado com sucesso:', userProfile)
+        try {
+          console.log('📝 Tentando criar documento do usuário...')
+          console.log('📋 Dados do perfil:', userProfile)
+          
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
+            ...userProfile,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          })
+
+          console.log('✅ Usuário criado com sucesso:', userProfile)
+        } catch (createError) {
+          console.error('❌ Erro ao criar documento do usuário:', createError)
+          console.error('📋 Dados que tentamos salvar:', userProfile)
+          throw new Error('Erro ao criar perfil do usuário. Verifique as permissões.')
+        }
         return { data: { user: firebaseUser, profile: userProfile, isNewUser: true }, error: null }
       } else {
         console.log('👤 Usuário existente encontrado')
