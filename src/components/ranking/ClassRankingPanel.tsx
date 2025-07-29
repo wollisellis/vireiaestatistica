@@ -20,11 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { isRecentActivity } from '@/utils/dateUtils';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
-import { enhancedClassService } from '@/services/enhancedClassService';
-import OptimizedClassService from '@/services/optimizedClassService';
-import ClassRankingService from '@/services/classRankingService';
-import DenormalizedScoreService from '@/services/denormalizedScoreService';
-import ProfessorClassService from '@/services/professorClassService';
+import unifiedScoringService from '@/services/unifiedScoringService';
 
 interface ClassStudent {
   studentId: string;
@@ -36,14 +32,6 @@ interface ClassStudent {
   isCurrentUser?: boolean;
   position?: number;
   anonymousId?: string;
-}
-
-interface ClassInfo {
-  id: string;
-  name: string;
-  semester: string;
-  year: string;
-  studentsCount: number;
 }
 
 interface ClassRankingPanelProps {
@@ -67,13 +55,11 @@ export function ClassRankingPanel({
   expanded = false,
   showNames = false
 }: ClassRankingPanelProps) {
-  console.log(`🔧 [ClassRankingPanel] Componente renderizado! moduleId: ${moduleId}`);
 
   // 🔧 NOVO: Usar usuário da prop ou do contexto como fallback
   const { user: contextUser } = useFlexibleAccess();
   const user = propUser || contextUser;
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
-  const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,35 +72,14 @@ export function ClassRankingPanel({
   }, []);
 
   useEffect(() => {
-    console.log(`🔧 [ClassRankingPanel] useEffect executado:`, {
-      propUser: propUser,
-      contextUser: contextUser,
-      finalUser: user,
-      userType: typeof user,
-      userId: user?.id || user?.uid,
-      userEmail: user?.email,
-      userRole: user?.role,
-      propLoading: propLoading,
-      moduleId: moduleId
-    });
-
     // 🎯 AGUARDAR: Aguardar usuário estar disponível
-    if (user === null) {
-      console.log(`🔧 [ClassRankingPanel] Usuário ainda carregando...`);
-      return; // Aguardar próximo render
-    }
-
-    if (user === undefined) {
-      console.log(`🔧 [ClassRankingPanel] Usuário undefined, aguardando...`);
+    if (user === null || user === undefined) {
       return; // Aguardar próximo render
     }
 
     if (user?.id || user?.uid) {
-      const userId = user.id || user.uid;
-      console.log(`🔧 [ClassRankingPanel] Usuário logado (${userId}), chamando loadClassRankingData...`);
       loadClassRankingData();
     } else {
-      console.log(`🔧 [ClassRankingPanel] Usuário sem ID válido, setLoading(false)`);
       setLoading(false);
     }
   }, [user, moduleId, propUser, contextUser]);
@@ -123,7 +88,6 @@ export function ClassRankingPanel({
   useEffect(() => {
     if (user?.id && (user.role === 'student' || user.role === 'professor')) {
       const interval = setInterval(() => {
-        console.log('🔄 Atualização automática do ranking (60s)...');
         loadClassRankingData();
       }, 180000); // Atualizado: 3 minutos (180 segundos) para reduzir atualizações
 
@@ -135,20 +99,12 @@ export function ClassRankingPanel({
   useEffect(() => {
     const handleModuleCompleted = (event: any) => {
       const eventDetail = event.detail || {};
-      console.log('🎯 Evento moduleCompleted recebido:', {
-        userId: eventDetail.userId,
-        moduleId: eventDetail.moduleId,
-        score: eventDetail.score,
-        percentage: eventDetail.percentage,
-        passed: eventDetail.passed
-      });
       
       // Atualização com delay específico por usuário para evitar conflitos
       const isCurrentUser = eventDetail.userId === user?.id;
       const updateDelay = isCurrentUser ? 2000 : 5000; // Usuário atual: 2s, outros: 5s
       
       setTimeout(() => {
-        console.log(`📊 Atualizando ranking após conclusão (delay: ${updateDelay}ms)...`);
         loadClassRankingData();
       }, updateDelay);
     };
@@ -160,347 +116,41 @@ export function ClassRankingPanel({
     };
   }, [user?.id]);
 
-  // ✅ OTIMIZAÇÃO: Flags para usar sistemas otimizados
-  const useOptimizedRanking = process.env.NODE_ENV === 'development' || 
-    (typeof window !== 'undefined' && localStorage.getItem('enable-optimized-ranking') === 'true');
-    
-  // 🚀 FASE 2: Flag para usar rankings pré-agregados (máxima performance)
-  const usePreAggregatedRanking = process.env.NODE_ENV === 'development' || 
-    (typeof window !== 'undefined' && localStorage.getItem('enable-preaggregated-ranking') === 'true');
-    
-  // ⚡ FASE 3: Flag para usar dados denormalizados (ultra-performance)
-  const useDenormalizedData = process.env.NODE_ENV === 'development' || 
-    (typeof window !== 'undefined' && localStorage.getItem('enable-denormalized-data') === 'true');
-
   const loadClassRankingData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log(`[ClassRankingPanel] 🚀 Iniciando carregamento do ranking...`);
-      console.log(`[ClassRankingPanel] 👤 Usuário:`, {
-        id: user?.id || user?.uid,
-        role: user?.role,
-        email: user?.email,
-        name: user?.displayName || user?.name,
-        moduleId: moduleId
-      });
-
       if (!user?.id) {
-        console.warn(`[ClassRankingPanel] ❌ Usuário sem ID válido:`, user);
         return;
       }
 
-      let targetClasses = [];
-      let allClasses = [];
-
-      // Buscar como professor (turmas que administra)
-      try {
-        console.log(`[ClassRankingPanel] 🔍 Buscando turmas como professor para usuário: ${user.id}`);
-        const professorClasses = await ProfessorClassService.getProfessorClasses(user.id);
-        console.log(`[ClassRankingPanel] 📚 Turmas como professor encontradas:`, professorClasses?.length || 0);
-        if (professorClasses && professorClasses.length > 0) {
-          allClasses.push(...professorClasses);
-          console.log(`[ClassRankingPanel] ✅ Adicionadas ${professorClasses.length} turmas como professor`);
-        }
-      } catch (error) {
-        console.error(`[ClassRankingPanel] ❌ Erro ao buscar turmas como professor:`, error);
-      }
-
-      // Buscar como estudante (turmas em que está matriculado)
-      try {
-        console.log(`[ClassRankingPanel] 🔍 Buscando turmas como estudante para usuário: ${user.id}`);
-        const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
-        console.log(`[ClassRankingPanel] 📚 Turmas como estudante encontradas:`, studentClasses?.length || 0);
-        if (studentClasses && studentClasses.length > 0) {
-          allClasses.push(...studentClasses);
-          console.log(`[ClassRankingPanel] ✅ Adicionadas ${studentClasses.length} turmas como estudante`);
-        }
-      } catch (error) {
-        console.error(`[ClassRankingPanel] ❌ Erro ao buscar turmas como estudante:`, error);
-      }
-
-      // Remover duplicatas (caso esteja como professor e estudante na mesma turma)
-      targetClasses = allClasses.filter((classe, index, self) =>
-        index === self.findIndex(c => c.id === classe.id)
-      );
-
-      console.log(`[ClassRankingPanel] 🎯 Total de turmas únicas encontradas: ${targetClasses.length}`);
-      console.log(`[ClassRankingPanel] 📋 Turmas encontradas:`, targetClasses.map(c => ({ id: c.id, name: c.name })));
-
-      if (!targetClasses || targetClasses.length === 0) {
-        console.log(`[ClassRankingPanel] ❌ Nenhuma turma encontrada para o usuário ${user.id}`);
-        setError('Nenhum estudante encontrado no sistema');
-        setLoading(false);
-        return;
-      }
-
-      // Usar a primeira turma encontrada
-      const firstClass = targetClasses[0];
-      console.log(`[ClassRankingPanel] 🎯 Usando primeira turma: ${firstClass.id} - ${firstClass.name}`);
-
-      setClassInfo({
-        id: firstClass.id,
-        name: firstClass.name,
-        semester: firstClass.semester,
-        year: firstClass.year,
-        studentsCount: firstClass.studentsCount
-      });
-
-      // ⚡ HIERARQUIA DE OTIMIZAÇÃO: Fase 3 → Fase 2 → Fase 1 → Sistema legado
-      let studentsData;
+      // 🌍 SISTEMA SIMPLIFICADO: Buscar todos os estudantes do sistema
+      const studentsData = await unifiedScoringService.getAllStudentsRanking(displayLimit);
       
-      if (useDenormalizedData) {
-        // FASE 3: Dados denormalizados (ultra-performance)
-        console.log(`[ClassRankingPanel] ⚡ Usando dados denormalizados para turma ${firstClass.id}`);
-        try {
-          const denormalizedData = await DenormalizedScoreService.getUltraFastRanking(firstClass.id, displayLimit);
-          studentsData = denormalizedData.map(entry => ({
-            studentId: entry.studentId,
-            studentName: entry.userName,
-            email: entry.userEmail,
-            totalNormalizedScore: entry.normalizedScore,
-            completedModules: Object.values(entry.moduleScores || {}).filter((score: any) => score >= 70).length,
-            lastActivity: entry.lastActivity,
-            anonymousId: entry.userAnonymousId,
-            classRank: entry.enrolledClasses?.find(c => c.classId === firstClass.id)?.classRank || 0,
-            name: entry.userName,
-            totalScore: entry.normalizedScore
-          }));
-          console.log(`[ClassRankingPanel] ⚡ Fase 3: ${studentsData.length} estudantes carregados com ultra-performance`);
-        } catch (error) {
-          console.warn(`[ClassRankingPanel] ⚠️ Fase 3 falhou, fallback para Fase 2:`, error);
-          // Fallback para Fase 2
-          try {
-            const preAggregatedData = await ClassRankingService.getPreAggregatedRanking(firstClass.id);
-            studentsData = preAggregatedData.slice(0, displayLimit).map(entry => ({
-              studentId: entry.studentId,
-              studentName: entry.studentName,
-              email: entry.email || '',
-              totalNormalizedScore: entry.totalNormalizedScore,
-              completedModules: entry.completedModules,
-              lastActivity: entry.lastActivity,
-              anonymousId: entry.anonymousId,
-              classRank: entry.classRank,
-              name: entry.studentName,
-              totalScore: entry.totalNormalizedScore
-            }));
-            console.log(`[ClassRankingPanel] 🚀 Fallback Fase 2: ${studentsData.length} estudantes`);
-          } catch (phase2Error) {
-            console.warn(`[ClassRankingPanel] ⚠️ Fase 2 também falhou, fallback para Fase 1:`, phase2Error);
-            studentsData = await OptimizedClassService.getOptimizedClassStudents(firstClass.id, { limit: displayLimit });
-          }
-        }
-      } else if (usePreAggregatedRanking) {
-        // FASE 2: Rankings pré-agregados (máxima performance)
-        console.log(`[ClassRankingPanel] 🚀 Usando rankings pré-agregados para turma ${firstClass.id}`);
-        try {
-          const preAggregatedData = await ClassRankingService.getPreAggregatedRanking(firstClass.id);
-          studentsData = preAggregatedData.slice(0, displayLimit).map(entry => ({
-            studentId: entry.studentId,
-            studentName: entry.studentName,
-            email: entry.email || '',
-            totalNormalizedScore: entry.totalNormalizedScore,
-            completedModules: entry.completedModules,
-            lastActivity: entry.lastActivity,
-            anonymousId: entry.anonymousId,
-            classRank: entry.classRank,
-            name: entry.studentName,
-            totalScore: entry.totalNormalizedScore
-          }));
-          console.log(`[ClassRankingPanel] ✅ Fase 2: ${studentsData.length} estudantes carregados instantaneamente`);
-        } catch (error) {
-          console.warn(`[ClassRankingPanel] ⚠️ Fase 2 falhou, fallback para Fase 1:`, error);
-          // Fallback para Fase 1
-          studentsData = await OptimizedClassService.getOptimizedClassStudents(
-            firstClass.id,
-            { limit: displayLimit }
-          );
-        }
-      } else if (useOptimizedRanking) {
-        // FASE 1: Queries otimizadas com cache
-        console.log(`[ClassRankingPanel] 🚀 Usando versão otimizada (Fase 1) para turma ${firstClass.id}`);
-        studentsData = await OptimizedClassService.getOptimizedClassStudents(
-          firstClass.id,
-          { limit: displayLimit }
-        );
-        console.log(`[ClassRankingPanel] 🚀 Sistema otimizado retornou ${studentsData?.length || 0} estudantes`);
-      } else {
-        // SISTEMA LEGADO: Fallback para compatibilidade
-        console.log(`[ClassRankingPanel] 📊 Usando versão legada para turma ${firstClass.id}`);
-        console.log(`[ClassRankingPanel] 📊 Flags de otimização:`, {
-          useOptimizedRanking,
-          usePreAggregatedRanking,
-          useDenormalizedData,
-          displayLimit
-        });
-        
-        try {
-          studentsData = await enhancedClassService.getClassStudents(firstClass.id);
-          console.log(`[ClassRankingPanel] 📊 Sistema legado (getClassStudents) retornou ${studentsData?.length || 0} estudantes`);
-          
-          if (studentsData && studentsData.length > 0) {
-            console.log(`[ClassRankingPanel] 📊 Primeira amostra de estudante:`, {
-              studentId: studentsData[0]?.studentId,
-              studentName: studentsData[0]?.studentName,
-              totalScore: studentsData[0]?.totalNormalizedScore || studentsData[0]?.totalScore,
-              completedModules: studentsData[0]?.completedModules
-            });
-          }
-        } catch (legacyError) {
-          console.error(`[ClassRankingPanel] ❌ Erro no sistema legado getClassStudents:`, legacyError);
-          studentsData = [];
-        }
-
-        // Fallback: Se não encontrar estudantes via users, buscar diretamente de classStudents
-        if (!Array.isArray(studentsData) || studentsData.length === 0) {
-          console.log(`[ClassRankingPanel] 🔄 Tentando fallback direto para turma ${firstClass.id}`);
-          console.log(`[ClassRankingPanel] 🔄 Motivo do fallback:`, {
-            isArray: Array.isArray(studentsData),
-            length: studentsData?.length || 0,
-            studentsData: studentsData
-          });
-          
-          try {
-            studentsData = await enhancedClassService.getClassStudentsDirectly(firstClass.id);
-            console.log(`[ClassRankingPanel] 🔄 Sistema direto retornou ${studentsData?.length || 0} estudantes`);
-            
-            if (studentsData && studentsData.length > 0) {
-              console.log(`[ClassRankingPanel] 🔄 Primeira amostra do sistema direto:`, {
-                studentId: studentsData[0]?.studentId,
-                studentName: studentsData[0]?.fullName || studentsData[0]?.name,
-                totalScore: studentsData[0]?.totalScore,
-                source: studentsData[0]?.source
-              });
-            }
-          } catch (directError) {
-            console.error(`[ClassRankingPanel] ❌ Erro no sistema direto getClassStudentsDirectly:`, directError);
-            studentsData = [];
-          }
-        }
-      }
-
-      console.log(`[ClassRankingPanel] 📊 Total final de estudantes encontrados: ${studentsData?.length || 0}`);
       if (!Array.isArray(studentsData) || studentsData.length === 0) {
-        console.log(`[ClassRankingPanel] ❌ Nenhum estudante encontrado na turma ${firstClass.id}`);
-        
-        // 🔄 RECUPERAÇÃO AUTOMÁTICA: Tentar migrar dados inconsistentes
-        console.log(`[ClassRankingPanel] 🔄 Tentando recuperação automática de dados...`);
-        try {
-          const recoverySuccess = await enhancedClassService.autoFixInconsistentData(firstClass.id);
-          
-          if (recoverySuccess) {
-            console.log(`[ClassRankingPanel] ✅ Recuperação bem-sucedida, tentando buscar estudantes novamente...`);
-            
-            // Tentar buscar novamente após a recuperação
-            try {
-              const recoveredStudentsData = await enhancedClassService.getClassStudents(firstClass.id);
-              if (recoveredStudentsData && recoveredStudentsData.length > 0) {
-                console.log(`[ClassRankingPanel] 🎉 Estudantes encontrados após recuperação: ${recoveredStudentsData.length}`);
-                studentsData = recoveredStudentsData;
-              } else {
-                console.log(`[ClassRankingPanel] ⚠️ Nenhum estudante encontrado mesmo após recuperação`);
-                setError('Nenhum estudante encontrado na turma');
-                return;
-              }
-            } catch (retryError) {
-              console.error(`[ClassRankingPanel] ❌ Erro ao tentar buscar após recuperação:`, retryError);
-              setError('Nenhum estudante encontrado na turma');
-              return;
-            }
-          } else {
-            console.log(`[ClassRankingPanel] ❌ Recuperação automática não conseguiu encontrar dados`);
-            setError('Nenhum estudante encontrado na turma');
-            return;
-          }
-        } catch (recoveryError) {
-          console.error(`[ClassRankingPanel] ❌ Erro na recuperação automática:`, recoveryError);
-          setError('Nenhum estudante encontrado na turma');
-          return;
-        }
+        setError('Nenhum estudante encontrado no sistema');
+        return;
       }
 
-      // ⚡ TRANSFORMAÇÃO DE DADOS: Unificar formato independente da fonte
-      let transformedStudents: ClassStudent[];
-      
-      if (useDenormalizedData && studentsData.every((s: any) => s.classRank !== undefined)) {
-        // FASE 3: Dados denormalizados (ultra-performance)
-        transformedStudents = studentsData.map((student: any) => ({
-          studentId: student.studentId,
-          studentName: student.studentName || student.name,
-          email: student.email || '',
-          totalScore: student.totalNormalizedScore || student.totalScore || 0,
-          completedModules: student.completedModules || 0,
-          lastActivity: student.lastActivity,
-          isCurrentUser: student.studentId === user.id,
-          anonymousId: student.anonymousId,
-          position: student.classRank || 0
-        }));
-        console.log(`[ClassRankingPanel] ⚡ Fase 3: Dados denormalizados processados com ultra-performance`);
-      } else if (usePreAggregatedRanking && studentsData.every((s: any) => s.classRank !== undefined)) {
-        // FASE 2: Dados já vêm pré-agregados e rankeados
-        transformedStudents = studentsData.map((student: any) => ({
-          studentId: student.studentId,
-          studentName: student.studentName || student.name,
-          email: student.email || '',
-          totalScore: student.totalNormalizedScore || student.totalScore || 0,
-          completedModules: student.completedModules || 0,
-          lastActivity: student.lastActivity,
-          isCurrentUser: student.studentId === user.id,
-          anonymousId: student.anonymousId,
-          position: student.classRank || 0
-        }));
-        console.log(`[ClassRankingPanel] 🚀 Fase 2: Dados pré-agregados processados`);
-      } else if (useOptimizedRanking) {
-        // FASE 1: Dados já vêm transformados e rankeados do OptimizedClassService
-        transformedStudents = studentsData.map((student: any) => ({
-          studentId: student.studentId,
-          studentName: student.studentName || student.name,
-          email: student.email || '',
-          totalScore: student.totalNormalizedScore || student.totalScore || 0,
-          completedModules: student.completedModules || 0,
-          lastActivity: student.lastActivity,
-          isCurrentUser: student.studentId === user.id,
-          anonymousId: student.anonymousId,
-          position: student.classRank || 0
-        }));
-        console.log(`[ClassRankingPanel] 🚀 Fase 1: Dados otimizados processados`);
-      } else {
-        // SISTEMA LEGADO: Transformação completa necessária
-        transformedStudents = studentsData.map((student: any) => {
-          const studentScore = student.normalizedScore || student.totalScore || 0;
-          const studentId = student.studentId || student.id || student.uid || '';
-          const isCurrentUser = studentId === user.id;
-
-          return {
-            studentId,
-            studentName: student.studentName || student.name || student.displayName || `Estudante (${studentId.slice(-6)})`,
-            email: student.email || '',
-            totalScore: Math.min(100, Math.max(0, studentScore)),
-            completedModules: student.completedModules || (studentScore > 0 ? 1 : 0),
-            lastActivity: student.lastActivity ? new Date(student.lastActivity) : new Date(),
-            isCurrentUser,
-            anonymousId: student.anonymousId || studentId.slice(-4)
-          };
-        });
-
-        // Ordenar e posicionar apenas na versão legada
-        transformedStudents = transformedStudents
-          .sort((a, b) => b.totalScore - a.totalScore)
-          .map((student, index) => ({
-            ...student,
-            position: index + 1
-          }))
-          .slice(0, displayLimit);
-          
-        console.log(`[ClassRankingPanel] 📊 Sistema legado: Dados transformados e ordenados`);
-      }
+      // Marcar o usuário atual e transformar dados
+      const transformedStudents: ClassStudent[] = studentsData.map((student: any) => ({
+        studentId: student.studentId,
+        studentName: student.studentName,
+        email: student.email || '',
+        totalScore: student.totalScore || 0,
+        completedModules: student.completedModules || 0,
+        lastActivity: student.lastActivity,
+        isCurrentUser: student.studentId === user.id,
+        anonymousId: student.anonymousId,
+        position: student.position || student.classRank || 0
+      }));
 
       setClassStudents(transformedStudents);
 
     } catch (err) {
       console.error('[ClassRankingPanel] Erro ao carregar dados:', err);
-      setError('Erro ao carregar dados da turma');
+      setError('Erro ao carregar dados dos estudantes');
     } finally {
       setLoading(false);
     }
@@ -613,16 +263,8 @@ export function ClassRankingPanel({
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-bold text-gray-900 text-base">
-                🏆 Ranking da Turma
+                🏆 Ranking Geral
               </h3>
-              {classInfo && (
-                <p className="text-sm text-gray-600 mt-1 font-medium truncate">
-                  {classInfo.name}
-                  {classInfo.semester && classInfo.year && (
-                    <span className="text-gray-400"> • {classInfo.semester}/{classInfo.year}</span>
-                  )}
-                </p>
-              )}
             </div>
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
@@ -638,56 +280,43 @@ export function ClassRankingPanel({
           </div>
         </div>
         
-        {showStats && classInfo && (
+        {showStats && classStudents.find(s => s.isCurrentUser) && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="mt-3 space-y-3"
+            className="mt-3"
           >
-            <div className="flex items-center justify-between text-xs text-gray-600">
-              <div className="flex items-center space-x-1">
-                <Users className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{classInfo.studentsCount} estudantes</span>
+            {/* Posição do usuário atual */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-3 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                  <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xs font-bold">#{classStudents.find(s => s.isCurrentUser)?.position}</span>
+                  </div>
+                  <p className="text-sm font-bold text-blue-900 truncate">
+                    Sua Posição
+                  </p>
+                </div>
+                <div className={`px-3 py-1.5 rounded-full text-sm font-bold flex-shrink-0 ${
+                  (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 90 ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800' :
+                  (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800' :
+                  'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800'
+                }`}>
+                  {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)} pts
+                  {(classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 && (
+                    <span className="ml-1">✅</span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center space-x-1 flex-shrink-0">
-                <Activity className="w-3 h-3" />
-                <span>Ativo</span>
+              <div className="flex items-center justify-between text-xs text-blue-700 mt-1">
+                <span className="font-mono font-bold bg-blue-100 px-2 py-0.5 rounded">
+                  #{(user as any)?.anonymousId || user?.id?.slice(-4) || '0000'}
+                </span>
+                <span className="font-medium flex-shrink-0">
+                  {classStudents.find(s => s.isCurrentUser)?.completedModules || 0}/1 módulo
+                </span>
               </div>
             </div>
-
-            {/* Posição do usuário atual */}
-            {classStudents.find(s => s.isCurrentUser) && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-3 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2 min-w-0 flex-1">
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-xs font-bold">#{classStudents.find(s => s.isCurrentUser)?.position}</span>
-                    </div>
-                    <p className="text-sm font-bold text-blue-900 truncate">
-                      Sua Posição
-                    </p>
-                  </div>
-                  <div className={`px-3 py-1.5 rounded-full text-sm font-bold flex-shrink-0 ${
-                    (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 90 ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800' :
-                    (classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800' :
-                    'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800'
-                  }`}>
-                    {formatScore(classStudents.find(s => s.isCurrentUser)?.totalScore || 0)} pts
-                    {(classStudents.find(s => s.isCurrentUser)?.totalScore || 0) >= 70 && (
-                      <span className="ml-1">✅</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-xs text-blue-700 mt-1">
-                  <span className="font-mono font-bold bg-blue-100 px-2 py-0.5 rounded">
-                    #{(user as any)?.anonymousId || user?.id?.slice(-4) || '0000'}
-                  </span>
-                  <span className="font-medium flex-shrink-0">
-                    {classStudents.find(s => s.isCurrentUser)?.completedModules || 0}/1 módulo
-                  </span>
-                </div>
-              </div>
-            )}
           </motion.div>
         )}
       </CardHeader>
@@ -785,7 +414,7 @@ export function ClassRankingPanel({
                 {classStudents.length === displayLimit && (
                   <div className="text-center pt-3">
                     <p className="text-xs text-gray-500">
-                      Mostrando top {displayLimit} da turma
+                      Mostrando top {displayLimit} estudantes
                     </p>
                   </div>
                 )}
@@ -795,7 +424,7 @@ export function ClassRankingPanel({
                     <GraduationCap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">Ranking em construção</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Complete o Módulo 1 para aparecer no ranking da turma!
+                      Complete o Módulo 1 para aparecer no ranking!
                     </p>
                     <div className="mt-3 text-xs text-blue-600">
                       🏆 Seja o primeiro a pontuar!

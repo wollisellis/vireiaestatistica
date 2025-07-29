@@ -494,7 +494,7 @@ function JogosPageContent() {
                       if (anonymousId && /^\d{4}$/.test(anonymousId)) {
                         return (
                           <span className="text-xs sm:text-sm text-emerald-700 font-mono font-bold bg-emerald-100 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-emerald-200 shadow-sm">
-                            Anonymous ID: {anonymousId}
+                            ID: {anonymousId}
                           </span>
                         );
                       }

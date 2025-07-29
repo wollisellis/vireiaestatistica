@@ -786,6 +786,68 @@ class UnifiedScoringService {
     }
   }
 
+  // 🌍 NOVO: Buscar ranking de todos os estudantes do sistema
+  async getAllStudentsRanking(limit: number = 100): Promise<any[]> {
+    try {
+      // Buscar todos os usuários com role 'student'
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('role', '==', 'student')
+      )
+      
+      const usersSnapshot = await getDocs(usersQuery)
+      
+      if (usersSnapshot.empty) {
+        console.log('[UnifiedScoringService] Nenhum estudante encontrado no sistema')
+        return []
+      }
+
+      const studentsData = []
+
+      // Para cada estudante, buscar seu score unificado
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data()
+        const studentId = userDoc.id
+
+        // Buscar score unificado
+        const scoreDoc = await getDoc(doc(db, 'unified_scores', studentId))
+        const scoreData = scoreDoc.exists() ? scoreDoc.data() : null
+
+        // Criar objeto do estudante com dados disponíveis
+        const studentInfo = {
+          studentId: studentId,
+          studentName: userData.fullName || userData.name || userData.displayName || 'Estudante',
+          email: userData.email || '',
+          anonymousId: userData.anonymousId || studentId.slice(-4),
+          totalScore: scoreData?.normalizedScore || 0,
+          totalNormalizedScore: scoreData?.normalizedScore || 0,
+          completedModules: scoreData ? Object.values(scoreData.moduleScores || {}).filter((score: any) => score >= 70).length : 0,
+          lastActivity: scoreData?.lastActivity?.toDate?.() || userData.lastActivity?.toDate?.() || new Date(),
+          isCurrentUser: false, // Será definido no componente
+          classRank: 0 // Será calculado após ordenação
+        }
+
+        studentsData.push(studentInfo)
+      }
+
+      // Ordenar por pontuação (maior para menor)
+      studentsData.sort((a, b) => b.totalScore - a.totalScore)
+
+      // Atribuir posições
+      studentsData.forEach((student, index) => {
+        student.classRank = index + 1
+        student.position = index + 1
+      })
+
+      // Limitar resultados
+      return studentsData.slice(0, limit)
+
+    } catch (error) {
+      console.error('[UnifiedScoringService] Erro ao buscar ranking global:', error)
+      return []
+    }
+  }
+
   // Limpar cache
   clearCache() {
     this.cache.clear()
