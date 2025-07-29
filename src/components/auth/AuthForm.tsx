@@ -253,29 +253,6 @@ export function AuthForm() {
                 </div>
               </Button>
 
-              {/* Direct Professor Access - Development */}
-              <Button
-                onClick={() => {
-                  console.log('🚀 Acesso direto como professor...')
-                  localStorage.setItem('selected-role', 'professor')
-                  localStorage.setItem('dev-professor-access', 'true')
-                  window.location.href = '/docente'
-                }}
-                className="w-full h-12 text-left bg-amber-600 hover:bg-amber-700 text-white"
-                size="sm"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <div className="font-medium text-sm leading-tight">Acesso Direto - Docente (Dev)</div>
-                    <div className="text-xs text-amber-100 leading-tight mt-0.5">
-                      Pular login para desenvolvimento
-                    </div>
-                  </div>
-                </div>
-              </Button>
 
               {/* Student Login Option */}
               <Button
@@ -508,6 +485,7 @@ export function AuthForm() {
               {selectedRole === 'professor' && (
                 <div className="border-t border-gray-200 pt-3">
                   <p className="text-xs text-gray-500 mb-2">Precisa se cadastrar como docente?</p>
+                  <p className="text-xs text-gray-400 mb-2">Requer código de verificação especial</p>
                   <a
                     href="/docente/registro"
                     className="text-green-600 hover:text-green-700 text-sm font-medium"

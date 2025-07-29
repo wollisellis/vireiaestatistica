@@ -355,19 +355,8 @@ export function useFirebaseAuth() {
 
       console.log('✅ Autenticação Google bem-sucedida:', { email, role })
 
-      // VALIDAÇÃO RESTRITA DE DOMÍNIO
-      const allowedDomains = ['@dac.unicamp.br', '@unicamp.br']
-      const isValidDomain = allowedDomains.some(domain => email.endsWith(domain))
-
-      if (role === 'student' && !isValidDomain) {
-        console.log('❌ Email não autorizado para estudante:', email)
-        await firebaseSignOut(auth)
-        throw new Error('Estudantes devem usar email institucional @dac.unicamp.br ou @unicamp.br')
-      }
-
-      // Professores podem usar qualquer email (flexibilidade mantida)
-
-      console.log('✅ Domínio de email validado')
+      // Delegando validação para Firestore Rules - permite flexibilidade total
+      console.log('✅ Prosseguindo com validação via Firestore Rules')
 
       // Check if user already exists in Firestore with retry logic
       let userDoc

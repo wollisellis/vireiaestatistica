@@ -46,6 +46,15 @@ service cloud.firestore {
       );
     }
 
+    // Função para verificar se professor foi verificado com código especial
+    function isProfessorVerified() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'professor' &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('verifiedWithCode', false) == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('autoSetup', false) == true);
+    }
+
     // Função para verificar se é estudante
     function isStudent() {
       return hasInstitutionalEmail() && (
@@ -75,7 +84,11 @@ service cloud.firestore {
       allow create: if hasInstitutionalEmail() &&
         request.resource.data.keys().hasAll(['role', 'email']) &&
         request.resource.data.role in ['professor', 'student'] &&
-        request.auth.uid == userId;
+        request.auth.uid == userId &&
+        // Professores devem ter sido verificados com código especial (exceto autoSetup)
+        (request.resource.data.role != 'professor' || 
+         request.resource.data.get('verifiedWithCode', false) == true ||
+         request.resource.data.get('autoSetup', false) == true);
     }
 
     // QUIZ ATTEMPTS - Tentativas de quiz (PROTEÇÃO CRÍTICA)
