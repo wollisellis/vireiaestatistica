@@ -34,7 +34,7 @@ import {
   Trash2
 } from 'lucide-react'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore'
+import { collection, getDocs, query, where, orderBy, doc, writeBatch } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { EnhancedStudentOverview } from '@/types/classes'
 import { enhancedClassService } from '@/services/enhancedClassService'
@@ -428,7 +428,20 @@ export default function DocenteDashboard() {
 
   // 🎯 FUNÇÃO PARA CALCULAR ESTATÍSTICAS
   const calculateStats = useCallback((students: StudentWithRanking[]): AggregatedStats => {
+    console.log(`[calculateStats] 🔍 Debug ranking - Total de estudantes recebidos:`, {
+      totalStudents: students.length,
+      studentIds: students.map(s => s.studentId),
+      studentsWithScores: students.filter(s => (s.totalScore || 0) > 0).length,
+      topStudentsPreview: students.slice(0, 5).map(s => ({
+        id: s.studentId,
+        name: s.studentName,
+        score: s.totalScore,
+        rank: s.rank
+      }))
+    })
+
     if (students.length === 0) {
+      console.log(`[calculateStats] ⚠️ Nenhum estudante encontrado para calcular estatísticas`)
       return {
         totalStudents: 0,
         activeStudents: 0,
@@ -451,13 +464,27 @@ export default function DocenteDashboard() {
     const totalTime = students.reduce((sum, s) => sum + (s.totalTimeSpent || 0), 0)
     
     const completedStudents = students.filter(s => (s.overallProgress || 0) >= 100).length
+    const topPerformers = students.slice(0, 5)
+    
+    console.log(`[calculateStats] 📊 Estatísticas calculadas:`, {
+      totalStudents,
+      activeStudents,
+      topPerformersCount: topPerformers.length,
+      avgScore: totalStudents > 0 ? totalScore / totalStudents : 0,
+      completionRate: totalStudents > 0 ? (completedStudents / totalStudents) * 100 : 0,
+      topPerformersDetails: topPerformers.map(s => ({
+        name: s.studentName,
+        score: s.totalScore,
+        progress: s.overallProgress
+      }))
+    })
     
     return {
       totalStudents,
       activeStudents,
       avgProgress: totalStudents > 0 ? totalProgress / totalStudents : 0,
       avgScore: totalStudents > 0 ? totalScore / totalStudents : 0,
-      topPerformers: students.slice(0, 5),
+      topPerformers,
       completionRate: totalStudents > 0 ? (completedStudents / totalStudents) * 100 : 0,
       totalTimeSpent: totalTime
     }
@@ -590,29 +617,77 @@ export default function DocenteDashboard() {
   // 🎯 FUNÇÃO PARA REMOVER ESTUDANTE
   const handleRemoveStudent = useCallback(async (studentId: string, studentName: string) => {
     // Confirmar exclusão
-    const confirmMessage = `Tem certeza que deseja remover o estudante "${studentName}"?\n\nEsta ação não pode ser desfeita.`
+    const confirmMessage = `Tem certeza que deseja remover o estudante "${studentName}"?\n\nEsta ação não pode ser desfeita e removerá:\n\n- Matrícula em todas as turmas\n- Progresso nos módulos\n- Pontuações e rankings\n\nDeseja continuar?`
     if (!window.confirm(confirmMessage)) {
       return
     }
 
     try {
-      console.log(`🗑️ Removendo estudante ${studentId} (${studentName})...`)
+      console.log(`🗑️ Iniciando remoção do estudante ${studentId} (${studentName})...`)
       
-      // Aqui você pode implementar a lógica de remoção
-      // Por enquanto, vamos apenas mostrar um alerta
-      alert(`Funcionalidade de remoção em desenvolvimento.\n\nEstudante: ${studentName}\nID: ${studentId}`)
+      // 1. Buscar todas as turmas onde o estudante está matriculado
+      const classStudentsQuery = query(
+        collection(db, 'classStudents'),
+        where('studentId', '==', studentId)
+      )
+      const classStudentsSnapshot = await getDocs(classStudentsQuery)
       
-      // TODO: Implementar a chamada ao serviço de remoção
-      // await enhancedClassService.removeStudentFromClass(classId, studentId)
+      console.log(`📚 Encontradas ${classStudentsSnapshot.docs.length} matrículas para remover`)
       
-      // Recarregar dados após remoção
-      // handleRefresh()
+      // 2. Remover das coleções em batch
+      const batch = writeBatch(db)
+      let operationsCount = 0
+      
+      // Remover de classStudents
+      classStudentsSnapshot.docs.forEach(docRef => {
+        batch.delete(docRef.ref)
+        operationsCount++
+        console.log(`🗑️ Agendando remoção de classStudents: ${docRef.id}`)
+      })
+      
+      // 3. Remover unified_scores
+      const unifiedScoreRef = doc(db, 'unified_scores', studentId)
+      batch.delete(unifiedScoreRef)
+      operationsCount++
+      console.log(`🗑️ Agendando remoção de unified_scores: ${studentId}`)
+      
+      // 4. Remover student_module_progress
+      const moduleProgressQuery = query(
+        collection(db, 'student_module_progress'),
+        where('studentId', '==', studentId)
+      )
+      const moduleProgressSnapshot = await getDocs(moduleProgressQuery)
+      moduleProgressSnapshot.docs.forEach(docRef => {
+        batch.delete(docRef.ref)
+        operationsCount++
+      })
+      console.log(`📊 Agendando remoção de ${moduleProgressSnapshot.docs.length} registros de progresso`)
+      
+      // 5. Executar batch de remoções
+      console.log(`⚡ Executando ${operationsCount} operações de remoção...`)
+      await batch.commit()
+      
+      console.log(`✅ Estudante ${studentName} removido com sucesso do sistema`)
+      
+      // 6. Atualizar a lista local removendo o estudante
+      setStudents(prevStudents => {
+        const updatedStudents = prevStudents.filter(s => s.studentId !== studentId)
+        
+        // Recalcular estatísticas com a nova lista
+        const newStats = calculateStats(updatedStudents)
+        setStats(newStats)
+        
+        return updatedStudents
+      })
+      
+      // 7. Mostrar confirmação
+      alert(`✅ Estudante "${studentName}" foi removido com sucesso do sistema.`)
       
     } catch (error) {
       console.error('❌ Erro ao remover estudante:', error)
-      alert('Erro ao remover estudante. Tente novamente.')
+      alert(`❌ Erro ao remover estudante "${studentName}". Detalhes: ${error.message || 'Erro desconhecido'}`)
     }
-  }, [])
+  }, [calculateStats])
 
   // 🎯 DEBOUNCED SEARCH para otimizar performance
   const [debouncedSearch, setDebouncedSearch] = useState(filters.search)
@@ -1033,6 +1108,23 @@ export default function DocenteDashboard() {
                       index={index}
                     />
                   ))}
+                  
+                  {/* Indicador quando há menos de 5 estudantes */}
+                  {stats.topPerformers.length < 5 && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center space-x-2 text-sm text-blue-700">
+                        <Users className="w-4 h-4" />
+                        <span className="font-medium">
+                          Mostrando {stats.topPerformers.length} de {stats.totalStudents} estudantes
+                        </span>
+                      </div>
+                      {stats.totalStudents > stats.topPerformers.length && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Apenas estudantes com pontuação são exibidos no ranking
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

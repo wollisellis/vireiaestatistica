@@ -924,7 +924,12 @@ export class EnhancedClassService {
         studentId: unifiedScore.studentId,
         moduleScoresKeys: Object.keys(moduleScores),
         moduleScoresValues: moduleScores,
-        moduleScoresType: typeof moduleScores
+        moduleScoresType: typeof moduleScores,
+        unifiedScoreStructure: {
+          hasModuleScores: !!unifiedScore.moduleScores,
+          moduleScoresType: typeof unifiedScore.moduleScores,
+          keysCount: Object.keys(moduleScores).length
+        }
       })
 
       // ✅ CORREÇÃO: Usar a maior pontuação (bestScore ou score)
@@ -935,19 +940,32 @@ export class EnhancedClassService {
       }, 0)
 
       // ✅ CORREÇÃO: Contar módulos completados baseado na maior pontuação
-      completedModules = Object.values(moduleScores).filter((score: any) => {
+      console.log(`[consolidateStudentMetrics] 🎯 Iniciando contagem de módulos completados para estudante: ${unifiedScore.studentId}`)
+      
+      const moduleEntries = Object.entries(moduleScores)
+      console.log(`[consolidateStudentMetrics] 📋 Total de módulos para verificar: ${moduleEntries.length}`, moduleEntries)
+      
+      completedModules = Object.values(moduleScores).filter((score: any, index: number) => {
+        const moduleEntry = moduleEntries[index]
+        const moduleId = moduleEntry[0]
         const currentScore = score.score || score || 0;
         const bestScore = score.bestScore || currentScore;
         const finalScore = Math.max(currentScore, bestScore);
-        console.log(`[consolidateStudentMetrics] 🎯 Verificando módulo:`, {
-          scoreValue: score,
+        const isCompleted = finalScore >= 70
+        
+        console.log(`[consolidateStudentMetrics] 🔍 Módulo ${moduleId}:`, {
+          rawScore: score,
           currentScore,
           bestScore,
           finalScore,
-          isCompleted: finalScore >= 70
+          isCompleted,
+          threshold: 70
         })
-        return finalScore >= 70; // Módulo completo se pontuação >= 70
+        
+        return isCompleted; // Módulo completo se pontuação >= 70
       }).length
+      
+      console.log(`[consolidateStudentMetrics] ✅ Resultado final: ${completedModules} módulos completados de ${moduleEntries.length} módulos total`)
 
       overallProgress = unifiedScore.normalizedScore || 0
     } else {
