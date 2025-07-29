@@ -30,7 +30,8 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  BarChart3
+  BarChart3,
+  Trash2
 } from 'lucide-react'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore'
@@ -586,6 +587,33 @@ export default function DocenteDashboard() {
     }
   }, [fetchAllStudents, calculateStats])
 
+  // 🎯 FUNÇÃO PARA REMOVER ESTUDANTE
+  const handleRemoveStudent = useCallback(async (studentId: string, studentName: string) => {
+    // Confirmar exclusão
+    const confirmMessage = `Tem certeza que deseja remover o estudante "${studentName}"?\n\nEsta ação não pode ser desfeita.`
+    if (!window.confirm(confirmMessage)) {
+      return
+    }
+
+    try {
+      console.log(`🗑️ Removendo estudante ${studentId} (${studentName})...`)
+      
+      // Aqui você pode implementar a lógica de remoção
+      // Por enquanto, vamos apenas mostrar um alerta
+      alert(`Funcionalidade de remoção em desenvolvimento.\n\nEstudante: ${studentName}\nID: ${studentId}`)
+      
+      // TODO: Implementar a chamada ao serviço de remoção
+      // await enhancedClassService.removeStudentFromClass(classId, studentId)
+      
+      // Recarregar dados após remoção
+      // handleRefresh()
+      
+    } catch (error) {
+      console.error('❌ Erro ao remover estudante:', error)
+      alert('Erro ao remover estudante. Tente novamente.')
+    }
+  }, [])
+
   // 🎯 DEBOUNCED SEARCH para otimizar performance
   const [debouncedSearch, setDebouncedSearch] = useState(filters.search)
   
@@ -765,6 +793,23 @@ export default function DocenteDashboard() {
             <Clock className="w-3 h-3" />
             <span>{new Date(student.lastActivity).toLocaleDateString('pt-BR')}</span>
           </div>
+        </div>
+      )
+    },
+    {
+      key: 'actions',
+      label: 'Ações',
+      render: (student: StudentWithRanking) => (
+        <div className="flex items-center justify-center">
+          <Button
+            onClick={() => handleRemoveStudent(student.studentId, student.studentName)}
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            title="Remover estudante"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
       )
     }

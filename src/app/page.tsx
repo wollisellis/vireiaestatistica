@@ -73,7 +73,7 @@ function LoginPageContent() {
                 }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
               >
-                Acessar como Professor
+                Acessar como Docente
               </button>
               
               <button

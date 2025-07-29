@@ -203,7 +203,7 @@ export default function ProfessorDashboardPage() {
               </p>
               <div className="space-y-3">
                 <Button className="w-full">
-                  Fazer Login como Professor
+                  Fazer Login como Docente
                 </Button>
                 <Button variant="outline" className="w-full">
                   Solicitar Acesso
@@ -387,7 +387,7 @@ export default function ProfessorDashboardPage() {
                   <GraduationCap className="w-8 h-8 text-indigo-600" />
                   <div>
                     <h1 className="text-lg sm:text-xl font-bold text-gray-900">AvaliaNutri</h1>
-                    <p className="text-xs text-gray-600 hidden sm:block">Dashboard do Professor</p>
+                    <p className="text-xs text-gray-600 hidden sm:block">Dashboard do Docente</p>
                   </div>
                 </div>
                 <Badge variant="info" className="hidden lg:inline-flex">
@@ -401,8 +401,8 @@ export default function ProfessorDashboardPage() {
                   <span>Bem-vindo,</span>
                   <span className="font-medium">
                     {user.fullName ? 
-                      `Prof. ${user.fullName.split(' ')[0]}` : 
-                      'Professor'
+                      `Doc. ${user.fullName.split(' ')[0]}` : 
+                      'Docente'
                     }
                   </span>
                 </div>
@@ -455,7 +455,7 @@ export default function ProfessorDashboardPage() {
                 <div className="space-y-3">
                   <div className="text-sm text-gray-600">
                     Bem-vindo, <span className="font-medium">
-                      {user.fullName ? `Prof. ${user.fullName.split(' ')[0]}` : 'Professor'}
+                      {user.fullName ? `Doc. ${user.fullName.split(' ')[0]}` : 'Docente'}
                     </span>
                   </div>
                   
@@ -564,7 +564,7 @@ export default function ProfessorDashboardPage() {
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                           <div className="flex-1">
                             <h2 className="text-xl sm:text-2xl font-bold mb-2">
-                              Bem-vindo ao Dashboard do Professor!
+                              Bem-vindo ao Dashboard do Docente!
                             </h2>
                             <p className="text-sm sm:text-base text-indigo-100">
                               Gerencie suas turmas, monitore o progresso dos estudantes e configure módulos.
@@ -939,7 +939,7 @@ export default function ProfessorDashboardPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="text-center text-gray-500 text-sm">
               <p>
-                AvaliaNutri - Dashboard do Professor
+                AvaliaNutri - Dashboard do Docente
                 <br />
                 UNICAMP - Faculdade de Ciências da Saúde - Desenvolvido por Ellis Abhulime
               </p>

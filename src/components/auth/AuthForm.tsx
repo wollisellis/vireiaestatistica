@@ -245,7 +245,7 @@ export function AuthForm() {
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex flex-col justify-center">
-                    <div className="font-semibold text-base leading-tight">Entrar como Professor</div>
+                    <div className="font-semibold text-base leading-tight">Entrar como Docente</div>
                     <div className="text-sm text-blue-100 leading-tight mt-0.5">
                       Acesso ao dashboard administrativo
                     </div>
@@ -269,7 +269,7 @@ export function AuthForm() {
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex flex-col justify-center">
-                    <div className="font-medium text-sm leading-tight">Acesso Direto - Professor (Dev)</div>
+                    <div className="font-medium text-sm leading-tight">Acesso Direto - Docente (Dev)</div>
                     <div className="text-xs text-amber-100 leading-tight mt-0.5">
                       Pular login para desenvolvimento
                     </div>
@@ -321,12 +321,12 @@ export function AuthForm() {
                 Voltar às opções
               </button>
               <h1 className="text-2xl font-bold text-gray-900">
-                {isSignUp ? 'Criar Conta' : 'Entrar'} - {selectedRole === 'professor' ? 'Professor' : 'Estudante'}
+                {isSignUp ? 'Criar Conta' : 'Entrar'} - {selectedRole === 'professor' ? 'Docente' : 'Estudante'}
               </h1>
               <p className="text-gray-600 mt-2">
                 {isSignUp
-                  ? `Crie sua conta de ${selectedRole === 'professor' ? 'professor' : 'estudante'}`
-                  : `Entre com sua conta de ${selectedRole === 'professor' ? 'professor' : 'estudante'}`
+                  ? `Crie sua conta de ${selectedRole === 'professor' ? 'docente' : 'estudante'}`
+                  : `Entre com sua conta de ${selectedRole === 'professor' ? 'docente' : 'estudante'}`
                 }
               </p>
             </div>
@@ -398,7 +398,7 @@ export function AuthForm() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="student">Estudante</SelectItem>
-                        <SelectItem value="professor">Professor</SelectItem>
+                        <SelectItem value="professor">Docente</SelectItem>
                       </SelectContent>
                     </Select>
                     <input type="hidden" {...register('role')} value={selectedRole} />
@@ -507,12 +507,12 @@ export function AuthForm() {
 
               {selectedRole === 'professor' && (
                 <div className="border-t border-gray-200 pt-3">
-                  <p className="text-xs text-gray-500 mb-2">Precisa se cadastrar como professor?</p>
+                  <p className="text-xs text-gray-500 mb-2">Precisa se cadastrar como docente?</p>
                   <a
                     href="/professor/registro"
                     className="text-green-600 hover:text-green-700 text-sm font-medium"
                   >
-                    Cadastre-se como Professor
+                    Cadastre-se como Docente
                   </a>
                 </div>
               )}
