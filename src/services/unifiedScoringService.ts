@@ -387,15 +387,32 @@ class UnifiedScoringService {
     return moduleAverage * 0.8 + gameAverage * 0.2
   }
 
-  // Calcular pontuação normalizada (0-100)
-  private calculateNormalizedScore(score: UnifiedScore): number {
-    // Para sistema educacional, usar diretamente a média das pontuações dos módulos
-    const moduleScores = Object.values(score.moduleScores)
-    if (moduleScores.length === 0) return 0
+  // 🚀 CORREÇÃO: Calcular pontuação normalizada (0-100) COM PESOS DOS MÓDULOS
+  // Agora usa os mesmos pesos do calculateTotalScore para consistência no ranking
+  private calculateNormalizedScore(score: UnifiedScore, moduleWeights?: Record<string, number>): number {
+    const moduleScores = score.moduleScores
+    if (Object.keys(moduleScores).length === 0) return 0
 
-    // Calcular média das pontuações dos módulos (já estão em escala 0-100)
-    const averageModuleScore = moduleScores.reduce((sum, s) => sum + s, 0) / moduleScores.length
-    return Math.min(100, Math.max(0, averageModuleScore))
+    // Usar os mesmos pesos do calculateTotalScore para consistência
+    const weights = moduleWeights || {
+      'module-1': 70,
+      'module-2': 30,
+      'module-3': 100,
+      'module-4': 100
+    }
+
+    // Calcular média ponderada dos módulos (igual ao totalScore mas sem jogos)
+    let totalWeightedScore = 0
+    let totalWeight = 0
+
+    Object.entries(moduleScores).forEach(([moduleId, moduleScore]) => {
+      const weight = weights[moduleId] || 100
+      totalWeightedScore += (moduleScore * weight) / 100 // Normalizar pelo peso
+      totalWeight += weight
+    })
+
+    const normalizedScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0
+    return Math.min(100, Math.max(0, normalizedScore))
   }
 
   // Calcular nível baseado na pontuação (escala 0-100)

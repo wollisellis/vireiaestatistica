@@ -197,10 +197,10 @@ export default function Module2QuizPage() {
     };
   }, [hasStarted, isComplete, startTime, timerEnabled, timeLimit]);
 
-  const initializeQuiz = async () => {
+  const initializeQuiz = async (forceNewQuiz = false) => {
     try {
-      // Verificar se já existe tentativa anterior
-      if (user?.uid) {
+      // Verificar se já existe tentativa anterior (apenas se não estiver forçando novo quiz)
+      if (!forceNewQuiz && user?.uid) {
         const attemptsQuery = query(
           collection(db, 'quiz_attempts'),
           where('studentId', '==', user.uid),
@@ -217,6 +217,20 @@ export default function Module2QuizPage() {
           setShowResults(true);
           const data = snapshot.docs[0].data();
           setScore(data.percentage || 0);
+          // Restaurar tempo e feedback corretos dos dados salvos
+          setTimeElapsed(data.timeSpent || 0);
+          const correctAnswers = data.correctAnswers || 0;
+          const totalQuestions = data.questionsAnswered || 4;
+          // Criar feedback fictício para exibir corretamente os acertos
+          const mockFeedback: Record<string, 'correct' | 'incorrect'> = {};
+          for (let i = 0; i < correctAnswers; i++) {
+            mockFeedback[`q${i}`] = 'correct';
+          }
+          for (let i = correctAnswers; i < totalQuestions; i++) {
+            mockFeedback[`q${i}`] = 'incorrect';
+          }
+          setFeedback(mockFeedback);
+          return;
         }
       }
 
@@ -439,7 +453,8 @@ export default function Module2QuizPage() {
     setStartTime(null);
     setSelectedItem(null);
     setHoveredZone(null);
-    initializeQuiz();
+    // Forçar novo quiz ao tentar novamente
+    initializeQuiz(true);
   };
 
   const formatTime = (seconds: number): string => {
@@ -880,7 +895,7 @@ export default function Module2QuizPage() {
                                 )}
                               </div>
                               {gameMode === 'descToName' && (
-                                <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                <p className="text-xs text-gray-600 mt-1">
                                   {item.description}
                                 </p>
                               )}

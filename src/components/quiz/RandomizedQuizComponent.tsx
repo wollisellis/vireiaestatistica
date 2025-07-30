@@ -21,7 +21,8 @@ import {
   AlertCircle,
   Lightbulb,
   Home,
-  LogOut
+  LogOut,
+  Star
 } from 'lucide-react';
 import { RandomizedQuiz, QuizAttempt, ProgressReport } from '@/types/randomizedQuiz';
 import { RandomizedQuizService } from '@/services/randomizedQuizService';
@@ -31,6 +32,16 @@ import { useAuth } from '@/hooks/useHybridAuth';
 // 🎯 Função utilitária para capitalizar categorias de forma consistente
 const capitalizeCategory = (category: string): string => {
   return category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
+// 🎯 Função para calcular estrelas baseada na pontuação (padronizado com outros módulos)
+const getStarsFromScore = (score: number): number => {
+  if (score >= 90) return 5;
+  if (score >= 75) return 4;
+  if (score >= 60) return 3;
+  if (score >= 40) return 2;
+  if (score >= 20) return 1;
+  return 0;
 }
 
 // Componente Progress inline para evitar problemas de import
@@ -353,6 +364,18 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
                 <div className="text-2xl font-bold text-orange-600">#{progressReport.summary.attemptNumber}</div>
                 <div className="text-sm text-gray-600">Tentativa</div>
               </div>
+            </div>
+
+            {/* ⭐ SISTEMA DE ESTRELAS (PADRONIZADO) */}
+            <div className="flex justify-center items-center space-x-2 mb-4">
+              {Array.from({ length: getStarsFromScore(results.percentage) }, (_, i) => (
+                <Star key={i} className="w-5 h-5 text-yellow-500 fill-current" />
+              ))}
+              {getStarsFromScore(results.percentage) > 0 && (
+                <span className="text-sm text-gray-500 ml-2">
+                  ({getStarsFromScore(results.percentage)}/5 estrelas)
+                </span>
+              )}
             </div>
 
             {/* Badge de aprovação */}

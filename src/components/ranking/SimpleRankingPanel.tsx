@@ -147,7 +147,35 @@ export function SimpleRankingPanel({
           const userDoc = await getDoc(doc(db, 'users', studentId));
           const userData = userDoc.exists() ? userDoc.data() : {};
 
-          const avgScore = attempts.reduce((sum, attempt) => sum + (attempt.percentage || 0), 0) / attempts.length;
+          // Agrupar tentativas por módulo e calcular pontuação ponderada
+          const moduleScores: { [moduleId: string]: number } = {};
+          attempts.forEach(attempt => {
+            const moduleId = attempt.moduleId;
+            if (moduleId && !moduleScores[moduleId]) {
+              moduleScores[moduleId] = attempt.percentage || 0;
+            } else if (moduleId && moduleScores[moduleId] < (attempt.percentage || 0)) {
+              // Manter a melhor pontuação do módulo
+              moduleScores[moduleId] = attempt.percentage || 0;
+            }
+          });
+
+          // Aplicar pesos dos módulos (consistente com unifiedScoringService)
+          const moduleWeights = {
+            'module-1': 70,
+            'module-2': 30,
+            'module-3': 100,
+            'module-4': 100
+          };
+
+          let totalWeightedScore = 0;
+          let totalWeight = 0;
+          Object.entries(moduleScores).forEach(([moduleId, score]) => {
+            const weight = moduleWeights[moduleId] || 100;
+            totalWeightedScore += (score * weight) / 100;
+            totalWeight += weight;
+          });
+
+          const avgScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
 
           studentsData.push({
             studentId: studentId,

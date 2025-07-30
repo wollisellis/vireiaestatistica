@@ -206,14 +206,14 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             <div className="flex-1 min-w-0 space-y-2">
               {/* Título com quebra controlada */}
               <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100 leading-tight max-w-[200px]">
-                Introdução à Avaliação Nutricional
+                {module.title}
               </h3>
 
               {/* Microcopy com tempo estimado */}
               <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                 <div className="flex items-center space-x-1">
                   <Clock className="w-4 h-4" />
-                  <span>10-15 min</span>
+                  <span>{module.estimatedTime}</span>
                 </div>
 
                 {/* Última atividade como microcopy */}

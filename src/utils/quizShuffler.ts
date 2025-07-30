@@ -163,12 +163,22 @@ export class QuizShuffler {
     const medium = questions.filter(q => q.difficulty === 'medium');
     const hard = questions.filter(q => q.difficulty === 'hard');
 
-    // Distribuição sugerida para 7 questões: 3 fáceis, 3 médias, 1 difícil
-    const distribution = {
-      easy: Math.ceil(count * 0.43), // ~3 questões
-      medium: Math.ceil(count * 0.43), // ~3 questões  
-      hard: Math.floor(count * 0.14) // ~1 questão
-    };
+    // Distribuição fixa para garantir exatamente o número correto de questões
+    const distribution = (() => {
+      if (count === 7) {
+        // Distribuição específica para 7 questões: 3 fáceis, 3 médias, 1 difícil
+        return { easy: 3, medium: 3, hard: 1 };
+      } else if (count === 4) {
+        // Distribuição específica para 4 questões (módulo 2): 2 fáceis, 1 média, 1 difícil
+        return { easy: 2, medium: 1, hard: 1 };
+      } else {
+        // Distribuição padrão proporcional para outros casos
+        const easyCount = Math.floor(count * 0.4);
+        const hardCount = Math.floor(count * 0.2);
+        const mediumCount = count - easyCount - hardCount;
+        return { easy: easyCount, medium: mediumCount, hard: hardCount };
+      }
+    })();
 
     const selected: BankQuestion[] = [];
 
