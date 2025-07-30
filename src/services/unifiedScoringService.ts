@@ -786,6 +786,117 @@ class UnifiedScoringService {
     }
   }
 
+  // 🎓 NOVO: Buscar ranking de estudantes de uma turma específica
+  async getClassRanking(classId: string, limit: number = 100): Promise<any[]> {
+    try {
+      console.log(`[UnifiedScoringService] 🔍 Buscando ranking da turma ${classId}...`);
+
+      // 1. Buscar todos os estudantes matriculados na turma
+      const enrollmentsQuery = query(
+        collection(db, 'classStudents'),
+        where('classId', '==', classId),
+        where('isActive', '==', true)
+      );
+      
+      const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
+      
+      if (enrollmentsSnapshot.empty) {
+        console.log(`[UnifiedScoringService] ❌ Nenhum estudante matriculado na turma ${classId}`);
+        return [];
+      }
+
+      console.log(`[UnifiedScoringService] 👥 Encontrados ${enrollmentsSnapshot.size} estudantes matriculados`);
+
+      const studentsData = [];
+
+      // 2. Para cada estudante matriculado, buscar seus dados
+      for (const enrollmentDoc of enrollmentsSnapshot.docs) {
+        const enrollmentData = enrollmentDoc.data();
+        const studentId = enrollmentData.studentId;
+
+        try {
+          // Buscar dados do usuário
+          const userDoc = await getDoc(doc(db, 'users', studentId));
+          if (!userDoc.exists()) continue;
+
+          const userData = userDoc.data();
+          
+          let studentScore = 0;
+          let completedModules = 0;
+          let lastActivity = userData.lastActivity?.toDate?.() || new Date();
+
+          // Buscar score unificado
+          const scoreDoc = await getDoc(doc(db, 'unified_scores', studentId));
+          
+          if (scoreDoc.exists()) {
+            const scoreData = scoreDoc.data();
+            studentScore = scoreData.normalizedScore || 0;
+            completedModules = Object.values(scoreData.moduleScores || {}).filter((score: any) => score >= 70).length;
+            lastActivity = scoreData.lastActivity?.toDate?.() || lastActivity;
+          } else {
+            // Fallback para quiz_attempts
+            const attemptsQuery = query(
+              collection(db, 'quiz_attempts'),
+              where('studentId', '==', studentId),
+              where('passed', '==', true)
+            );
+            
+            const attemptsSnapshot = await getDocs(attemptsQuery);
+            
+            if (!attemptsSnapshot.empty) {
+              const scores = attemptsSnapshot.docs.map(doc => doc.data().percentage || 0);
+              studentScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+              completedModules = new Set(attemptsSnapshot.docs.map(doc => doc.data().moduleId)).size;
+            }
+          }
+
+          const studentInfo = {
+            studentId: studentId,
+            studentName: userData.fullName || userData.name || userData.displayName || 'Estudante',
+            fullName: userData.fullName || userData.name || userData.displayName || 'Estudante',
+            email: userData.email || '',
+            anonymousId: userData.anonymousId || studentId.slice(-4),
+            totalScore: Math.round(studentScore),
+            totalNormalizedScore: Math.round(studentScore),
+            completedModules: completedModules,
+            lastActivity: lastActivity,
+            isCurrentUser: false,
+            classRank: 0,
+            position: 0,
+            enrolledAt: enrollmentData.enrolledAt?.toDate?.() || new Date()
+          };
+
+          studentsData.push(studentInfo);
+
+        } catch (studentError) {
+          console.error(`[UnifiedScoringService] ❌ Erro ao processar estudante ${studentId}:`, studentError);
+        }
+      }
+
+      console.log(`[UnifiedScoringService] 📊 Total de estudantes processados: ${studentsData.length}`);
+
+      // Ordenar por pontuação
+      studentsData.sort((a, b) => b.totalScore - a.totalScore);
+
+      // Atribuir posições
+      studentsData.forEach((student, index) => {
+        student.classRank = index + 1;
+        student.position = index + 1;
+      });
+
+      // Limitar resultados
+      const limitedResults = studentsData.slice(0, limit);
+      
+      console.log(`[UnifiedScoringService] 🏆 Ranking da turma: ${limitedResults.length} estudantes`);
+      
+      return limitedResults;
+
+    } catch (error) {
+      console.error('[UnifiedScoringService] ❌ Erro ao buscar ranking da turma:', error);
+      return [];
+    }
+  }
+
   // 🌍 NOVO: Buscar ranking de todos os estudantes do sistema (OTIMIZADO)
   async getAllStudentsRanking(limit: number = 100): Promise<any[]> {
     try {

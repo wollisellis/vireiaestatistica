@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/Badge';
 import { isRecentActivity } from '@/utils/dateUtils';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import unifiedScoringService from '@/services/unifiedScoringService';
+import ProfessorClassService from '@/services/professorClassService';
 
 interface ClassStudent {
   studentId: string;
@@ -129,8 +130,27 @@ export function ClassRankingPanel({
 
       console.log('[ClassRankingPanel] 🔍 Carregando dados do ranking...');
 
-      // 🌍 SISTEMA GLOBAL OTIMIZADO: Buscar todos os estudantes do sistema
-      const studentsData = await unifiedScoringService.getAllStudentsRanking(displayLimit * 2); // Buscar mais dados para melhor seleção
+      // 🏫 NOVO: Buscar ranking baseado em turma
+      let studentsData = [];
+      
+      // Se é estudante, buscar a turma em que está matriculado
+      if (user.role === 'student') {
+        const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
+        
+        if (studentClasses.length > 0) {
+          // Usar a primeira turma ativa
+          const classId = studentClasses[0].id;
+          console.log(`[ClassRankingPanel] 🏫 Estudante matriculado na turma ${classId}`);
+          studentsData = await unifiedScoringService.getClassRanking(classId, displayLimit * 2);
+        } else {
+          console.log('[ClassRankingPanel] ⚠️ Estudante não matriculado em nenhuma turma');
+          setError('Você precisa estar matriculado em uma turma');
+          return;
+        }
+      } else if (user.role === 'professor') {
+        // Para professores, ainda mostrar ranking global por enquanto
+        studentsData = await unifiedScoringService.getAllStudentsRanking(displayLimit * 2);
+      }
       
       console.log('[ClassRankingPanel] 📊 Dados recebidos:', studentsData?.length || 0, 'estudantes');
 
@@ -218,7 +238,7 @@ export function ClassRankingPanel({
                 🏆 Carregando Ranking...
               </h3>
               <p className="text-sm text-gray-600 mt-1">
-                Buscando dados da turma
+                Buscando ranking da turma
               </p>
             </div>
           </div>
@@ -281,7 +301,7 @@ export function ClassRankingPanel({
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-bold text-gray-900 text-base">
-                🏆 Ranking Geral
+                🏆 Ranking da Turma
               </h3>
             </div>
           </div>

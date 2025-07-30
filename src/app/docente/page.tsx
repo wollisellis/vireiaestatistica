@@ -283,7 +283,21 @@ export default function DocenteDashboard() {
 
   // 🎯 FUNÇÃO PRINCIPAL PARA BUSCAR DADOS COM ERROR HANDLING ROBUSTO
   const fetchAllStudents = useCallback(async (useCache = true, attempt = 1): Promise<StudentWithRanking[]> => {
-    const cacheKey = 'all-students-data'
+    // 🔒 CORREÇÃO: Verificar se há usuário logado
+    if (!user) {
+      console.warn('❌ Nenhum usuário logado, não é possível buscar turmas')
+      setError('Você precisa estar logado como professor')
+      return []
+    }
+
+    const professorId = user.uid || user.id
+    if (!professorId) {
+      console.warn('❌ ID do professor não disponível')
+      setError('ID do professor não encontrado')
+      return []
+    }
+
+    const cacheKey = `professor-${professorId}-students-data`
     
     if (useCache) {
       const cached = cacheManager.get<StudentWithRanking[]>(cacheKey)
@@ -294,7 +308,7 @@ export default function DocenteDashboard() {
       }
     }
 
-    console.log(`🔄 Buscando dados atualizados do Firebase... (Tentativa ${attempt}/${MAX_RETRY_ATTEMPTS})`)
+    console.log(`🔄 Buscando dados das turmas do professor ${professorId}... (Tentativa ${attempt}/${MAX_RETRY_ATTEMPTS})`)
     
     try {
       // Validar Firebase
@@ -302,7 +316,7 @@ export default function DocenteDashboard() {
         throw new Error('Conexão com Firebase não disponível')
       }
 
-      // Buscar todas as turmas ativas com timeout
+      // 🔒 CORREÇÃO: Buscar apenas turmas do professor logado
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Timeout: Operação demorou mais de 30 segundos')), 30000)
       )
@@ -310,6 +324,7 @@ export default function DocenteDashboard() {
       const fetchPromise = getDocs(
         query(
           collection(db, 'classes'),
+          where('professorId', '==', professorId), // 🔒 FILTRO ADICIONADO
           where('status', 'in', ['active', 'open', 'closed'])
         )
       )
@@ -405,7 +420,7 @@ export default function DocenteDashboard() {
       setRetryCount(attempt)
       return []
     }
-  }, [])
+  }, [user]) // 🔒 CORREÇÃO: Adicionada dependência do user
   
   // 🎯 FUNÇÃO HELPER PARA DETERMINAR SE DEVE TENTAR NOVAMENTE
   const shouldRetry = useCallback((error: any): boolean => {
@@ -1011,7 +1026,7 @@ export default function DocenteDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard Docente</h1>
-          <p className="text-gray-600 mt-1">Visão unificada de todos os estudantes da plataforma</p>
+          <p className="text-gray-600 mt-1">Visão das suas turmas e estudantes</p>
         </div>
         
         <Button
@@ -1030,7 +1045,7 @@ export default function DocenteDashboard() {
         <StatsCard
           title="Total de Estudantes"
           value={stats?.totalStudents || 0}
-          subtitle="em toda a plataforma"
+          subtitle="nas suas turmas"
           gradient="bg-gradient-to-r from-blue-500 to-blue-600"
           icon={<Users className="w-4 h-4 mr-2" />}
         />

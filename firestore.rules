@@ -111,16 +111,29 @@ service cloud.firestore {
       allow read, write, create, update, delete: if isAuthenticated();
     }
 
-    // CLASSES - Turmas (CONTROLE TEMPORÁRIO MAIS PERMISSIVO)
+    // CLASSES - Turmas (CONTROLE COM ISOLAMENTO POR PROFESSOR)
     match /classes/{classId} {
-      // ✅ Todos os usuários autenticados podem ler turmas
-      allow read: if isAuthenticated();
+      // ✅ Professores podem ler suas próprias turmas
+      allow read: if isProfessor() && 
+        (resource.data.professorId == request.auth.uid ||
+         // Permitir leitura de turmas públicas/abertas
+         resource.data.get('visibility', 'private') == 'public');
       
-      // ✅ Professores podem gerenciar todas as turmas (temporário)
-      allow write, delete, create: if isProfessor();
+      // ✅ Estudantes podem ler turmas em que estão matriculados
+      allow read: if isStudent() && 
+        exists(/databases/$(database)/documents/classStudents/$(request.auth.uid + '_' + classId));
       
-      // ✅ Usuários autenticados podem criar turmas (temporário para debugging)
-      allow create: if isAuthenticated();
+      // ✅ Professores podem criar suas próprias turmas
+      allow create: if isProfessor() &&
+        request.resource.data.professorId == request.auth.uid;
+      
+      // ✅ Professores podem editar apenas suas próprias turmas
+      allow update: if isProfessor() &&
+        resource.data.professorId == request.auth.uid;
+        
+      // ✅ Professores podem deletar apenas suas próprias turmas
+      allow delete: if isProfessor() &&
+        resource.data.professorId == request.auth.uid;
     }
 
     // CLASS STUDENTS - Matrículas (CONTROLE OTIMIZADO)

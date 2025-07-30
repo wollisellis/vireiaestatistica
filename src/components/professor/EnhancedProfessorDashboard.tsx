@@ -53,16 +53,17 @@ export function EnhancedProfessorDashboard({
           return
         }
 
-        // Todos os professores podem ver todas as turmas
+        // 🔒 CORREÇÃO: Buscar apenas turmas do professor logado
         const classesQuery = query(
           collection(db, 'classes'),
+          where('professorId', '==', professorId),
           where('status', 'in', ['active', 'open', 'closed'])
         )
         const classesSnapshot = await getDocs(classesQuery)
         const allStudentIds = new Set<string>()
         let totalClasses = classesSnapshot.docs.length
         
-        console.log(`📊 [EnhancedProfessorDashboard] Encontradas ${totalClasses} turmas do sistema (acesso compartilhado)`)
+        console.log(`📊 [EnhancedProfessorDashboard] Encontradas ${totalClasses} turmas do professor ${professorId}`)
         
         for (const classDoc of classesSnapshot.docs) {
           const classId = classDoc.id
@@ -216,7 +217,7 @@ export function EnhancedProfessorDashboard({
               <div className="text-2xl font-bold text-blue-600">{stats.totalStudents}</div>
             )}
             <div className="text-sm text-gray-600">Total de Estudantes</div>
-            <div className="text-xs text-gray-500 mt-1">Em todas as turmas</div>
+            <div className="text-xs text-gray-500 mt-1">Nas suas turmas</div>
           </CardContent>
         </Card>
         
