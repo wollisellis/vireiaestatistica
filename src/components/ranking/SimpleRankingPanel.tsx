@@ -28,6 +28,8 @@ interface StudentRanking {
   position: number;
   isCurrentUser?: boolean;
   lastActivity?: Date;
+  completedModules?: number;
+  totalModules?: number;
 }
 
 interface SimpleRankingPanelProps {
@@ -81,6 +83,11 @@ export function SimpleRankingPanel({
           // Verificar se tem pontuação válida
           const totalScore = scoreData.normalizedScore || scoreData.totalScore || 0;
           
+          // Contar módulos completados (score >= 70%)
+          const moduleScores = scoreData.moduleScores || {};
+          const completedModules = Object.values(moduleScores).filter((score: any) => score >= 70).length;
+          const totalModules = 2; // Total de módulos desbloqueados (pode ser dinâmico futuramente)
+          
           if (totalScore > 0) {
             studentsData.push({
               studentId: studentId,
@@ -89,7 +96,9 @@ export function SimpleRankingPanel({
               totalScore: Math.round(totalScore),
               position: 0, // Será definido após ordenação
               isCurrentUser: studentId === currentUserId,
-              lastActivity: scoreData.lastActivity?.toDate?.() || userData.lastActivity?.toDate?.()
+              lastActivity: scoreData.lastActivity?.toDate?.() || userData.lastActivity?.toDate?.(),
+              completedModules,
+              totalModules
             });
           }
         } catch (error) {
@@ -177,13 +186,19 @@ export function SimpleRankingPanel({
 
           const avgScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
 
+          // Contar módulos completados (score >= 70%)
+          const completedModules = Object.values(moduleScores).filter((score: number) => score >= 70).length;
+          const totalModules = 2; // Total de módulos desbloqueados (pode ser dinâmico futuramente)
+
           studentsData.push({
             studentId: studentId,
             studentName: userData.fullName || userData.name || 'Estudante',
             anonymousId: userData.anonymousId || studentId.slice(-4),
             totalScore: Math.round(avgScore),
             position: 0,
-            isCurrentUser: studentId === currentUserId
+            isCurrentUser: studentId === currentUserId,
+            completedModules,
+            totalModules
           });
         } catch (error) {
           console.error(`[SimpleRanking] Erro ao processar ${studentId}:`, error);
@@ -366,20 +381,30 @@ export function SimpleRankingPanel({
                       <Star className="w-3 h-3 text-yellow-500" />
                       <span className="text-xs text-gray-600">
                         {student.totalScore} pts
+                        {student.completedModules !== undefined && student.totalModules !== undefined && (
+                          <span className="ml-1">
+                            ({student.completedModules}/{student.totalModules} módulos)
+                          </span>
+                        )}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Indicador de pontuação */}
-                <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                <div className={`px-3 py-1 rounded-full text-sm font-bold flex items-center ${
                   student.totalScore >= 90 ? 'bg-green-100 text-green-800' :
                   student.totalScore >= 70 ? 'bg-blue-100 text-blue-800' :
                   student.totalScore >= 50 ? 'bg-yellow-100 text-yellow-800' :
                   'bg-gray-100 text-gray-700'
                 }`}>
                   {student.totalScore >= 70 && '✅ '}
-                  {student.totalScore}
+                  <span>{student.totalScore}</span>
+                  {student.completedModules !== undefined && student.totalModules !== undefined && (
+                    <span className="text-xs ml-1 opacity-80">
+                      ({student.completedModules}/{student.totalModules})
+                    </span>
+                  )}
                 </div>
               </motion.div>
             ))}

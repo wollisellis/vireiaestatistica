@@ -284,7 +284,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                 <Award className="w-4 h-4 text-green-600 dark:text-green-400" />
                 <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                 <span className="font-semibold text-sm">
-                  {state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • {state.score}% • Aprovado
+                  {state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • {state.score}% • {module.maxPoints ? `${((state.score / 100) * module.maxPoints).toFixed(1)} pts • ` : ''}Aprovado
                 </span>
                 <div className="flex items-center text-yellow-500 dark:text-yellow-400">
                   {Array.from({ length: state.stars }, (_, i) => (
