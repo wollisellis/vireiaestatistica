@@ -14,10 +14,14 @@ import {
   Target,
   Download,
   Calendar,
-  Loader2
+  Loader2,
+  Trophy,
+  Award,
+  RefreshCw
 } from 'lucide-react'
-import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, getDocs, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import unifiedScoringService from '@/services/unifiedScoringService'
 
 interface EnhancedProfessorDashboardProps {
   className?: string
@@ -33,8 +37,11 @@ export function EnhancedProfessorDashboard({
     totalStudents: 0,
     activeModules: 0,
     completionRate: 0,
-    avgSessionTime: 0
+    avgSessionTime: 0,
+    activeStudents: 0,
+    avgScore: 0
   })
+  const [topStudents, setTopStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   
   // Buscar dados reais do Firebase
@@ -46,60 +53,29 @@ export function EnhancedProfessorDashboard({
 
     const fetchStats = async () => {
       try {
-        // ✅ CORREÇÃO: Buscar todas as turmas do sistema (acesso compartilhado para professores)
-        const professorId = user?.uid || user?.id
-        if (!professorId) {
-          console.warn('Professor ID não disponível')
-          return
-        }
-
-        // 🔒 CORREÇÃO: Buscar apenas turmas do professor logado
-        const classesQuery = query(
-          collection(db, 'classes'),
-          where('professorId', '==', professorId),
-          where('status', 'in', ['active', 'open', 'closed'])
-        )
-        const classesSnapshot = await getDocs(classesQuery)
-        const allStudentIds = new Set<string>()
-        let totalClasses = classesSnapshot.docs.length
+        console.log('🔍 [Dashboard Professor] Buscando dados globais de estudantes...')
         
-        console.log(`📊 [EnhancedProfessorDashboard] Encontradas ${totalClasses} turmas do professor ${professorId}`)
+        // 🌍 NOVO: Buscar TODOS os estudantes do sistema (sem dependência de turmas)
+        const allStudentsData = await unifiedScoringService.getAllStudentsRanking(100)
         
-        for (const classDoc of classesSnapshot.docs) {
-          const classId = classDoc.id
-          console.log(`🔍 [EnhancedProfessorDashboard] Processando turma: ${classId}`)
-
-          // ✅ CORREÇÃO: Buscar em ambas as coleções de estudantes
-          const studentsQuery1 = query(
-            collection(db, 'classStudents'),
-            where('classId', '==', classId)
-          )
-          const studentsSnapshot1 = await getDocs(studentsQuery1)
-
-          const studentsQuery2 = query(
-            collection(db, 'class_students'),
-            where('classId', '==', classId)
-          )
-          const studentsSnapshot2 = await getDocs(studentsQuery2)
-
-          // Adicionar estudantes da primeira coleção
-          studentsSnapshot1.docs.forEach(doc => {
-            const studentId = doc.data().studentId
-            if (studentId) {
-              allStudentIds.add(studentId)
-            }
-          })
-
-          // Adicionar estudantes da segunda coleção
-          studentsSnapshot2.docs.forEach(doc => {
-            const studentId = doc.data().studentId
-            if (studentId) {
-              allStudentIds.add(studentId)
-            }
-          })
-
-          console.log(`📊 [EnhancedProfessorDashboard] Turma ${classId}: ${studentsSnapshot1.size + studentsSnapshot2.size} estudantes`)
-        }
+        console.log(`📊 [Dashboard Professor] Encontrados ${allStudentsData.length} estudantes no sistema`)
+        
+        // Filtrar apenas estudantes com pontuação > 0 para estatísticas
+        const activeStudents = allStudentsData.filter(student => student.totalScore > 0)
+        
+        // Calcular estatísticas gerais
+        const totalStudents = allStudentsData.length
+        const activeStudentsCount = activeStudents.length
+        
+        // Calcular pontuação média (apenas estudantes ativos)
+        const avgScore = activeStudentsCount > 0
+          ? Math.round(activeStudents.reduce((sum, s) => sum + s.totalScore, 0) / activeStudentsCount)
+          : 0
+          
+        // Calcular taxa de engajamento
+        const engagementRate = totalStudents > 0
+          ? Math.round((activeStudentsCount / totalStudents) * 100)
+          : 0
 
         // 2. Buscar módulos ativos
         const settingsRef = collection(db, 'settings')
@@ -112,29 +88,27 @@ export function EnhancedProfessorDashboard({
           }
         })
 
-        // 3. Calcular taxa de conclusão média
-        const progressSnapshot = await getDocs(collection(db, 'student_module_progress'))
-        let totalProgress = 0
-        let progressCount = 0
-        
-        progressSnapshot.docs.forEach(doc => {
-          const data = doc.data()
-          if (data.progress && data.progress.percentage) {
-            totalProgress += data.progress.percentage
-            progressCount++
+        // 3. Calcular taxa de conclusão média dos estudantes ativos
+        let totalCompletedModules = 0
+        activeStudents.forEach(student => {
+          // Assumir que módulo está completo se pontuação >= 70
+          if (student.completedModules) {
+            totalCompletedModules += student.completedModules
           }
         })
         
-        const avgCompletionRate = progressCount > 0 ? Math.round(totalProgress / progressCount) : 0
+        const avgCompletionRate = activeStudentsCount > 0 && activeModules > 0
+          ? Math.round((totalCompletedModules / (activeStudentsCount * activeModules)) * 100)
+          : 0
 
-        // 4. Calcular tempo médio de sessão
+        // 4. Calcular tempo médio de sessão (buscar dos quiz_attempts)
         const attemptsSnapshot = await getDocs(collection(db, 'quiz_attempts'))
         let totalTime = 0
         let timeCount = 0
         
         attemptsSnapshot.docs.forEach(doc => {
           const data = doc.data()
-          if (data.timeSpent) {
+          if (data.timeSpent && data.timeSpent > 0 && data.timeSpent < 3600) { // Ignorar tempos muito longos
             totalTime += data.timeSpent
             timeCount++
           }
@@ -142,12 +116,19 @@ export function EnhancedProfessorDashboard({
         
         const avgTime = timeCount > 0 ? Math.round(totalTime / timeCount / 60) : 0 // Converter para minutos
 
+        // Pegar top 5 estudantes para exibir
+        const top5Students = activeStudents.slice(0, 5)
+
         setStats({
-          totalStudents: allStudentIds.size,
+          totalStudents: totalStudents,
           activeModules,
           completionRate: avgCompletionRate,
-          avgSessionTime: avgTime
+          avgSessionTime: avgTime,
+          activeStudents: activeStudentsCount,
+          avgScore: avgScore
         })
+        
+        setTopStudents(top5Students)
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error)
         // Valores padrão em caso de erro
@@ -155,8 +136,11 @@ export function EnhancedProfessorDashboard({
           totalStudents: 0,
           activeModules: 1,
           completionRate: 0,
-          avgSessionTime: 0
+          avgSessionTime: 0,
+          activeStudents: 0,
+          avgScore: 0
         })
+        setTopStudents([])
       } finally {
         setLoading(false)
       }
@@ -164,13 +148,20 @@ export function EnhancedProfessorDashboard({
 
     fetchStats()
 
-    // Listener para mudanças em tempo real
+    // Listener para mudanças em tempo real nos scores
+    const unsubscribeScores = onSnapshot(
+      collection(db, 'unified_scores'),
+      () => fetchStats()
+    )
+
+    // Listener para mudanças nos módulos
     const unsubscribeModules = onSnapshot(
       collection(db, 'settings'),
       () => fetchStats()
     )
 
     return () => {
+      unsubscribeScores()
       unsubscribeModules()
     }
   }, [user])
@@ -214,23 +205,27 @@ export function EnhancedProfessorDashboard({
             {loading ? (
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600" />
             ) : (
-              <div className="text-2xl font-bold text-blue-600">{stats.totalStudents}</div>
+              <>
+                <div className="text-2xl font-bold text-blue-600">{stats.totalStudents}</div>
+                <div className="text-sm text-gray-600">Total de Estudantes</div>
+                <div className="text-xs text-gray-500 mt-1">no sistema</div>
+              </>
             )}
-            <div className="text-sm text-gray-600">Total de Estudantes</div>
-            <div className="text-xs text-gray-500 mt-1">Nas suas turmas</div>
           </CardContent>
         </Card>
         
         <Card>
           <CardContent className="p-6 text-center">
-            <BookOpen className="w-8 h-8 text-green-600 mx-auto mb-2" />
+            <Activity className="w-8 h-8 text-green-600 mx-auto mb-2" />
             {loading ? (
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-green-600" />
             ) : (
-              <div className="text-2xl font-bold text-green-600">{stats.activeModules}</div>
+              <>
+                <div className="text-2xl font-bold text-green-600">{stats.activeStudents}</div>
+                <div className="text-sm text-gray-600">Estudantes Ativos</div>
+                <div className="text-xs text-gray-500 mt-1">{stats.totalStudents > 0 ? `${Math.round((stats.activeStudents / stats.totalStudents) * 100)}%` : '0%'} de engajamento</div>
+              </>
             )}
-            <div className="text-sm text-gray-600">Módulos Ativos</div>
-            <div className="text-xs text-gray-500 mt-1">Sistema AvaliaNutri</div>
           </CardContent>
         </Card>
         
@@ -240,10 +235,12 @@ export function EnhancedProfessorDashboard({
             {loading ? (
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-purple-600" />
             ) : (
-              <div className="text-2xl font-bold text-purple-600">{stats.completionRate}%</div>
+              <>
+                <div className="text-2xl font-bold text-purple-600">{stats.avgScore}</div>
+                <div className="text-sm text-gray-600">Pontuação Média</div>
+                <div className="text-xs text-gray-500 mt-1">pontos por estudante</div>
+              </>
             )}
-            <div className="text-sm text-gray-600">Taxa de Conclusão</div>
-            <div className="text-xs text-gray-500 mt-1">Média geral</div>
           </CardContent>
         </Card>
         
@@ -260,6 +257,75 @@ export function EnhancedProfessorDashboard({
           </CardContent>
         </Card>
       </div>
+
+      {/* Ranking Global de Estudantes */}
+      {!loading && topStudents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Trophy className="w-5 h-5 text-yellow-600" />
+                <span>Ranking Global de Estudantes</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {topStudents.map((student, index) => (
+                <div
+                  key={student.studentId}
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`
+                      w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
+                      ${index === 0 ? 'bg-yellow-500 text-white' : 
+                        index === 1 ? 'bg-gray-400 text-white' : 
+                        index === 2 ? 'bg-amber-600 text-white' : 
+                        'bg-blue-100 text-blue-700'}
+                    `}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {student.fullName || student.studentName || 'Estudante'}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        ID: {student.anonymousId || student.studentId.slice(-4)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg text-gray-900">
+                      {student.totalScore || 0} pts
+                    </p>
+                    {student.completedModules > 0 && (
+                      <p className="text-xs text-gray-500">
+                        {student.completedModules} módulo{student.completedModules > 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {stats.totalStudents > 5 && (
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-500">
+                  Mostrando top 5 de {stats.totalStudents} estudantes
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Cards informativos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
