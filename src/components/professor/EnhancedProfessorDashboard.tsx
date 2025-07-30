@@ -56,86 +56,9 @@ export function EnhancedProfessorDashboard({
         console.log('🔍 [Dashboard Professor] Buscando dados globais de estudantes...')
         
         // 🌍 NOVO: Buscar TODOS os estudantes do sistema (sem dependência de turmas)
-        let allStudentsData = await unifiedScoringService.getAllStudentsRanking(100)
+        const allStudentsData = await unifiedScoringService.getAllStudentsRanking(100)
         
         console.log(`📊 [Dashboard Professor] Encontrados ${allStudentsData.length} estudantes no sistema`)
-        
-        // 🔧 DEBUG: Se não há dados, usar dados de exemplo para demonstração
-        if (allStudentsData.length === 0 && process.env.NODE_ENV === 'development') {
-          console.log('🔧 [Dashboard Professor] Usando dados de exemplo para demonstração')
-          allStudentsData = [
-            {
-              studentId: 'demo_001',
-              studentName: 'Ana Silva',
-              fullName: 'Ana Silva',
-              email: 'ana.silva@exemplo.com',
-              anonymousId: 'A001',
-              totalScore: 92,
-              totalNormalizedScore: 92,
-              completedModules: 1,
-              lastActivity: new Date(),
-              isCurrentUser: false,
-              classRank: 1,
-              position: 1
-            },
-            {
-              studentId: 'demo_002',
-              studentName: 'Pedro Costa',
-              fullName: 'Pedro Costa',
-              email: 'pedro.costa@exemplo.com',
-              anonymousId: 'P002',
-              totalScore: 88,
-              totalNormalizedScore: 88,
-              completedModules: 1,
-              lastActivity: new Date(),
-              isCurrentUser: false,
-              classRank: 2,
-              position: 2
-            },
-            {
-              studentId: 'demo_003',
-              studentName: 'Carlos Santos',
-              fullName: 'Carlos Santos',
-              email: 'carlos.santos@exemplo.com',
-              anonymousId: 'C003',
-              totalScore: 85,
-              totalNormalizedScore: 85,
-              completedModules: 1,
-              lastActivity: new Date(),
-              isCurrentUser: false,
-              classRank: 3,
-              position: 3
-            },
-            {
-              studentId: 'demo_004',
-              studentName: 'Maria Oliveira',
-              fullName: 'Maria Oliveira',
-              email: 'maria.oliveira@exemplo.com',
-              anonymousId: 'M004',
-              totalScore: 78,
-              totalNormalizedScore: 78,
-              completedModules: 1,
-              lastActivity: new Date(),
-              isCurrentUser: false,
-              classRank: 4,
-              position: 4
-            },
-            {
-              studentId: 'demo_005',
-              studentName: 'Julia Lima',
-              fullName: 'Julia Lima',
-              email: 'julia.lima@exemplo.com',
-              anonymousId: 'J005',
-              totalScore: 76,
-              totalNormalizedScore: 76,
-              completedModules: 1,
-              lastActivity: new Date(),
-              isCurrentUser: false,
-              classRank: 5,
-              position: 5
-            }
-          ]
-        }
         
         // Filtrar apenas estudantes com pontuação > 0 para estatísticas
         const activeStudents = allStudentsData.filter(student => student.totalScore > 0)
@@ -312,12 +235,6 @@ export function EnhancedProfessorDashboard({
                         <li>3. Os estudantes devem se cadastrar e completar as atividades</li>
                         <li>4. Os dados aparecerão automaticamente aqui</li>
                       </ol>
-                      
-                      <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-                        <p className="text-sm text-blue-800">
-                          <strong>Para testes:</strong> Execute <code className="bg-blue-100 px-1 rounded">node create-sample-data.js</code> no terminal para criar dados de exemplo.
-                        </p>
-                      </div>
                     </div>
                   )}
                 </div>
