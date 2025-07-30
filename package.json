@@ -1,6 +1,6 @@
 {
   "name": "avalianutri",
-  "version": "0.1.0",
+  "version": "0.9.3",
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
@@ -9,7 +9,8 @@
     "start-dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "changelog": "node scripts/update-changelog.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

@@ -56,9 +56,86 @@ export function EnhancedProfessorDashboard({
         console.log('🔍 [Dashboard Professor] Buscando dados globais de estudantes...')
         
         // 🌍 NOVO: Buscar TODOS os estudantes do sistema (sem dependência de turmas)
-        const allStudentsData = await unifiedScoringService.getAllStudentsRanking(100)
+        let allStudentsData = await unifiedScoringService.getAllStudentsRanking(100)
         
         console.log(`📊 [Dashboard Professor] Encontrados ${allStudentsData.length} estudantes no sistema`)
+        
+        // 🔧 DEBUG: Se não há dados, usar dados de exemplo para demonstração
+        if (allStudentsData.length === 0 && process.env.NODE_ENV === 'development') {
+          console.log('🔧 [Dashboard Professor] Usando dados de exemplo para demonstração')
+          allStudentsData = [
+            {
+              studentId: 'demo_001',
+              studentName: 'Ana Silva',
+              fullName: 'Ana Silva',
+              email: 'ana.silva@exemplo.com',
+              anonymousId: 'A001',
+              totalScore: 92,
+              totalNormalizedScore: 92,
+              completedModules: 1,
+              lastActivity: new Date(),
+              isCurrentUser: false,
+              classRank: 1,
+              position: 1
+            },
+            {
+              studentId: 'demo_002',
+              studentName: 'Pedro Costa',
+              fullName: 'Pedro Costa',
+              email: 'pedro.costa@exemplo.com',
+              anonymousId: 'P002',
+              totalScore: 88,
+              totalNormalizedScore: 88,
+              completedModules: 1,
+              lastActivity: new Date(),
+              isCurrentUser: false,
+              classRank: 2,
+              position: 2
+            },
+            {
+              studentId: 'demo_003',
+              studentName: 'Carlos Santos',
+              fullName: 'Carlos Santos',
+              email: 'carlos.santos@exemplo.com',
+              anonymousId: 'C003',
+              totalScore: 85,
+              totalNormalizedScore: 85,
+              completedModules: 1,
+              lastActivity: new Date(),
+              isCurrentUser: false,
+              classRank: 3,
+              position: 3
+            },
+            {
+              studentId: 'demo_004',
+              studentName: 'Maria Oliveira',
+              fullName: 'Maria Oliveira',
+              email: 'maria.oliveira@exemplo.com',
+              anonymousId: 'M004',
+              totalScore: 78,
+              totalNormalizedScore: 78,
+              completedModules: 1,
+              lastActivity: new Date(),
+              isCurrentUser: false,
+              classRank: 4,
+              position: 4
+            },
+            {
+              studentId: 'demo_005',
+              studentName: 'Julia Lima',
+              fullName: 'Julia Lima',
+              email: 'julia.lima@exemplo.com',
+              anonymousId: 'J005',
+              totalScore: 76,
+              totalNormalizedScore: 76,
+              completedModules: 1,
+              lastActivity: new Date(),
+              isCurrentUser: false,
+              classRank: 5,
+              position: 5
+            }
+          ]
+        }
         
         // Filtrar apenas estudantes com pontuação > 0 para estatísticas
         const activeStudents = allStudentsData.filter(student => student.totalScore > 0)
@@ -195,8 +272,61 @@ export function EnhancedProfessorDashboard({
   }
 
 
+  // Estado para mostrar/ocultar instruções
+  const [showInstructions, setShowInstructions] = useState(false)
+
+  // Verificar se não há dados
+  const hasNoData = !loading && stats.totalStudents === 0
+
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Mensagem informativa quando não há dados */}
+      {hasNoData && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-6">
+            <div className="flex items-start space-x-3">
+              <Activity className="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900 mb-2">
+                  Sistema sem Dados de Estudantes
+                </h3>
+                <p className="text-amber-800 text-sm mb-4">
+                  Ainda não há estudantes cadastrados no sistema. O dashboard mostrará informações quando os estudantes começarem a usar a plataforma.
+                </p>
+                <div className="space-y-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowInstructions(!showInstructions)}
+                    className="w-full sm:w-auto"
+                  >
+                    {showInstructions ? 'Ocultar' : 'Ver'} Instruções
+                  </Button>
+                  
+                  {showInstructions && (
+                    <div className="mt-4 p-4 bg-white rounded-lg border border-amber-200">
+                      <h4 className="font-medium text-gray-900 mb-2">Como popular o sistema:</h4>
+                      <ol className="space-y-2 text-sm text-gray-700">
+                        <li>1. Crie turmas na aba "Turmas"</li>
+                        <li>2. Compartilhe os códigos de acesso com os estudantes</li>
+                        <li>3. Os estudantes devem se cadastrar e completar as atividades</li>
+                        <li>4. Os dados aparecerão automaticamente aqui</li>
+                      </ol>
+                      
+                      <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
+                        <p className="text-sm text-blue-800">
+                          <strong>Para testes:</strong> Execute <code className="bg-blue-100 px-1 rounded">node create-sample-data.js</code> no terminal para criar dados de exemplo.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Visão geral simplificada para Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
@@ -259,7 +389,7 @@ export function EnhancedProfessorDashboard({
       </div>
 
       {/* Ranking Global de Estudantes */}
-      {!loading && topStudents.length > 0 && (
+      {!loading && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -277,49 +407,63 @@ export function EnhancedProfessorDashboard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {topStudents.map((student, index) => (
-                <div
-                  key={student.studentId}
-                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`
-                      w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
-                      ${index === 0 ? 'bg-yellow-500 text-white' : 
-                        index === 1 ? 'bg-gray-400 text-white' : 
-                        index === 2 ? 'bg-amber-600 text-white' : 
-                        'bg-blue-100 text-blue-700'}
-                    `}>
-                      {index + 1}
+            {topStudents.length > 0 ? (
+              <>
+                <div className="space-y-2">
+                  {topStudents.map((student, index) => (
+                    <div
+                      key={student.studentId}
+                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`
+                          w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
+                          ${index === 0 ? 'bg-yellow-500 text-white' : 
+                            index === 1 ? 'bg-gray-400 text-white' : 
+                            index === 2 ? 'bg-amber-600 text-white' : 
+                            'bg-blue-100 text-blue-700'}
+                        `}>
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {student.fullName || student.studentName || 'Estudante'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            ID: {student.anonymousId || student.studentId.slice(-4)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg text-gray-900">
+                          {student.totalScore || 0} pts
+                        </p>
+                        {student.completedModules > 0 && (
+                          <p className="text-xs text-gray-500">
+                            {student.completedModules} módulo{student.completedModules > 1 ? 's' : ''}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {student.fullName || student.studentName || 'Estudante'}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        ID: {student.anonymousId || student.studentId.slice(-4)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg text-gray-900">
-                      {student.totalScore || 0} pts
-                    </p>
-                    {student.completedModules > 0 && (
-                      <p className="text-xs text-gray-500">
-                        {student.completedModules} módulo{student.completedModules > 1 ? 's' : ''}
-                      </p>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            
-            {stats.totalStudents > 5 && (
-              <div className="mt-4 text-center">
-                <p className="text-sm text-gray-500">
-                  Mostrando top 5 de {stats.totalStudents} estudantes
+                
+                {stats.totalStudents > 5 && (
+                  <div className="mt-4 text-center">
+                    <p className="text-sm text-gray-500">
+                      Mostrando top 5 de {stats.totalStudents} estudantes
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">
+                  Nenhum estudante encontrado no sistema
+                </p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Os estudantes aparecerão aqui quando completarem atividades
                 </p>
               </div>
             )}
