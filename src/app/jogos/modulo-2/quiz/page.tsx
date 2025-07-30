@@ -120,6 +120,7 @@ export default function Module2QuizPage() {
 
       // Configurar métodos aleatórios
       const randomMethods = getRandomMethods(4);
+      console.log('🎲 Métodos aleatórios selecionados:', randomMethods);
       setAvailableMethods(randomMethods);
       
       // Configurar zonas de drop
@@ -150,8 +151,10 @@ export default function Module2QuizPage() {
   };
 
   const handleStart = () => {
+    console.log('🚀 Iniciando quiz do módulo 2');
     setHasStarted(true);
     setStartTime(new Date());
+    console.log('📊 Métodos disponíveis:', availableMethods);
   };
 
   const handleDragStart = (e: React.DragEvent, item: DragItem) => {
@@ -276,7 +279,7 @@ export default function Module2QuizPage() {
         timeSpent: timeElapsed,
         questionsAnswered: 4,
         correctAnswers: Math.round((percentage / 100) * 4),
-        moduleTitle: 'Métodos de Avaliação da Composição Corporal'
+        moduleTitle: 'Métodos de Avaliação Nutricional'
       };
 
       await addDoc(collection(db, 'quiz_attempts'), attemptData);
@@ -346,7 +349,7 @@ export default function Module2QuizPage() {
                   <span className="text-sm font-bold text-purple-700">2</span>
                 </div>
                 <h1 className="text-lg font-semibold text-gray-900">
-                  Métodos de Avaliação Corporal
+                  Métodos de Avaliação Nutricional
                 </h1>
               </div>
             </div>
@@ -389,10 +392,10 @@ export default function Module2QuizPage() {
                     <Target className="w-10 h-10 text-purple-600" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    Módulo 2: Métodos de Avaliação
+                    Módulo 2: Métodos de Avaliação Nutricional
                   </h2>
                   <p className="text-gray-600">
-                    Teste seus conhecimentos sobre os diferentes métodos de avaliação da composição corporal
+                    Teste seus conhecimentos sobre os diferentes métodos de avaliação nutricional
                   </p>
                 </div>
               </CardHeader>
@@ -405,8 +408,6 @@ export default function Module2QuizPage() {
                       <h3 className="font-semibold text-blue-900 mb-2">Instruções</h3>
                       <ul className="space-y-1 text-sm text-blue-800">
                         <li>• Arraste cada método para sua categoria correta</li>
-                        <li>• São 4 métodos aleatórios de um banco de 7</li>
-                        <li>• Categorias: Imagem, Bioimpedância ou Diluição</li>
                         <li>• Pontuação total: 30 pontos</li>
                         <li>• Aprovação: 70% ou mais</li>
                       </ul>
@@ -510,6 +511,13 @@ export default function Module2QuizPage() {
         ) : (
           // Área do quiz drag-and-drop
           <div className="space-y-6">
+            {/* Debug info */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-yellow-50 p-2 rounded text-xs">
+                <p>Debug: {availableMethods.length} métodos disponíveis</p>
+              </div>
+            )}
+            
             {/* Métodos disponíveis */}
             <Card>
               <CardHeader>

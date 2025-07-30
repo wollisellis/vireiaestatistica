@@ -227,7 +227,7 @@ function JogosPageContent() {
         newState.ranking = true;
       } else {
         // Set modules
-        const defaultUnlocked = isProfessor ? ['module-1', 'module-2', 'module-3', 'module-4'] : ['module-1'];
+        const defaultUnlocked = isProfessor ? ['module-1', 'module-2', 'module-3', 'module-4'] : ['module-1', 'module-2'];
         startTransition(() => {
           setUnlockedModules(defaultUnlocked);
         });

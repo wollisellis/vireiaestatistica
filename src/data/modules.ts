@@ -167,7 +167,7 @@ export const modules: Module[] = [
   },
   {
     id: 'module-2',
-    title: 'Métodos de Avaliação da Composição Corporal',
+    title: 'Métodos de Avaliação Nutricional',
     description: 'Aprenda sobre os diferentes métodos de avaliação corporal através de atividades interativas',
     order: 2,
     isLocked: true,

@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import CountdownTimer from '@/components/ui/CountdownTimer'
 import CreateClassModal, { ClassFormData } from './CreateClassModal'
 import ClassInviteModal from './ClassInviteModal'
+import ModuleManagementPanel from './ModuleManagementPanel'
 import { 
   ProfessorClassService, 
   ClassInfo, 
@@ -1114,6 +1115,20 @@ export function ImprovedClassManagement({ professorId, professorName = 'Prof. Dr
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+      )}
+
+      {/* Gerenciamento de Módulos da Turma */}
+      {selectedClass && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <ModuleManagementPanel 
+            classId={selectedClass.id} 
+            className="mt-6"
+          />
         </motion.div>
       )}
 

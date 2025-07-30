@@ -1,4 +1,4 @@
-// Banco de questões do Módulo 2: Métodos de Avaliação da Composição Corporal
+// Banco de questões do Módulo 2: Métodos de Avaliação Nutricional
 // 7 métodos → 4 sorteados aleatoriamente = 30 pontos total
 
 import { QuestionBank } from '@/types/randomizedQuiz';
@@ -213,7 +213,7 @@ export const bodyCompositionMethods: DragDropMethod[] = [
 export const module2QuestionBank: QuestionBank = {
   id: 'bank-module-2',
   moduleId: 'module-2',
-  title: 'Métodos de Avaliação da Composição Corporal',
+  title: 'Métodos de Avaliação Nutricional',
   totalQuestions: 7, // Total de métodos disponíveis
   questionsPerQuiz: 4, // Quantos métodos aparecem por vez
   totalPoints: 30, // Pontuação total do módulo
