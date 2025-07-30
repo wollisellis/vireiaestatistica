@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
+// Removido import de Select - todos são estudantes por padrão
 import { User, Gamepad2, ArrowLeft } from 'lucide-react'
 
 // Mock translation function
@@ -43,29 +43,19 @@ const signInSchema = z.object({
 const signUpSchema = signInSchema.extend({
   fullName: z.string().min(2, t('auth.validation.fullNameMinLength')),
   confirmPassword: z.string(),
-  role: z.enum(['student', 'professor']),
   courseCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: t('auth.validation.passwordsDontMatch'),
   path: ["confirmPassword"],
 }).refine((data) => {
-  // Students must use @dac.unicamp.br email
-  if (data.role === 'student' && !data.email.endsWith('@dac.unicamp.br')) {
+  // Todos devem usar email institucional @dac.unicamp.br ou @unicamp.br
+  if (!data.email.endsWith('@dac.unicamp.br') && !data.email.endsWith('@unicamp.br')) {
     return false
   }
   return true
 }, {
-  message: 'Estudantes devem usar email institucional @dac.unicamp.br',
+  message: 'Use seu email institucional @dac.unicamp.br ou @unicamp.br',
   path: ["email"],
-}).refine((data) => {
-  // Course code is required for students
-  if (data.role === 'student' && !data.courseCode) {
-    return false
-  }
-  return true
-}, {
-  message: 'Código do curso é obrigatório para estudantes',
-  path: ["courseCode"],
 })
 
 export function AuthForm() {
@@ -73,7 +63,7 @@ export function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [selectedRole, setSelectedRole] = useState<'student' | 'professor'>('student')
+  // Removido selectedRole - todos são estudantes por padrão
   const { signIn, signInWithGoogle, signUp } = useFirebaseAuth()
 
   const {
@@ -95,30 +85,19 @@ export function AuthForm() {
           data.email,
           data.password,
           data.fullName,
-          data.role || selectedRole,
+          'student', // Sempre registrar como estudante
           data.courseCode
         )
         if (error) throw new Error(error.message)
 
-        // Simple redirect based on role
-        if (data.role === 'professor' || selectedRole === 'professor') {
-          window.location.href = '/docente'
-        } else {
-          window.location.href = '/jogos'
-        }
+        // Sempre redirecionar para jogos após registro
+        window.location.href = '/jogos'
       } else {
         const { error } = await signIn(data.email, data.password)
         if (error) throw new Error(error.message)
 
-        // Store selected role in localStorage to ensure proper redirect
-        localStorage.setItem('selected-role', selectedRole)
-        
-        // Force a hard redirect to ensure role is properly applied
-        if (selectedRole === 'professor') {
-          window.location.replace('/docente')
-        } else {
-          window.location.replace('/jogos')
-        }
+        // Sempre redirecionar para jogos após login
+        window.location.replace('/jogos')
       }
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Erro desconhecido'
@@ -149,20 +128,10 @@ export function AuthForm() {
     reset()
   }
 
-  const handleRoleSelection = (role: 'student' | 'professor') => {
-    console.log('🎯 Role selecionado:', role)
-    setSelectedRole(role)
-    
-    // Store role in localStorage for persistence
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('selected-role', role)
-    }
-    
+  const handleStartLogin = () => {
     // Hide login options and show login form
     setShowLoginOptions(false)
     setIsSignUp(false) // Start with login form
-    
-    console.log('✅ Transicionando para formulário de login')
   }
 
   const backToOptions = () => {
@@ -177,8 +146,8 @@ export function AuthForm() {
     setError('')
 
     try {
-      console.log('🚀 Iniciando Google Sign In para:', selectedRole)
-      const { data, error } = await signInWithGoogle(selectedRole)
+      console.log('🚀 Iniciando Google Sign In para estudante')
+      const { data, error } = await signInWithGoogle('student')
 
       if (error) {
         console.log('❌ Erro no Google Sign In:', error.message)
@@ -194,13 +163,9 @@ export function AuthForm() {
         console.log('✅ Usuário Google existente:', data.profile)
       }
 
-      // Simple redirect based on role
-      console.log('🔄 Redirecionando para dashboard...')
-      if (selectedRole === 'professor') {
-        window.location.href = '/docente'
-      } else {
-        window.location.href = '/jogos'
-      }
+      // Sempre redirecionar para jogos
+      console.log('🔄 Redirecionando para jogos...')
+      window.location.href = '/jogos'
     } catch (err: unknown) {
       console.log('❌ Erro final:', err)
       setError((err as Error).message || 'Erro ao fazer login com Google')
@@ -234,44 +199,21 @@ export function AuthForm() {
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {/* Professor Login Option */}
+              {/* Single Login Button */}
               <Button
-                onClick={() => handleRoleSelection('professor')}
-                className="w-full h-16 text-left bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={handleStartLogin}
+                className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white"
                 size="lg"
               >
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <div className="font-semibold text-base leading-tight">Entrar como Docente</div>
-                    <div className="text-sm text-blue-100 leading-tight mt-0.5">
-                      Acesso ao dashboard administrativo
-                    </div>
-                  </div>
+                <div className="flex items-center justify-center space-x-4">
+                  <Gamepad2 className="w-6 h-6 text-white" />
+                  <div className="font-semibold text-lg">Entrar na Plataforma</div>
                 </div>
               </Button>
-
-
-              {/* Student Login Option */}
-              <Button
-                onClick={() => handleRoleSelection('student')}
-                className="w-full h-16 text-left bg-emerald-600 hover:bg-emerald-700 text-white"
-                size="lg"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Gamepad2 className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <div className="font-semibold text-base leading-tight">Entrar como Estudante</div>
-                    <div className="text-sm text-emerald-100 leading-tight mt-0.5">
-                      Acesso aos jogos educacionais
-                    </div>
-                  </div>
-                </div>
-              </Button>
+              
+              <p className="text-sm text-gray-600 text-center mt-4">
+                Use seu email institucional @dac.unicamp.br ou @unicamp.br
+              </p>
 
             </CardContent>
           </Card>
@@ -298,12 +240,12 @@ export function AuthForm() {
                 Voltar às opções
               </button>
               <h1 className="text-2xl font-bold text-gray-900">
-                {isSignUp ? 'Criar Conta' : 'Entrar'} - {selectedRole === 'professor' ? 'Docente' : 'Estudante'}
+                {isSignUp ? 'Criar Conta' : 'Entrar'}
               </h1>
               <p className="text-gray-600 mt-2">
                 {isSignUp
-                  ? `Crie sua conta de ${selectedRole === 'professor' ? 'docente' : 'estudante'}`
-                  : `Entre com sua conta de ${selectedRole === 'professor' ? 'docente' : 'estudante'}`
+                  ? 'Crie sua conta usando email institucional'
+                  : 'Entre com sua conta existente'
                 }
               </p>
             </div>
@@ -367,39 +309,21 @@ export function AuthForm() {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tipo de Usuário
+                      Código do Curso (Opcional)
                     </label>
-                    <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as 'student' | 'professor')}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo de usuário" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Estudante</SelectItem>
-                        <SelectItem value="professor">Docente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <input type="hidden" {...register('role')} value={selectedRole} />
+                    <input
+                      {...register('courseCode')}
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: NT600"
+                    />
+                    {errors.courseCode && (
+                      <p className="text-red-500 text-sm mt-1">{String(errors.courseCode.message)}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Solicite o código do curso ao seu professor
+                    </p>
                   </div>
-
-                  {selectedRole === 'student' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Código do Curso
-                      </label>
-                      <input
-                        {...register('courseCode')}
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ex: NT600"
-                      />
-                      {errors.courseCode && (
-                        <p className="text-red-500 text-sm mt-1">{String(errors.courseCode.message)}</p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        Solicite o código do curso ao seu professor
-                      </p>
-                    </div>
-                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -463,11 +387,9 @@ export function AuthForm() {
                   {isSignUp ? 'Criar conta' : 'Entrar'} com Google
                 </Button>
 
-                {selectedRole === 'student' && (
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    ⚠️ Estudantes devem usar email @dac.unicamp.br
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  ⚠️ Use seu email institucional @dac.unicamp.br ou @unicamp.br
+                </p>
               </div>
             </div>
 
@@ -482,18 +404,6 @@ export function AuthForm() {
                 }
               </button>
 
-              {selectedRole === 'professor' && (
-                <div className="border-t border-gray-200 pt-3">
-                  <p className="text-xs text-gray-500 mb-2">Precisa se cadastrar como docente?</p>
-                  <p className="text-xs text-gray-400 mb-2">Requer código de verificação especial</p>
-                  <a
-                    href="/docente/registro"
-                    className="text-green-600 hover:text-green-700 text-sm font-medium"
-                  >
-                    Cadastre-se como Docente
-                  </a>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

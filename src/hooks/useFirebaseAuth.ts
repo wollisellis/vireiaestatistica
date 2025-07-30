@@ -229,9 +229,9 @@ export function useFirebaseAuth() {
     try {
       setLoading(true)
 
-      // Validate email domain for students (should be @dac.unicamp.br)
-      if (role === 'student' && !email.endsWith('@dac.unicamp.br')) {
-        throw new Error('Estudantes devem usar email institucional @dac.unicamp.br')
+      // Validate email domain for students (should be @dac.unicamp.br or @unicamp.br)
+      if (role === 'student' && !email.endsWith('@dac.unicamp.br') && !email.endsWith('@unicamp.br')) {
+        throw new Error('Estudantes devem usar email institucional @dac.unicamp.br ou @unicamp.br')
       }
 
       // Professors can use any valid email domain

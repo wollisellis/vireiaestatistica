@@ -3,7 +3,7 @@ import { Module } from '@/types/modules';
 export const modules: Module[] = [
   {
     id: 'module-1',
-    title: 'Introdução à Avaliação Nutricional',
+    title: '1. Introdução à Avaliação Nutricional',
     description: 'Fundamentos da avaliação nutricional e sua importância na prática clínica',
     order: 1,
     isLocked: false,
@@ -168,7 +168,7 @@ export const modules: Module[] = [
   },
   {
     id: 'module-2',
-    title: 'Métodos de Avaliação Nutricional',
+    title: '2. Métodos de Avaliação Nutricional',
     description: 'Aprenda sobre os diferentes métodos de avaliação corporal através de atividades interativas',
     order: 2,
     isLocked: true,

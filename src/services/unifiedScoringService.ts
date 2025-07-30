@@ -359,23 +359,31 @@ class UnifiedScoringService {
     const moduleScores = score.moduleScores
     const gameScores = Object.values(score.gameScores)
 
-    // Para sistema educacional, somar diretamente as pontuações dos módulos
+    // Para sistema educacional, calcular pontos reais baseados nos valores máximos
     if (Object.keys(moduleScores).length === 0) return 0
 
-    // CORREÇÃO: Somar diretamente os pontos dos módulos sem pesos
-    let totalModuleScore = 0
-    let moduleCount = 0
+    // CORREÇÃO: Converter porcentagens para pontos reais
+    // Módulo 1 vale 70 pontos, Módulo 2 vale 30 pontos
+    const moduleMaxPoints: Record<string, number> = {
+      'module-1': 70,
+      'module-2': 30
+    }
 
-    Object.entries(moduleScores).forEach(([moduleId, moduleScore]) => {
-      totalModuleScore += moduleScore // Soma direta sem pesos
-      moduleCount++
+    let totalModuleScore = 0
+
+    Object.entries(moduleScores).forEach(([moduleId, modulePercentage]) => {
+      const maxPoints = moduleMaxPoints[moduleId] || 0
+      // Converter porcentagem (0-100) para pontos reais
+      const realPoints = (modulePercentage / 100) * maxPoints
+      totalModuleScore += realPoints
+      console.log(`[calculateTotalScore] ${moduleId}: ${modulePercentage}% de ${maxPoints} = ${realPoints.toFixed(1)} pontos`)
     })
 
     // Se há jogos, adicionar também (mas são opcionais)
     const totalGameScore = gameScores.length > 0 ? gameScores.reduce((sum, s) => sum + s, 0) : 0
 
     // Retornar soma total de módulos + jogos
-    console.log(`[calculateTotalScore] Módulos: ${totalModuleScore}, Jogos: ${totalGameScore}, Total: ${totalModuleScore + totalGameScore}`)
+    console.log(`[calculateTotalScore] Total Módulos: ${totalModuleScore.toFixed(1)}, Jogos: ${totalGameScore}, Total: ${(totalModuleScore + totalGameScore).toFixed(1)}`)
     return totalModuleScore + totalGameScore
   }
 
@@ -388,13 +396,12 @@ class UnifiedScoringService {
 
   // Calcular nível baseado na pontuação total
   private calculateLevel(totalScore: number): number {
-    // CORREÇÃO: Ajustado para considerar múltiplos módulos (cada módulo vale até 100)
-    // Com 4 módulos, o máximo seria 400 pontos
-    if (totalScore >= 350) return 5 // Excelência (87.5%+)
-    if (totalScore >= 280) return 4 // Muito Bom (70%+)
-    if (totalScore >= 200) return 3 // Bom (50%+)
-    if (totalScore >= 120) return 2 // Regular (30%+)
-    if (totalScore >= 50) return 1 // Iniciante (12.5%+)
+    // CORREÇÃO: Ajustado para sistema de 100 pontos totais (70 + 30)
+    if (totalScore >= 90) return 5 // Excelência (90%+)
+    if (totalScore >= 75) return 4 // Muito Bom (75%+)
+    if (totalScore >= 60) return 3 // Bom (60%+)
+    if (totalScore >= 40) return 2 // Regular (40%+)
+    if (totalScore >= 20) return 1 // Iniciante (20%+)
     return 0 // Não iniciado
   }
 
