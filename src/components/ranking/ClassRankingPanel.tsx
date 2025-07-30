@@ -130,27 +130,9 @@ export function ClassRankingPanel({
 
       console.log('[ClassRankingPanel] 🔍 Carregando dados do ranking...');
 
-      // 🏫 NOVO: Buscar ranking baseado em turma
-      let studentsData = [];
-      
-      // Se é estudante, buscar a turma em que está matriculado
-      if (user.role === 'student') {
-        const studentClasses = await ProfessorClassService.getStudentClasses(user.id);
-        
-        if (studentClasses.length > 0) {
-          // Usar a primeira turma ativa
-          const classId = studentClasses[0].id;
-          console.log(`[ClassRankingPanel] 🏫 Estudante matriculado na turma ${classId}`);
-          studentsData = await unifiedScoringService.getClassRanking(classId, displayLimit * 2);
-        } else {
-          console.log('[ClassRankingPanel] ⚠️ Estudante não matriculado em nenhuma turma');
-          setError('Você precisa estar matriculado em uma turma');
-          return;
-        }
-      } else if (user.role === 'professor') {
-        // Para professores, ainda mostrar ranking global por enquanto
-        studentsData = await unifiedScoringService.getAllStudentsRanking(displayLimit * 2);
-      }
+      // 🌍 NOVO: Buscar ranking global de todos os estudantes (sem dependência de turmas)
+      console.log('[ClassRankingPanel] 🌍 Buscando ranking global de estudantes...');
+      let studentsData = await unifiedScoringService.getAllStudentsRanking(displayLimit * 2);
       
       console.log('[ClassRankingPanel] 📊 Dados recebidos:', studentsData?.length || 0, 'estudantes');
 
@@ -301,7 +283,7 @@ export function ClassRankingPanel({
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-bold text-gray-900 text-base">
-                🏆 Ranking da Turma
+                🏆 Ranking Geral
               </h3>
             </div>
           </div>

@@ -33,7 +33,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
-import { ClassRankingPanel } from '@/components/ranking/ClassRankingPanel';
+import { SimpleRankingPanel } from '@/components/ranking/SimpleRankingPanel';
 import unifiedScoringService from '@/services/unifiedScoringService';
 import { debounce, devLog } from '@/utils/debounce';
 import ProfessorClassService from '@/services/professorClassService';
@@ -579,13 +579,11 @@ function JogosPageContent() {
               {/* 🎯 INFORMAÇÕES DA TURMA */}
               {user && <StudentClassInfo studentId={getUserId() || ''} />}
               
-              {/* 🎯 RANKING DA TURMA */}
-              <ClassRankingPanel
-                moduleId="introducao-avaliacao-nutricional"
-                user={user}
-                loading={loading}
-                expanded={true}
-                showNames={false}
+              {/* 🎯 RANKING GERAL */}
+              <SimpleRankingPanel
+                currentUserId={getUserId() || undefined}
+                limit={8}
+                className="w-full"
               />
             </div>
           </div>
@@ -604,13 +602,11 @@ function JogosPageContent() {
               
               {/* Ranking - Versão Mobile Compacta */}
               <div>
-                <ClassRankingPanel
-                  moduleId="introducao-avaliacao-nutricional"
-                  user={user}
-                  loading={loading}
-                  expanded={false}
-                  showNames={false}
+                <SimpleRankingPanel
+                  currentUserId={getUserId() || undefined}
+                  limit={5}
                   compact={true}
+                  className="w-full"
                 />
               </div>
             </div>

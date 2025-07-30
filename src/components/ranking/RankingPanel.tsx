@@ -21,7 +21,7 @@ import { isRecentActivity } from '@/utils/dateUtils';
 import rankingService, { RankingEntry, RankingStats } from '@/services/rankingService';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 
 interface RankingPanelProps {
   className?: string;
@@ -35,37 +35,28 @@ async function generateGlobalRankingData(): Promise<RankingEntry[]> {
   try {
     console.log('🔍 Buscando dados globais de estudantes...');
 
-    // 1. Buscar todos os estudantes na coleção users
-    const usersSnapshot = await getDocs(
-      query(collection(db, 'users'), where('role', '==', 'student'))
-    );
-
-    if (usersSnapshot.empty) {
-      console.log('❌ Nenhum estudante encontrado na coleção users');
-      return [];
-    }
-
-    console.log(`👥 Encontrados ${usersSnapshot.size} estudantes na coleção users`);
-
-    const rankingData: RankingEntry[] = [];
-
-    // 2. Para cada estudante, buscar seus dados unificados
-    for (const userDoc of usersSnapshot.docs) {
-      const userData = userDoc.data();
-      const studentId = userDoc.id;
-
-      try {
-        // Buscar score unificado do estudante
-        const scoreDoc = await getDoc(doc(db, 'unified_scores', studentId));
+    // Primeiro, tentar buscar dados de unified_scores diretamente
+    const scoresSnapshot = await getDocs(collection(db, 'unified_scores'));
+    
+    if (!scoresSnapshot.empty) {
+      console.log(`📊 Encontrados ${scoresSnapshot.size} scores unificados`);
+      
+      const rankingData: RankingEntry[] = [];
+      
+      for (const scoreDoc of scoresSnapshot.docs) {
+        const scoreData = scoreDoc.data();
+        const studentId = scoreDoc.id;
         
-        if (scoreDoc.exists()) {
-          const scoreData = scoreDoc.data();
+        try {
+          // Buscar dados do usuário
+          const userDoc = await getDoc(doc(db, 'users', studentId));
+          const userData = userDoc.exists() ? userDoc.data() : {};
           
-          // Verificar se o estudante tem alguma pontuação
-          const hasScore = scoreData.normalizedScore > 0 || 
-                          Object.values(scoreData.moduleScores || {}).some((score: any) => score > 0);
-
-          if (hasScore) {
+          // Verificar se tem pontuação válida
+          const hasValidScore = scoreData.normalizedScore > 0 || 
+                               Object.values(scoreData.moduleScores || {}).some((score: any) => score > 0);
+          
+          if (hasValidScore) {
             rankingData.push({
               studentId: studentId,
               anonymousId: userData.anonymousId || studentId.slice(-4),
@@ -78,53 +69,80 @@ async function generateGlobalRankingData(): Promise<RankingEntry[]> {
               isCurrentUser: false
             });
           }
-        } else {
-          // Se não há score unificado, tentar buscar dados de quiz_attempts
-          const attemptsQuery = query(
-            collection(db, 'quiz_attempts'),
-            where('studentId', '==', studentId),
-            where('passed', '==', true)
-          );
-          
-          const attemptsSnapshot = await getDocs(attemptsQuery);
-          
-          if (!attemptsSnapshot.empty) {
-            // Calcular pontuação baseada nas tentativas de quiz
-            let totalScore = 0;
-            let moduleCount = 0;
-            const moduleScores: { [key: string]: number } = {};
-            
-            attemptsSnapshot.docs.forEach(attemptDoc => {
-              const attemptData = attemptDoc.data();
-              const moduleId = attemptData.moduleId;
-              const percentage = attemptData.percentage || 0;
-              
-              if (!moduleScores[moduleId] || moduleScores[moduleId] < percentage) {
-                moduleScores[moduleId] = percentage;
-              }
-            });
-            
-            const scores = Object.values(moduleScores);
-            if (scores.length > 0) {
-              totalScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-              
-              rankingData.push({
-                studentId: studentId,
-                anonymousId: userData.anonymousId || studentId.slice(-4),
-                fullName: userData.fullName || userData.name || userData.displayName || 'Estudante',
-                totalScore: Math.round(totalScore),
-                normalizedScore: Math.round(totalScore),
-                moduleScores: moduleScores,
-                position: 0, // Será definido após ordenação
-                lastActivity: userData.lastActivity?.toDate?.() || new Date(),
-                isCurrentUser: false
-              });
-            }
-          }
+        } catch (error) {
+          console.error(`Erro ao processar score ${studentId}:`, error);
         }
+      }
+      
+      // Ordenar por pontuação e definir posições
+      rankingData.sort((a, b) => b.totalScore - a.totalScore);
+      rankingData.forEach((entry, index) => {
+        entry.position = index + 1;
+      });
+
+      console.log(`🏆 Ranking de scores unificados: ${rankingData.length} estudantes`);
+      return rankingData;
+    }
+
+    // Se não há scores unificados, buscar quiz_attempts
+    console.log('📝 Buscando dados de quiz_attempts...');
+    const attemptsSnapshot = await getDocs(collection(db, 'quiz_attempts'));
+    
+    if (attemptsSnapshot.empty) {
+      console.log('❌ Nenhum dado encontrado em quiz_attempts');
+      return [];
+    }
+
+    // Agrupar tentativas por estudante
+    const studentAttempts: { [key: string]: any[] } = {};
+    
+    attemptsSnapshot.docs.forEach(doc => {
+      const attemptData = doc.data();
+      const studentId = attemptData.studentId;
+      
+      if (studentId && attemptData.passed === true) {
+        if (!studentAttempts[studentId]) {
+          studentAttempts[studentId] = [];
+        }
+        studentAttempts[studentId].push(attemptData);
+      }
+    });
+
+    const rankingData: RankingEntry[] = [];
+
+    // Processar cada estudante
+    for (const [studentId, attempts] of Object.entries(studentAttempts)) {
+      try {
+        // Buscar dados do usuário
+        const userDoc = await getDoc(doc(db, 'users', studentId));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+        
+        // Calcular pontuação média
+        const scores = attempts.map(attempt => attempt.percentage || 0);
+        const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+        
+        // Contar módulos únicos
+        const uniqueModules = new Set(attempts.map(attempt => attempt.moduleId)).size;
+        
+        // Última atividade
+        const lastActivity = attempts
+          .map(attempt => attempt.completedAt?.toDate?.() || attempt.startedAt?.toDate?.())
+          .filter(date => date)
+          .sort((a, b) => b.getTime() - a.getTime())[0] || new Date();
+
+        rankingData.push({
+          studentId: studentId,
+          anonymousId: userData.anonymousId || studentId.slice(-4),
+          fullName: userData.fullName || userData.name || userData.displayName || 'Estudante',
+          totalScore: Math.round(avgScore),
+          normalizedScore: Math.round(avgScore),
+          moduleScores: { 'quiz_average': avgScore },
+          position: 0, // Será definido após ordenação
+          lastActivity: lastActivity,
+          isCurrentUser: false
+        });
       } catch (error) {
         console.error(`Erro ao processar estudante ${studentId}:`, error);
-        // Continuar com próximo estudante
       }
     }
 
@@ -134,7 +152,7 @@ async function generateGlobalRankingData(): Promise<RankingEntry[]> {
       entry.position = index + 1;
     });
 
-    console.log(`🏆 Ranking global gerado com ${rankingData.length} estudantes`);
+    console.log(`🏆 Ranking de quiz_attempts: ${rankingData.length} estudantes`);
     return rankingData;
 
   } catch (error) {

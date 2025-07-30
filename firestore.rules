@@ -70,9 +70,9 @@ service cloud.firestore {
     // COLEÇÕES PRINCIPAIS - CONTROLE ESPECÍFICO
     // ========================================
 
-    // USERS COLLECTION - Perfis de usuários (TEMPORARIAMENTE PERMISSIVO PARA DEBUG)
+    // USERS COLLECTION - Perfis de usuários (PERMISSIVO PARA RANKING)
     match /users/{userId} {
-      // 🔧 DEBUG: Permitir leitura para todos os usuários autenticados
+      // ✅ Todos os usuários autenticados podem ler perfis (necessário para ranking)
       allow read: if isAuthenticated();
 
       // ✅ Usuários podem editar apenas seus próprios dados
@@ -81,15 +81,11 @@ service cloud.firestore {
       // ✅ Professores podem ver dados de todos os usuários
       allow read: if isProfessor();
 
-      // ✅ TEMPORÁRIO: Permitir criação mais permissiva para debug
+      // ✅ Permitir criação para usuários autenticados
       allow create: if isAuthenticated() && 
         request.auth.uid == userId &&
         request.resource.data.keys().hasAll(['role', 'email']) &&
-        request.resource.data.role in ['professor', 'student'] &&
-        // Professores devem ter sido verificados com código especial (exceto autoSetup)
-        (request.resource.data.role != 'professor' || 
-         request.resource.data.get('verifiedWithCode', false) == true ||
-         request.resource.data.get('autoSetup', false) == true);
+        request.resource.data.role in ['professor', 'student'];
     }
 
     // QUIZ ATTEMPTS - Tentativas de quiz (PROTEÇÃO CRÍTICA)
