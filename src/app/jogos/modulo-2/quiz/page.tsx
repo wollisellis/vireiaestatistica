@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { 
@@ -12,11 +12,21 @@ import {
   RotateCcw,
   Info,
   Trophy,
-  Loader2
+  Loader2,
+  Volume2,
+  VolumeX,
+  Timer,
+  Zap,
+  ArrowRightLeft,
+  Sparkles,
+  Camera,
+  Waves,
+  FlaskConical
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Switch } from '@/components/ui/Switch';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { db } from '@/lib/firebase';
 import { 
@@ -46,11 +56,44 @@ interface DropZone {
   color: string;
   items: DragDropMethod[];
   acceptedMethods: string[];
+  icon: React.ComponentType<any>;
 }
 
 interface DragItem extends DragDropMethod {
   isPlaced?: boolean;
 }
+
+// Sons de feedback (usando Web Audio API)
+const playSound = (type: 'correct' | 'incorrect' | 'drop') => {
+  if (typeof window === 'undefined') return;
+  
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  // Configurações para cada tipo de som
+  if (type === 'correct') {
+    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+    oscillator.frequency.exponentialRampToValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+  } else if (type === 'incorrect') {
+    oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // A3
+    oscillator.frequency.exponentialRampToValueAtTime(110, audioContext.currentTime + 0.2); // A2
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+  } else {
+    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4
+    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+  }
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.3);
+};
 
 export default function Module2QuizPage() {
   const router = useRouter();
@@ -67,17 +110,60 @@ export default function Module2QuizPage() {
   const [dropZones, setDropZones] = useState<DropZone[]>([]);
   const [draggedItem, setDraggedItem] = useState<DragItem | null>(null);
   const [selectedItem, setSelectedItem] = useState<DragItem | null>(null); // Para mobile
+  const [hoveredZone, setHoveredZone] = useState<string | null>(null);
+  
+  // Estados de configuração
+  const [gameMode, setGameMode] = useState<'nameToDesc' | 'descToName'>('nameToDesc');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [timerEnabled, setTimerEnabled] = useState(false);
+  const [timeLimit, setTimeLimit] = useState(180); // 3 minutos
   
   // Estados de pontuação e tempo
   const [score, setScore] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(timeLimit);
   const [feedback, setFeedback] = useState<Record<string, 'correct' | 'incorrect'>>({});
+  
+  // Refs
+  const timerRef = useRef<NodeJS.Timeout>();
   
   // Constantes
   const MODULE_ID = 'module-2';
   const TOTAL_POINTS = 30;
   const PASSING_SCORE = 70;
+  
+  // Ícones para categorias
+  const categoryIcons = {
+    imaging: Camera,
+    electrical: Zap,
+    dilution: Waves
+  };
+
+  // Cores aprimoradas para categorias
+  const categoryColors = {
+    imaging: {
+      bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
+      border: 'border-blue-400',
+      hover: 'hover:border-blue-500 hover:shadow-blue-200',
+      active: 'border-blue-600 shadow-lg shadow-blue-300',
+      text: 'text-blue-700'
+    },
+    electrical: {
+      bg: 'bg-gradient-to-br from-yellow-50 to-amber-100',
+      border: 'border-yellow-400',
+      hover: 'hover:border-yellow-500 hover:shadow-yellow-200',
+      active: 'border-yellow-600 shadow-lg shadow-yellow-300',
+      text: 'text-yellow-700'
+    },
+    dilution: {
+      bg: 'bg-gradient-to-br from-green-50 to-emerald-100',
+      border: 'border-green-400',
+      hover: 'hover:border-green-500 hover:shadow-green-200',
+      active: 'border-green-600 shadow-lg shadow-green-300',
+      text: 'text-green-700'
+    }
+  };
 
   // Inicializar quiz
   useEffect(() => {
@@ -86,14 +172,30 @@ export default function Module2QuizPage() {
 
   // Timer
   useEffect(() => {
-    if (!hasStarted || isComplete) return;
+    if (!hasStarted || isComplete) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
     
-    const timer = setInterval(() => {
-      setTimeElapsed(Math.floor((Date.now() - (startTime?.getTime() || 0)) / 1000));
+    timerRef.current = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - (startTime?.getTime() || 0)) / 1000);
+      setTimeElapsed(elapsed);
+      
+      if (timerEnabled) {
+        const remaining = Math.max(0, timeLimit - elapsed);
+        setTimeRemaining(remaining);
+        
+        if (remaining === 0) {
+          // Tempo esgotado
+          handleTimeUp();
+        }
+      }
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [hasStarted, isComplete, startTime]);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [hasStarted, isComplete, startTime, timerEnabled, timeLimit]);
 
   const initializeQuiz = async () => {
     try {
@@ -120,25 +222,27 @@ export default function Module2QuizPage() {
 
       // Configurar métodos aleatórios
       const randomMethods = getRandomMethods(4);
-      console.log('🎲 Métodos aleatórios selecionados:', randomMethods);
       setAvailableMethods(randomMethods);
       
-      // Configurar zonas de drop
+      // Configurar zonas de drop com ícones
       const zones: DropZone[] = [
         {
           ...methodCategories.imaging,
           items: [],
-          acceptedMethods: methodCategories.imaging.acceptedMethods
+          acceptedMethods: methodCategories.imaging.acceptedMethods,
+          icon: Camera
         },
         {
           ...methodCategories.electrical,
           items: [],
-          acceptedMethods: methodCategories.electrical.acceptedMethods
+          acceptedMethods: methodCategories.electrical.acceptedMethods,
+          icon: Zap
         },
         {
           ...methodCategories.dilution,
           items: [],
-          acceptedMethods: methodCategories.dilution.acceptedMethods
+          acceptedMethods: methodCategories.dilution.acceptedMethods,
+          icon: Waves
         }
       ];
       setDropZones(zones);
@@ -151,10 +255,8 @@ export default function Module2QuizPage() {
   };
 
   const handleStart = () => {
-    console.log('🚀 Iniciando quiz do módulo 2');
     setHasStarted(true);
     setStartTime(new Date());
-    console.log('📊 Métodos disponíveis:', availableMethods);
   };
 
   const handleDragStart = (e: React.DragEvent, item: DragItem) => {
@@ -167,10 +269,22 @@ export default function Module2QuizPage() {
     e.dataTransfer.dropEffect = 'move';
   };
 
+  const handleDragEnter = (zoneId: string) => {
+    setHoveredZone(zoneId);
+  };
+
+  const handleDragLeave = () => {
+    setHoveredZone(null);
+  };
+
   const handleDrop = (e: React.DragEvent, targetZone: DropZone) => {
     e.preventDefault();
+    setHoveredZone(null);
     
     if (!draggedItem) return;
+
+    // Som de drop
+    if (soundEnabled) playSound('drop');
 
     // Remover item da lista de disponíveis
     setAvailableMethods(prev => prev.filter(item => item.id !== draggedItem.id));
@@ -199,6 +313,9 @@ export default function Module2QuizPage() {
 
   const handleZoneClick = (zone: DropZone) => {
     if (!selectedItem) return;
+
+    // Som de drop
+    if (soundEnabled) playSound('drop');
 
     // Remover item da lista de disponíveis
     setAvailableMethods(prev => prev.filter(item => item.id !== selectedItem.id));
@@ -239,6 +356,11 @@ export default function Module2QuizPage() {
     }, 100);
   };
 
+  const handleTimeUp = () => {
+    // Tempo esgotado - calcular pontuação com o que foi feito
+    calculateScore();
+  };
+
   const calculateScore = async () => {
     let correctCount = 0;
     const newFeedback: Record<string, 'correct' | 'incorrect'> = {};
@@ -247,7 +369,12 @@ export default function Module2QuizPage() {
       zone.items.forEach(item => {
         const isCorrect = zone.acceptedMethods.includes(item.id);
         newFeedback[item.id] = isCorrect ? 'correct' : 'incorrect';
-        if (isCorrect) correctCount++;
+        if (isCorrect) {
+          correctCount++;
+          if (soundEnabled) playSound('correct');
+        } else {
+          if (soundEnabled) playSound('incorrect');
+        }
       });
     });
 
@@ -279,7 +406,10 @@ export default function Module2QuizPage() {
         timeSpent: timeElapsed,
         questionsAnswered: 4,
         correctAnswers: Math.round((percentage / 100) * 4),
-        moduleTitle: 'Métodos de Avaliação Nutricional'
+        moduleTitle: 'Métodos de Avaliação Nutricional',
+        gameMode: gameMode,
+        timerEnabled: timerEnabled,
+        soundEnabled: soundEnabled
       };
 
       await addDoc(collection(db, 'quiz_attempts'), attemptData);
@@ -305,8 +435,10 @@ export default function Module2QuizPage() {
     setScore(0);
     setFeedback({});
     setTimeElapsed(0);
+    setTimeRemaining(timeLimit);
     setStartTime(null);
     setSelectedItem(null);
+    setHoveredZone(null);
     initializeQuiz();
   };
 
@@ -359,6 +491,15 @@ export default function Module2QuizPage() {
                 <div className="flex items-center space-x-2 text-gray-600">
                   <Clock className="w-4 h-4" />
                   <span className="text-sm font-medium">{formatTime(timeElapsed)}</span>
+                  {timerEnabled && (
+                    <Badge 
+                      variant={timeRemaining < 30 ? 'destructive' : 'secondary'}
+                      className="ml-2"
+                    >
+                      <Timer className="w-3 h-3 mr-1" />
+                      {formatTime(timeRemaining)}
+                    </Badge>
+                  )}
                 </div>
                 
                 {isComplete && (
@@ -379,11 +520,11 @@ export default function Module2QuizPage() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {!hasStarted ? (
-          // Tela inicial
+          // Tela inicial com configurações
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto"
+            className="max-w-3xl mx-auto"
           >
             <Card>
               <CardHeader>
@@ -415,12 +556,68 @@ export default function Module2QuizPage() {
                   </div>
                 </div>
 
+                {/* Configurações do jogo */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900">Configurações do Jogo</h3>
+                  
+                  {/* Modo de jogo */}
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <ArrowRightLeft className="w-5 h-5 text-gray-600" />
+                        <span className="font-medium">Modo de Jogo</span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant={gameMode === 'nameToDesc' ? 'default' : 'outline'}
+                          onClick={() => setGameMode('nameToDesc')}
+                        >
+                          Nome → Categoria
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={gameMode === 'descToName' ? 'default' : 'outline'}
+                          onClick={() => setGameMode('descToName')}
+                        >
+                          Descrição → Categoria
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Som */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                      <span className="font-medium">Sons de Feedback</span>
+                    </div>
+                    <Switch
+                      checked={soundEnabled}
+                      onCheckedChange={setSoundEnabled}
+                    />
+                  </div>
+
+                  {/* Timer */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Timer className="w-5 h-5" />
+                      <span className="font-medium">Modo com Tempo Limitado (3 min)</span>
+                    </div>
+                    <Switch
+                      checked={timerEnabled}
+                      onCheckedChange={setTimerEnabled}
+                    />
+                  </div>
+                </div>
+
                 <div className="text-center">
                   <Button
                     size="lg"
                     onClick={handleStart}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
+                    <Sparkles className="w-5 h-5 mr-2" />
                     Iniciar Atividade
                   </Button>
                 </div>
@@ -486,6 +683,36 @@ export default function Module2QuizPage() {
                   </div>
                 </div>
 
+                {/* Detalhamento das respostas */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-gray-900">Suas Respostas</h3>
+                  {dropZones.map(zone => (
+                    <div key={zone.id} className="space-y-2">
+                      <div className="flex items-center space-x-2 text-sm font-medium">
+                        <zone.icon className="w-4 h-4" />
+                        <span>{zone.title}</span>
+                      </div>
+                      <div className="pl-6 space-y-1">
+                        {zone.items.map(item => (
+                          <div 
+                            key={item.id}
+                            className={`flex items-center space-x-2 text-sm ${
+                              feedback[item.id] === 'correct' ? 'text-green-600' : 'text-red-600'
+                            }`}
+                          >
+                            {feedback[item.id] === 'correct' ? (
+                              <CheckCircle className="w-3 h-3" />
+                            ) : (
+                              <XCircle className="w-3 h-3" />
+                            )}
+                            <span>{item.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     variant="outline"
@@ -511,118 +738,160 @@ export default function Module2QuizPage() {
         ) : (
           // Área do quiz drag-and-drop
           <div className="space-y-6">
-            {/* Debug info */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="bg-yellow-50 p-2 rounded text-xs">
-                <p>Debug: {availableMethods.length} métodos disponíveis</p>
-              </div>
-            )}
-            
-            {/* Métodos disponíveis */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Métodos para Classificar
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {selectedItem ? 'Clique em uma categoria abaixo' : 'Arraste ou clique em um método'}
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <AnimatePresence>
-                    {availableMethods.map(method => (
-                      <motion.div
-                        key={method.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e as any, method)}
-                        onClick={() => handleItemClick(method)}
-                        className={`
-                          p-4 bg-white border-2 rounded-lg cursor-pointer transition-all
-                          ${selectedItem?.id === method.id 
-                            ? 'border-purple-500 shadow-lg ring-2 ring-purple-200' 
-                            : 'border-gray-200 hover:border-purple-300'
-                          }
-                        `}
-                      >
-                        <h4 className="font-semibold text-gray-900 mb-2">
-                          {method.name}
-                        </h4>
-                        <p className="text-xs text-gray-600 line-clamp-3">
-                          {method.description}
-                        </p>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Zonas de categorias */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {dropZones.map(zone => (
-                <div
-                  key={zone.id}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, zone)}
-                  onClick={() => handleZoneClick(zone)}
-                  className={`
-                    min-h-[200px] p-4 border-2 border-dashed rounded-lg transition-all
-                    ${zone.color}
-                    ${draggedItem || selectedItem ? 'border-opacity-100 scale-[1.02]' : 'border-opacity-50'}
-                    ${selectedItem ? 'cursor-pointer' : ''}
-                  `}
-                >
-                  <div className="text-center mb-4">
-                    <h4 className="font-semibold text-gray-900">{zone.title}</h4>
-                    <p className="text-xs text-gray-600 mt-1">{zone.description}</p>
-                  </div>
-                  
-                  <div className="space-y-2">
+            {/* Layout melhorado com separação clara */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Lado esquerdo - Itens disponíveis */}
+              <Card className="h-fit">
+                <CardHeader>
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                    <FlaskConical className="w-5 h-5 text-purple-600" />
+                    <span>
+                      {gameMode === 'nameToDesc' ? 'Métodos para Classificar' : 'Descrições para Classificar'}
+                    </span>
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {selectedItem ? 'Clique em uma categoria à direita' : 'Arraste ou clique em um item'}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
                     <AnimatePresence>
-                      {zone.items.map(item => (
+                      {availableMethods.map(method => (
                         <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
+                          key={method.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e as any, method)}
+                          onClick={() => handleItemClick(method)}
                           className={`
-                            p-3 bg-white rounded-lg border cursor-pointer
-                            ${feedback[item.id] === 'correct' 
-                              ? 'border-green-500 bg-green-50' 
-                              : feedback[item.id] === 'incorrect'
-                              ? 'border-red-500 bg-red-50'
-                              : 'border-gray-200 hover:border-gray-300'
+                            p-4 bg-white border-2 rounded-lg cursor-pointer transition-all
+                            ${selectedItem?.id === method.id 
+                              ? 'border-purple-500 shadow-lg ring-2 ring-purple-200 bg-purple-50' 
+                              : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
                             }
                           `}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleItemReturn(item, zone);
-                          }}
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{item.name}</span>
-                            {feedback[item.id] && (
-                              <div className="ml-2">
-                                {feedback[item.id] === 'correct' ? (
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <XCircle className="w-4 h-4 text-red-600" />
-                                )}
-                              </div>
+                          <div className="space-y-2">
+                            {gameMode === 'nameToDesc' ? (
+                              <h4 className="font-semibold text-gray-900 text-lg">
+                                {method.name}
+                              </h4>
+                            ) : (
+                              <p className="text-gray-700 leading-relaxed">
+                                {method.description}
+                              </p>
                             )}
                           </div>
                         </motion.div>
                       ))}
                     </AnimatePresence>
                   </div>
-                </div>
-              ))}
+                  
+                  {availableMethods.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                      <p>Todos os itens foram classificados!</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Lado direito - Zonas de categorias */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                  <Target className="w-5 h-5 text-purple-600" />
+                  <span>Categorias de Avaliação</span>
+                </h3>
+                
+                {dropZones.map(zone => {
+                  const colors = categoryColors[zone.id as keyof typeof categoryColors];
+                  const Icon = zone.icon;
+                  
+                  return (
+                    <motion.div
+                      key={zone.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.01 }}
+                      onDragOver={handleDragOver}
+                      onDragEnter={() => handleDragEnter(zone.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, zone)}
+                      onClick={() => handleZoneClick(zone)}
+                      className={`
+                        min-h-[150px] p-4 border-2 rounded-xl transition-all duration-300
+                        ${colors.bg} ${colors.border} ${colors.hover}
+                        ${hoveredZone === zone.id ? colors.active : ''}
+                        ${draggedItem || selectedItem ? 'cursor-pointer' : ''}
+                      `}
+                    >
+                      <div className="mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 bg-white rounded-lg ${colors.text}`}>
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h4 className={`font-semibold text-lg ${colors.text}`}>
+                              {zone.title}
+                            </h4>
+                            <p className="text-xs text-gray-600 mt-0.5">{zone.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <AnimatePresence>
+                          {zone.items.map(item => (
+                            <motion.div
+                              key={item.id}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              className={`
+                                p-3 bg-white rounded-lg border cursor-pointer transition-all
+                                ${feedback[item.id] === 'correct' 
+                                  ? 'border-green-500 bg-green-50' 
+                                  : feedback[item.id] === 'incorrect'
+                                  ? 'border-red-500 bg-red-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                                }
+                              `}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleItemReturn(item, zone);
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">
+                                  {gameMode === 'nameToDesc' ? item.name : 'Método Classificado'}
+                                </span>
+                                {feedback[item.id] && (
+                                  <div className="ml-2">
+                                    {feedback[item.id] === 'correct' ? (
+                                      <CheckCircle className="w-4 h-4 text-green-600" />
+                                    ) : (
+                                      <XCircle className="w-4 h-4 text-red-600" />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              {gameMode === 'descToName' && (
+                                <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                  {item.description}
+                                </p>
+                              )}
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
