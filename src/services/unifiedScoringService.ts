@@ -359,70 +359,42 @@ class UnifiedScoringService {
     const moduleScores = score.moduleScores
     const gameScores = Object.values(score.gameScores)
 
-    // Para sistema educacional, usar média ponderada das pontuações dos módulos
+    // Para sistema educacional, somar diretamente as pontuações dos módulos
     if (Object.keys(moduleScores).length === 0) return 0
 
-    // Se não temos pesos, usar pesos padrão
-    const weights = moduleWeights || {
-      'module-1': 70,
-      'module-2': 30,
-      'module-3': 100,
-      'module-4': 100
-    }
-
-    // Calcular média ponderada dos módulos
-    let totalWeightedScore = 0
-    let totalWeight = 0
+    // CORREÇÃO: Somar diretamente os pontos dos módulos sem pesos
+    let totalModuleScore = 0
+    let moduleCount = 0
 
     Object.entries(moduleScores).forEach(([moduleId, moduleScore]) => {
-      const weight = weights[moduleId] || 100
-      totalWeightedScore += (moduleScore * weight) / 100 // Normalizar pelo peso
-      totalWeight += weight
+      totalModuleScore += moduleScore // Soma direta sem pesos
+      moduleCount++
     })
 
-    const moduleAverage = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0
-    const gameAverage = gameScores.length > 0 ? gameScores.reduce((sum, s) => sum + s, 0) / gameScores.length : 0
+    // Se há jogos, adicionar também (mas são opcionais)
+    const totalGameScore = gameScores.length > 0 ? gameScores.reduce((sum, s) => sum + s, 0) : 0
 
-    // Peso: 80% módulos, 20% jogos (priorizar aprendizado) - mantendo precisão
-    return moduleAverage * 0.8 + gameAverage * 0.2
+    // Retornar soma total de módulos + jogos
+    console.log(`[calculateTotalScore] Módulos: ${totalModuleScore}, Jogos: ${totalGameScore}, Total: ${totalModuleScore + totalGameScore}`)
+    return totalModuleScore + totalGameScore
   }
 
-  // 🚀 CORREÇÃO: Calcular pontuação normalizada (0-100) COM PESOS DOS MÓDULOS
-  // Agora usa os mesmos pesos do calculateTotalScore para consistência no ranking
+  // Calcular pontuação normalizada - agora é igual ao totalScore
   private calculateNormalizedScore(score: UnifiedScore, moduleWeights?: Record<string, number>): number {
-    const moduleScores = score.moduleScores
-    if (Object.keys(moduleScores).length === 0) return 0
-
-    // Usar os mesmos pesos do calculateTotalScore para consistência
-    const weights = moduleWeights || {
-      'module-1': 70,
-      'module-2': 30,
-      'module-3': 100,
-      'module-4': 100
-    }
-
-    // Calcular média ponderada dos módulos (igual ao totalScore mas sem jogos)
-    let totalWeightedScore = 0
-    let totalWeight = 0
-
-    Object.entries(moduleScores).forEach(([moduleId, moduleScore]) => {
-      const weight = weights[moduleId] || 100
-      totalWeightedScore += (moduleScore * weight) / 100 // Normalizar pelo peso
-      totalWeight += weight
-    })
-
-    const normalizedScore = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0
-    return Math.min(100, Math.max(0, normalizedScore))
+    // CORREÇÃO: Para consistência, normalizedScore agora é igual ao totalScore
+    // Isso garante que o ranking reflita a soma real dos pontos
+    return this.calculateTotalScore(score, moduleWeights)
   }
 
-  // Calcular nível baseado na pontuação (escala 0-100)
+  // Calcular nível baseado na pontuação total
   private calculateLevel(totalScore: number): number {
-    // Níveis educacionais baseados na pontuação 0-100
-    if (totalScore >= 95) return 5 // Excelência
-    if (totalScore >= 85) return 4 // Muito Bom
-    if (totalScore >= 75) return 3 // Bom
-    if (totalScore >= 60) return 2 // Regular
-    if (totalScore >= 40) return 1 // Iniciante
+    // CORREÇÃO: Ajustado para considerar múltiplos módulos (cada módulo vale até 100)
+    // Com 4 módulos, o máximo seria 400 pontos
+    if (totalScore >= 350) return 5 // Excelência (87.5%+)
+    if (totalScore >= 280) return 4 // Muito Bom (70%+)
+    if (totalScore >= 200) return 3 // Bom (50%+)
+    if (totalScore >= 120) return 2 // Regular (30%+)
+    if (totalScore >= 50) return 1 // Iniciante (12.5%+)
     return 0 // Não iniciado
   }
 

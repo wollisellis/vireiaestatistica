@@ -28,6 +28,7 @@ interface Module {
   description: string;
   icon: string;
   estimatedTime: string;
+  maxPoints?: number;
   exercises?: unknown[];
   content?: unknown[];
   isLocked?: boolean;
@@ -209,12 +210,18 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                 {module.title}
               </h3>
 
-              {/* Microcopy com tempo estimado */}
+              {/* Microcopy com tempo estimado e pontos */}
               <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                 <div className="flex items-center space-x-1">
                   <Clock className="w-4 h-4" />
                   <span>{module.estimatedTime}</span>
                 </div>
+                {module.maxPoints && (
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-4 h-4" />
+                    <span>{module.maxPoints} pontos</span>
+                  </div>
+                )}
 
                 {/* Última atividade como microcopy */}
                 {state.status === 'completed' && state.lastActivity && (

@@ -47,6 +47,7 @@ interface ModuleData {
   description: string;
   icon: string;
   estimatedTime: string;
+  maxPoints?: number;
   isLocked?: boolean;
   lockMessage?: string;
 }
@@ -72,6 +73,7 @@ const convertModulesToGames = (modules: any[] | null | undefined): ModuleData[] 
     description: module.description || 'Descrição do módulo',
     icon: '📊', // Default icon
     estimatedTime: module.estimatedTime || '10-20 min',
+    maxPoints: module.maxPoints || 0,
     isLocked: false,
     lockMessage: ''
   }));
