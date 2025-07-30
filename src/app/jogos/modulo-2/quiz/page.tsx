@@ -433,7 +433,7 @@ export default function Module2QuizPage() {
         await unifiedScoringService.updateStudentScore(
           user.uid,
           MODULE_ID,
-          Math.round((percentage / 100) * TOTAL_POINTS),
+          percentage, // ✅ CORREÇÃO: Enviar porcentagem direta (0-100) ao invés de pontos convertidos
           'quiz'
         );
       }
