@@ -237,24 +237,20 @@ class UnifiedScoringService {
       // Buscar pontuação atual
       const currentScore = await this.getUnifiedScore(studentId) || this.createEmptyScore(studentId)
 
-      // Calcular nova pontuação do módulo
-      const moduleProgress = ModuleProgressSystem.calculateModuleProgress(
-        moduleId,
-        exerciseScore,
-        metadata
-      )
+      // A pontuação já vem normalizada (0-100) do quiz
+      const normalizedScore = exerciseScore
 
       // Atualizar pontuações
-      console.log(`[updateExerciseScore] 📝 Salvando pontuação do módulo:`, {
+      console.log(`[updateModuleScore] 📝 Salvando pontuação do módulo:`, {
         moduleId,
-        normalizedScore: moduleProgress.normalizedScore,
+        normalizedScore,
         exerciseScore,
         currentModuleScoresBefore: currentScore.moduleScores
       })
       
-      currentScore.moduleScores[moduleId] = moduleProgress.normalizedScore
+      currentScore.moduleScores[moduleId] = normalizedScore
       
-      console.log(`[updateExerciseScore] ✅ Pontuação salva:`, {
+      console.log(`[updateModuleScore] ✅ Pontuação salva:`, {
         moduleId,
         savedScore: currentScore.moduleScores[moduleId],
         allModuleScores: currentScore.moduleScores
@@ -279,7 +275,12 @@ class UnifiedScoringService {
 
       // Atualizar progresso do módulo
       batch.set(doc(db, 'module_progress', studentId, 'modules', moduleId), {
-        ...moduleProgress,
+        moduleId,
+        studentId,
+        score: normalizedScore,
+        isCompleted: normalizedScore >= 70,
+        timeSpent: metadata?.timeSpent || 0,
+        attempts: metadata?.attempts || 1,
         updatedAt: serverTimestamp()
       })
 
