@@ -355,14 +355,32 @@ class UnifiedScoringService {
   }
 
   // Calcular pontuação total
-  private calculateTotalScore(score: UnifiedScore): number {
-    const moduleScores = Object.values(score.moduleScores)
+  private calculateTotalScore(score: UnifiedScore, moduleWeights?: Record<string, number>): number {
+    const moduleScores = score.moduleScores
     const gameScores = Object.values(score.gameScores)
 
-    // Para sistema educacional, usar média das pontuações dos módulos como base
-    if (moduleScores.length === 0) return 0
+    // Para sistema educacional, usar média ponderada das pontuações dos módulos
+    if (Object.keys(moduleScores).length === 0) return 0
 
-    const moduleAverage = moduleScores.reduce((sum, s) => sum + s, 0) / moduleScores.length
+    // Se não temos pesos, usar pesos padrão
+    const weights = moduleWeights || {
+      'module-1': 70,
+      'module-2': 30,
+      'module-3': 100,
+      'module-4': 100
+    }
+
+    // Calcular média ponderada dos módulos
+    let totalWeightedScore = 0
+    let totalWeight = 0
+
+    Object.entries(moduleScores).forEach(([moduleId, moduleScore]) => {
+      const weight = weights[moduleId] || 100
+      totalWeightedScore += (moduleScore * weight) / 100 // Normalizar pelo peso
+      totalWeight += weight
+    })
+
+    const moduleAverage = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0
     const gameAverage = gameScores.length > 0 ? gameScores.reduce((sum, s) => sum + s, 0) / gameScores.length : 0
 
     // Peso: 80% módulos, 20% jogos (priorizar aprendizado) - mantendo precisão
@@ -447,6 +465,37 @@ class UnifiedScoringService {
     return 100
   }
 
+  // Atualizar pontuação do estudante (método público genérico)
+  async updateStudentScore(
+    studentId: string,
+    moduleId: string,
+    score: number,
+    type: 'quiz' | 'exercise' | 'game' = 'quiz',
+    metadata?: {
+      classId?: string;
+      timeSpent?: number;
+      hintsUsed?: number;
+      attempts?: number;
+    }
+  ): Promise<boolean> {
+    try {
+      // Para quiz do módulo, usar updateModuleScore
+      if (type === 'quiz' || type === 'exercise') {
+        return await this.updateModuleScore(studentId, moduleId, score, metadata);
+      }
+      
+      // Para jogos, usar updateGameScore
+      if (type === 'game') {
+        return await this.updateGameScore(studentId, moduleId, score, metadata);
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Erro ao atualizar pontuação do estudante:', error);
+      return false;
+    }
+  }
+
   // 🚀 NOVO: Obter módulos concluídos de forma consistente
   async getCompletedModules(studentId: string): Promise<string[]> {
     const score = await this.getUnifiedScore(studentId)
@@ -466,29 +515,36 @@ class UnifiedScoringService {
   }
 
   // 🚀 NOVO: Obter estatísticas de conclusão
-  async getCompletionStats(studentId: string): Promise<{
+  async getCompletionStats(studentId: string, unlockedModules?: string[]): Promise<{
     completedModules: number
     totalModules: number
     completionRate: number
     completedModuleIds: string[]
   }> {
     const score = await this.getUnifiedScore(studentId)
+    
+    // Se unlockedModules não foi fornecido, usar módulos padrão desbloqueados
+    const availableModules = unlockedModules || ['module-1', 'module-2'];
+    
     if (!score) {
       return {
         completedModules: 0,
-        totalModules: 4, // Número total de módulos do sistema
+        totalModules: availableModules.length,
         completionRate: 0,
         completedModuleIds: []
       }
     }
     
+    // Filtrar apenas módulos desbloqueados e concluídos
     const completedModuleIds = Object.entries(score.moduleScores)
-      .filter(([_, moduleScore]) => moduleScore >= 70)
+      .filter(([moduleId, moduleScore]) => 
+        availableModules.includes(moduleId) && moduleScore >= 70
+      )
       .map(([moduleId, _]) => moduleId)
     
     const completedModules = completedModuleIds.length
-    const totalModules = 1 // ✅ ATUALIZADO: Apenas 1 módulo disponível atualmente
-    const completionRate = (completedModules / totalModules) * 100
+    const totalModules = availableModules.length
+    const completionRate = totalModules > 0 ? (completedModules / totalModules) * 100 : 0
     
     return {
       completedModules,

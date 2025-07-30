@@ -274,7 +274,8 @@ function ModuleCard({
     maxAttempts: setting?.maxAttempts || undefined,
     timeLimit: setting?.timeLimit || undefined,
     isCollaborativeEnabled: setting?.isCollaborativeEnabled || true,
-    customInstructions: setting?.customInstructions || ''
+    customInstructions: setting?.customInstructions || '',
+    weight: setting?.weight || (module.id === 'module-1' ? 70 : module.id === 'module-2' ? 30 : 100)
   })
 
   const handleSaveConfig = () => {
@@ -339,6 +340,10 @@ function ModuleCard({
               
               <Badge variant="outline" className="text-xs">
                 {stats.difficulty}
+              </Badge>
+              
+              <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
+                Peso: {setting?.weight || (module.id === 'module-1' ? 70 : module.id === 'module-2' ? 30 : 100)} pts
               </Badge>
             </div>
           </div>
@@ -407,6 +412,23 @@ function ModuleCard({
               </DialogHeader>
               
               <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Peso do Módulo (0-100)</label>
+                  <Input
+                    type="number"
+                    value={configForm.weight}
+                    onChange={(e) => setConfigForm(prev => ({
+                      ...prev,
+                      weight: parseInt(e.target.value) || 100
+                    }))}
+                    min={0}
+                    max={100}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Define quantos pontos este módulo vale no total
+                  </p>
+                </div>
+                
                 <div>
                   <label className="text-sm font-medium">Nota Mínima para Aprovação</label>
                   <Input
@@ -500,6 +522,47 @@ function ModuleCard({
             </div>
           </div>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Componente para módulos funcionais (implementados)
+function FunctionalModuleCard(props: any) {
+  // Usar o ModuleCard padrão para módulos funcionais
+  return <ModuleCard {...props} moduleNumber={1} />
+}
+
+// Componente para módulos planejados (não implementados)
+function PlannedModuleCard({ module, moduleNumber }: { module: any; moduleNumber: number }) {
+  return (
+    <Card className="opacity-60 border-gray-200">
+      <CardContent className="p-6">
+        <div className="flex items-start space-x-3">
+          <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm font-bold">
+            {moduleNumber}
+          </div>
+          
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-700 mb-1">
+              {module.title}
+            </h3>
+            <p className="text-sm text-gray-500 mb-3">
+              {module.description}
+            </p>
+            
+            <div className="flex items-center space-x-4 text-xs text-gray-400">
+              <div className="flex items-center space-x-1">
+                <Clock className="w-3 h-3" />
+                <span>{module.estimatedTime || 90} min</span>
+              </div>
+              
+              <Badge variant="outline" className="text-xs text-gray-400 border-gray-300">
+                Em desenvolvimento
+              </Badge>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

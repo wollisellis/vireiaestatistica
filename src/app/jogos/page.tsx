@@ -52,7 +52,7 @@ interface ModuleData {
 }
 
 // 🎯 CONFIGURAÇÃO DOS MÓDULOS DISPONÍVEIS
-const ENABLED_MODULES = ['module-1'] as const;
+const ENABLED_MODULES = ['module-1', 'module-2'] as const;
 type EnabledModuleId = typeof ENABLED_MODULES[number];
 
 // 🎯 CONVERTER MÓDULOS PARA FORMATO LIMPO (COM SAFE GUARDS)
@@ -121,6 +121,7 @@ function JogosPageContent() {
                 dataLoadingState.ranking && dataLoadingState.classInfo;
   const [showCompletedModal, setShowCompletedModal] = useState(false);
   const [selectedModuleForModal, setSelectedModuleForModal] = useState<{
+    moduleId?: string;
     title: string;
     score: number;
     bestScore?: number;
@@ -333,6 +334,7 @@ function JogosPageContent() {
           // Módulo já concluído - abrir modal
           const moduleData = modules.find(m => m.id === moduleId);
           setSelectedModuleForModal({
+            moduleId: moduleId,
             title: moduleData?.title || 'Módulo',
             score: progress.score,
             bestScore: progress.score, // Por enquanto são iguais
@@ -348,20 +350,28 @@ function JogosPageContent() {
       // Módulo não concluído - navegar normalmente com Next.js router
       if (moduleId === 'module-1') {
         router.push('/jogos/modulo-1/quiz');
+      } else if (moduleId === 'module-2') {
+        router.push('/jogos/modulo-2/quiz');
       }
     } catch (error) {
       console.error('Error starting module:', error);
       // Navegar mesmo com erro usando Next.js router
       if (moduleId === 'module-1') {
         router.push('/jogos/modulo-1/quiz');
+      } else if (moduleId === 'module-2') {
+        router.push('/jogos/modulo-2/quiz');
       }
     }
   }, [router, getUserId(), getModuleProgress]);
   
   const handleRetryModule = useCallback(() => {
     setShowCompletedModal(false);
-    router.push('/jogos/modulo-1/quiz');
-  }, [router]);
+    if (selectedModuleForModal?.moduleId === 'module-1') {
+      router.push('/jogos/modulo-1/quiz');
+    } else if (selectedModuleForModal?.moduleId === 'module-2') {
+      router.push('/jogos/modulo-2/quiz');
+    }
+  }, [router, selectedModuleForModal]);
   
   const handleLogout = useCallback(async () => {
     try {

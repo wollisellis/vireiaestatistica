@@ -95,6 +95,7 @@ export interface ModuleSettings {
   minPassingScore: number
   prerequisites: string[]
   customInstructions?: string
+  weight?: number // Peso do módulo (0-100), padrão 100
 }
 
 export interface ClassStatistics {
@@ -787,6 +788,69 @@ export class ProfessorClassService {
     } catch (error) {
       console.error('Erro ao desbloquear módulo:', error)
       throw error
+    }
+  }
+
+  // Configurar peso do módulo
+  static async setModuleWeight(classId: string, moduleId: string, weight: number): Promise<void> {
+    try {
+      // Validar peso
+      if (weight < 0 || weight > 100) {
+        throw new Error('Peso deve estar entre 0 e 100')
+      }
+
+      await this.configureModule(classId, moduleId, {
+        weight,
+        moduleId,
+        moduleName: modules.find(m => m.id === moduleId)?.title || 'Módulo'
+      })
+      
+      console.log(`Peso do módulo ${moduleId} configurado para ${weight}`)
+    } catch (error) {
+      console.error('Erro ao configurar peso do módulo:', error)
+      throw error
+    }
+  }
+
+  // Obter pesos de todos os módulos de uma turma
+  static async getModuleWeights(classId: string): Promise<Record<string, number>> {
+    try {
+      const settings = await this.getModuleSettings(classId)
+      const weights: Record<string, number> = {}
+      
+      // Configurar pesos padrão se não existirem
+      modules.forEach(module => {
+        if (module.id === 'module-1') {
+          weights[module.id] = 70 // Módulo 1 vale 70 pontos por padrão
+        } else if (module.id === 'module-2') {
+          weights[module.id] = 30 // Módulo 2 vale 30 pontos por padrão
+        } else {
+          weights[module.id] = 100 // Outros módulos valem 100 por padrão
+        }
+      })
+      
+      // Sobrescrever com configurações salvas
+      settings.forEach(setting => {
+        if (setting.weight !== undefined) {
+          weights[setting.moduleId] = setting.weight
+        }
+      })
+      
+      return weights
+    } catch (error) {
+      console.error('Erro ao obter pesos dos módulos:', error)
+      // Retornar pesos padrão em caso de erro
+      const defaultWeights: Record<string, number> = {}
+      modules.forEach(module => {
+        if (module.id === 'module-1') {
+          defaultWeights[module.id] = 70
+        } else if (module.id === 'module-2') {
+          defaultWeights[module.id] = 30
+        } else {
+          defaultWeights[module.id] = 100
+        }
+      })
+      return defaultWeights
     }
   }
 

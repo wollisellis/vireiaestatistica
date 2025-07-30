@@ -211,6 +211,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // MODULE SETTINGS - Configurações de módulos por turma
+    match /module_settings/{settingId} {
+      // ✅ Professores podem ler/escrever configurações de módulos
+      allow read, write: if isProfessor();
+      
+      // ✅ Estudantes podem ler configurações da sua turma
+      allow read: if isStudent() && 
+        resource.data.classId in resource.data.get('enrolledClasses', []);
+    }
+
     // NUTRITIONAL DATASETS - Dados brasileiros (ACESSO CONTROLADO)
     match /nutritional_datasets/{datasetId} {
       // ✅ Usuários autenticados podem ler datasets para exercícios

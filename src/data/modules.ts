@@ -168,139 +168,76 @@ export const modules: Module[] = [
   {
     id: 'module-2',
     title: 'Métodos de Avaliação da Composição Corporal',
-    description: 'Conheça os diferentes métodos de avaliação corporal, desde antropometria até padrões-ouro',
+    description: 'Aprenda sobre os diferentes métodos de avaliação corporal através de atividades interativas',
     order: 2,
     isLocked: true,
     icon: '🔬',
-    estimatedTime: 120,
+    estimatedTime: 30,
     content: [
       {
         id: 'content-2-1',
         type: 'text',
-        title: 'Métodos Padrão-Ouro',
+        title: 'Introdução aos Métodos de Avaliação',
         content: `
-          **DEXA (Absorciometria de Dupla Energia de Raios-X):**
-          - Considerado padrão-ouro para composição corporal
-          - Diferencia massa óssea, massa magra e massa gorda
-          - Custo médio no Brasil: R$ 300-600 (particular)
-          - Limitação: não separa gordura subcutânea de visceral
-          
-          **Tomografia Computadorizada:**
-          - Excelente para avaliar gordura visceral
-          - Alto custo e exposição à radiação
-          - Uso limitado na prática clínica rotineira
-          
-          **Ressonância Magnética:**
-          - Sem radiação ionizante
-          - Altíssima precisão
-          - Custo elevado: R$ 800-2000
+          A avaliação da composição corporal é fundamental para o diagnóstico nutricional completo. 
+          Existem diversos métodos disponíveis, desde os mais simples e acessíveis até os considerados 
+          padrão-ouro na área.
+
+          **Objetivos deste módulo:**
+          - Conhecer os principais métodos de avaliação corporal
+          - Entender as características de cada método
+          - Identificar vantagens e limitações
+          - Saber quando aplicar cada método na prática clínica
         `,
         order: 1
       },
       {
         id: 'content-2-2',
         type: 'text',
-        title: 'Métodos Acessíveis',
+        title: 'Categorias de Métodos',
         content: `
-          **Bioimpedância Elétrica:**
-          - Método prático e rápido
-          - Custo acessível: R$ 50-150
-          - Influenciado por hidratação
-          - Disponível em muitas clínicas e academias
+          **Métodos de Imagem (Padrão-Ouro):**
+          - DEXA, Tomografia, Ressonância Magnética
+          - Alta precisão, mas custo elevado
           
-          **Antropometria:**
-          - Baixo custo e alta aplicabilidade
-          - Requer treinamento adequado
-          - Inclui: peso, altura, circunferências, dobras cutâneas
-          - Base do atendimento no SUS
+          **Métodos Duplamente Indiretos:**
+          - Bioimpedância, Hidrodensitometria
+          - Boa relação custo-benefício
+          
+          **Métodos de Diluição:**
+          - Água marcada (deutério/trítio)
+          - Precisão para água corporal total
         `,
         order: 2
-      },
-      {
-        id: 'content-2-3',
-        type: 'image',
-        title: 'Comparação Visual dos Métodos',
-        content: 'Imagem comparativa dos diferentes métodos de avaliação',
-        mediaUrl: '/images/body-composition-methods.png',
-        order: 3
       }
     ],
     exercises: [
       {
         id: 'exercise-2-1',
-        type: 'matching',
-        title: 'Conecte Métodos e Características',
-        description: 'Relacione cada método de avaliação com suas características principais',
-        points: 120,
-        difficulty: 'easy',
+        type: 'drag-drop',
+        title: 'Classificação de Métodos de Avaliação',
+        description: 'Arraste cada método de avaliação para suas características correspondentes',
+        points: 30,
+        difficulty: 'medium',
         order: 1
-      },
-      {
-        id: 'exercise-2-2',
-        type: 'calculation',
-        title: 'Simulador de Custo-Benefício',
-        description: 'Calcule o custo-benefício de diferentes métodos para diversos cenários clínicos',
-        points: 180,
-        difficulty: 'medium',
-        order: 2
-      },
-      {
-        id: 'exercise-2-3',
-        type: 'quiz',
-        title: 'Interpretação de Resultados',
-        description: 'Analise resultados de diferentes métodos e interprete corretamente',
-        points: 200,
-        difficulty: 'hard',
-        order: 3,
-        questions: [
-          {
-            id: 'q-2-3-1',
-            text: 'Um paciente realizou DEXA e apresentou 32% de gordura corporal. Considerando que é um homem de 35 anos, como você classificaria?',
-            type: 'multiple-choice',
-            options: [
-              'Normal',
-              'Sobrepeso',
-              'Obesidade',
-              'Obesidade grave'
-            ],
-            correctAnswer: 'Obesidade',
-            explanation: 'Para homens adultos, gordura corporal acima de 25% já é considerada obesidade. 32% indica obesidade.',
-            hint: 'Homens têm pontos de corte diferentes de mulheres para % de gordura.',
-            hintPenalty: 15
-          }
-        ]
-      },
-      {
-        id: 'exercise-2-4',
-        type: 'brazilian-data',
-        title: 'Análise de Custos e Acessibilidade',
-        description: 'Analise dados reais de custos de exames e acessibilidade no Brasil',
-        points: 180,
-        difficulty: 'medium',
-        order: 4
       }
     ],
     realDataSources: [
       {
-        name: 'Custos de Exames - ANS 2024',
-        source: 'DataSUS',
+        name: 'Métodos de Avaliação Corporal',
+        source: 'Literatura Científica',
         year: 2024,
-        description: 'Tabela de custos médios de exames no Brasil',
+        description: 'Características dos principais métodos de avaliação',
         dataPoints: [
           {
-            label: 'DEXA - SUS',
-            value: 'R$ 85,00',
-            unit: 'valor tabelado'
+            label: 'Métodos disponíveis',
+            value: 7,
+            unit: 'tipos'
           },
           {
-            label: 'DEXA - Particular',
-            value: 'R$ 450,00',
-            unit: 'média nacional'
-          },
-          {
-            label: 'Bioimpedância - Particular',
-            value: 'R$ 80,00',
-            unit: 'média nacional'
+            label: 'Questões por tentativa',
+            value: 4,
+            unit: 'métodos'
           }
         ]
       }
