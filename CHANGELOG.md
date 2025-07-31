@@ -11,6 +11,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.9.5 – 2025-07-31
+
+### 🔧 **Improvements & Fixes**
+- **Reverted Module Colors to Original Green**:
+  - All completed modules now use consistent green color (`from-green-500 to-green-600`)
+  - Removed individual color variations (emerald, purple, indigo, amber)
+  - Badge changed from amber/gold back to green with CheckCircle icon
+  - **Files Modified**: `src/components/games/EnhancedModuleCard.tsx`
+
+- **Fixed Security Issue in /jogos**:
+  - Removed login modal that allowed bypassing authentication
+  - Now redirects directly to `/` when user is not authenticated
+  - Prevents unauthorized access to game modules
+  - **Files Modified**: `src/app/jogos/page.tsx`
+
+- **Improved Module Control Visibility for Professors**:
+  - Added clear warning in "Módulos" tab explaining it's GLOBAL control
+  - Added instructions on how to access per-class module control
+  - Guides professors to "Turmas" tab for individual class management
+  - **Files Modified**: `src/app/professor/page.tsx`
+
+---
+
 ## Version 0.9.4 – 2025-07-31
 
 ### ✨ **New Features**

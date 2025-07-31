@@ -133,7 +133,6 @@ function JogosPageContent() {
     lastCompleted?: Date;
   } | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   
   // 🎯 REFS PARA DEBOUNCE
   const refreshTimeoutRef = useRef<NodeJS.Timeout>();
@@ -218,10 +217,10 @@ function JogosPageContent() {
       const userId = getUserId();
       const isGuestUser = userId === 'guest-user' || userId === 'professor-guest-user';
 
-      // Se não há usuário ou é um guest não autorizado, mostrar modal de login
+      // Se não há usuário ou é um guest não autorizado, redirecionar para login
       if (!user && !isGuestUser) {
-        console.log('🔐 Usuário não logado detectado, mostrando modal de login');
-        setShowLoginModal(true);
+        console.log('🔐 Usuário não logado detectado, redirecionando para login');
+        router.push('/');
         return;
       }
 
@@ -490,93 +489,7 @@ function JogosPageContent() {
   }
   
   return (
-    <>
-      {/* Modal de Login */}
-      <AnimatePresence>
-        {showLoginModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">Login Necessário</h2>
-                    <p className="text-blue-100">
-                      Faça login para acessar os módulos educacionais
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => router.push('/')}
-                    className="text-white/80 hover:text-white"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-6 space-y-4">
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                    <BookOpen className="w-10 h-10 text-blue-600" />
-                  </div>
-                  
-                  <p className="text-gray-600">
-                    Você precisa estar autenticado como estudante para acessar o conteúdo dos módulos.
-                  </p>
-                  
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Atenção:</strong> Use seu email institucional @dac.unicamp.br ou @unicamp.br
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <Button
-                    onClick={() => {
-                      // Salvar URL de retorno
-                      sessionStorage.setItem('returnUrl', '/jogos');
-                      router.push('/');
-                    }}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    size="lg"
-                  >
-                    Fazer Login
-                  </Button>
-                  
-                  <Button
-                    onClick={() => {
-                      sessionStorage.setItem('returnUrl', '/jogos');
-                      router.push('/?signup=true');
-                    }}
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                  >
-                    Criar Conta
-                  </Button>
-                </div>
-                
-                <p className="text-xs text-gray-500 text-center">
-                  Ao fazer login, você será redirecionado de volta para esta página
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
         {/* 🎯 HEADER RESPONSIVO */}
         <div className="bg-white border-b border-emerald-200 shadow-sm">
           <div className="max-w-8xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -759,7 +672,6 @@ function JogosPageContent() {
 
         <Footer />
       </div>
-    </>
   );
 }
 

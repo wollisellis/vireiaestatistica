@@ -36,7 +36,8 @@ import {
   CheckCircle,
   Monitor,
   Menu,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 import { HealthIndicator } from '@/components/system/HealthIndicator'
@@ -638,6 +639,32 @@ export default function ProfessorDashboardPage() {
                           <p className="text-sm sm:text-base text-emerald-700 mt-1">
                             Veja exatamente o que está disponível para os estudantes em <strong>/jogos</strong>
                           </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Aviso sobre controle por turma */}
+                  <Card className="border-l-4 border-yellow-500 bg-yellow-50">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row items-start gap-3 sm:space-x-4">
+                        <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg flex-shrink-0">
+                          <AlertTriangle className="w-5 sm:w-6 h-5 sm:h-6 text-yellow-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-yellow-900 mb-2 text-base sm:text-lg">
+                            ⚠️ Controle de Módulos por Turma
+                          </h3>
+                          <div className="text-yellow-800 text-xs sm:text-sm space-y-1 sm:space-y-2">
+                            <p><strong>🎯 IMPORTANTE:</strong> O controle abaixo é GLOBAL e afeta TODOS os alunos.</p>
+                            <p><strong>👥 Para controlar módulos POR TURMA:</strong></p>
+                            <ol className="list-decimal list-inside ml-4 space-y-1">
+                              <li>Vá para a aba <strong>"Turmas"</strong></li>
+                              <li>Selecione a turma desejada</li>
+                              <li>Use o <strong>"Painel de Gerenciamento de Módulos"</strong> que aparecerá</li>
+                            </ol>
+                            <p className="text-yellow-700 italic">Isso permite ativar/desativar módulos específicos para cada turma individualmente.</p>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
