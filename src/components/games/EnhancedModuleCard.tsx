@@ -100,9 +100,14 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
   const iconBgClass = useMemo(() => {
     if (module.isLocked) return 'bg-gray-400';
     
-    // Se já foi completado, usar verde para todos os módulos
+    // Se já foi completado, usar cores diferentes por módulo
     if (state.status === 'completed') {
-      return 'bg-gradient-to-br from-green-500 to-green-600';
+      if (module.id === 'module-1') {
+        return 'bg-gradient-to-br from-blue-500 to-blue-600';
+      } else if (module.id === 'module-2') {
+        return 'bg-gradient-to-br from-purple-500 to-purple-600';
+      }
+      return 'bg-gradient-to-br from-green-500 to-green-600'; // fallback
     }
     
     // Se está em progresso, mostrar laranja
@@ -147,7 +152,11 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
           : error
             ? 'border-red-300 hover:border-red-400 bg-gradient-to-br from-white to-red-50 dark:border-red-600 dark:bg-gradient-to-br dark:from-gray-700 dark:to-red-900/20'
             : state.status === 'completed'
-              ? 'border-green-400 hover:border-green-500 bg-gradient-to-br from-green-50/30 to-green-50/30 hover:ring-4 hover:ring-green-300/50 shadow-green-200/50'
+              ? module.id === 'module-1'
+                ? 'border-blue-500 hover:border-blue-600 bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 hover:ring-4 hover:ring-blue-400/50 shadow-blue-300/50'
+                : module.id === 'module-2'
+                  ? 'border-purple-500 hover:border-purple-600 bg-gradient-to-br from-purple-100 to-purple-200 hover:from-purple-200 hover:to-purple-300 hover:ring-4 hover:ring-purple-400/50 shadow-purple-300/50'
+                  : 'border-green-500 hover:border-green-600 bg-gradient-to-br from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 hover:ring-4 hover:ring-green-400/50 shadow-green-300/50'
               : module.id === 'module-1'
                 ? 'border-blue-300 hover:border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-300/50 dark:hover:ring-blue-500/20'
                 : module.id === 'module-2'
@@ -172,9 +181,21 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             <div className="absolute top-4 right-4">
               <Badge
                 variant="success"
-                className="flex items-center space-x-1 text-xs px-2 py-1 bg-gradient-to-r from-green-100 to-green-100 text-green-800 border-green-300 shadow-md"
+                className={`flex items-center space-x-1 text-xs px-2 py-1 shadow-md ${
+                  module.id === 'module-1'
+                    ? 'bg-gradient-to-r from-blue-200 to-blue-300 text-blue-900 border-blue-400'
+                    : module.id === 'module-2'
+                      ? 'bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900 border-purple-400'
+                      : 'bg-gradient-to-r from-green-200 to-green-300 text-green-900 border-green-400'
+                }`}
               >
-                <CheckCircle className="w-3 h-3 text-green-600" />
+                <CheckCircle className={`w-3 h-3 ${
+                  module.id === 'module-1'
+                    ? 'text-blue-700'
+                    : module.id === 'module-2'
+                      ? 'text-purple-700'
+                      : 'text-green-700'
+                }`} />
                 <span className="font-semibold">Concluído</span>
               </Badge>
             </div>
@@ -289,11 +310,29 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
           {state.status === 'completed' && (
             <div className="mb-6">
               <div
-                className="inline-flex items-center space-x-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg border border-green-200 dark:bg-green-800/30 dark:text-green-200 dark:border-green-600 cursor-help"
+                className={`inline-flex items-center space-x-2 px-3 py-2 rounded-lg border cursor-help ${
+                  module.id === 'module-1'
+                    ? 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-800/50 dark:text-blue-100 dark:border-blue-500'
+                    : module.id === 'module-2'
+                      ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-800/50 dark:text-purple-100 dark:border-purple-500'
+                      : 'bg-green-100 text-green-900 border-green-300 dark:bg-green-800/50 dark:text-green-100 dark:border-green-500'
+                }`}`
                 title={`Detalhes: ${state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • ${state.score}% • ${state.passed ? 'Aprovado' : 'Reprovado'} • ${state.stars} estrela${state.stars !== 1 ? 's' : ''}`}
               >
-                <Award className="w-4 h-4 text-green-600 dark:text-green-400" />
-                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <Award className={`w-4 h-4 ${
+                  module.id === 'module-1'
+                    ? 'text-blue-700 dark:text-blue-300'
+                    : module.id === 'module-2'
+                      ? 'text-purple-700 dark:text-purple-300'
+                      : 'text-green-700 dark:text-green-300'
+                }`} />
+                <CheckCircle className={`w-4 h-4 ${
+                  module.id === 'module-1'
+                    ? 'text-blue-700 dark:text-blue-300'
+                    : module.id === 'module-2'
+                      ? 'text-purple-700 dark:text-purple-300'
+                      : 'text-green-700 dark:text-green-300'
+                }`} />
                 <span className="font-semibold text-sm">
                   {state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • {state.score}% • {module.maxPoints ? `${((state.score / 100) * module.maxPoints).toFixed(1)} pts • ` : ''}Aprovado
                 </span>
@@ -377,7 +416,11 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                 : error
                   ? 'bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-300 hover:from-red-100 hover:to-red-200 hover:border-red-400 dark:from-red-800/30 dark:to-red-700/30 dark:text-red-200 dark:border-red-600'
                   : state.status === 'completed'
-                    ? 'bg-gradient-to-r from-green-50 to-emerald-100 text-green-700 border-green-300 hover:from-green-100 hover:to-emerald-200 hover:border-green-400 dark:from-green-800/30 dark:to-emerald-700/30 dark:text-green-200 dark:border-green-600'
+                    ? module.id === 'module-1'
+                      ? 'bg-gradient-to-r from-blue-200 to-indigo-300 text-blue-800 border-blue-400 hover:from-blue-300 hover:to-indigo-400 hover:border-blue-500 dark:from-blue-700/50 dark:to-indigo-600/50 dark:text-blue-100 dark:border-blue-500'
+                      : module.id === 'module-2'
+                        ? 'bg-gradient-to-r from-purple-200 to-violet-300 text-purple-800 border-purple-400 hover:from-purple-300 hover:to-violet-400 hover:border-purple-500 dark:from-purple-700/50 dark:to-violet-600/50 dark:text-purple-100 dark:border-purple-500'
+                        : 'bg-gradient-to-r from-green-200 to-emerald-300 text-green-800 border-green-400 hover:from-green-300 hover:to-emerald-400 hover:border-green-500 dark:from-green-700/50 dark:to-emerald-600/50 dark:text-green-100 dark:border-green-500'
                     : state.status === 'in_progress'
                       ? 'bg-gradient-to-r from-orange-50 to-amber-100 text-orange-700 border-orange-300 hover:from-orange-100 hover:to-amber-200 hover:border-orange-400 dark:from-orange-800/30 dark:to-amber-700/30 dark:text-orange-200 dark:border-orange-600'
                       : 'bg-gradient-to-r from-blue-50 to-indigo-100 text-blue-700 border-blue-300 hover:from-blue-100 hover:to-indigo-200 hover:border-blue-400 dark:from-blue-800/30 dark:to-indigo-700/30 dark:text-blue-200 dark:border-blue-600 hover:ring-4 hover:ring-blue-200/50'

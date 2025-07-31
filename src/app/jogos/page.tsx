@@ -200,9 +200,14 @@ function JogosPageContent() {
               }
               
               setUnlockedModules(validModules);
-              devLog('Módulos globalmente desbloqueados:', validModules);
+              devLog('🎯 Módulos globalmente desbloqueados:', validModules);
+              console.log('📱 Sincronização: página de jogos recebeu atualização de módulos:', {
+                documento: 'settings/modules',
+                modulosDesbloqueados: validModules,
+                timestamp: new Date().toISOString()
+              });
             } else {
-              // Se não existe documento, usar padrão e criar
+              // Se não existe documento, usar padrão
               devLog('Documento de configurações não existe, usando padrão');
               setUnlockedModules(['module-1']);
             }

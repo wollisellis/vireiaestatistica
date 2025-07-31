@@ -138,6 +138,11 @@ export function SimplifiedProfessorDashboard({
             const data = docSnapshot.data()
             const unlockedList = data?.unlocked || ['module-1']
             setUnlockedModules(Array.isArray(unlockedList) ? unlockedList : ['module-1'])
+            console.log('🏫 SimplifiedProfessorDashboard recebeu atualização:', {
+              documento: 'settings/modules',
+              modulosDesbloqueados: unlockedList,
+              timestamp: new Date().toISOString()
+            })
           } else {
             // Criar documento padrão se não existir
             setDoc(docSnapshot.ref, { 
@@ -168,8 +173,31 @@ export function SimplifiedProfessorDashboard({
 
   // Alternar acesso de módulo
   const toggleModuleAccess = async (moduleId: string) => {
-    if (!db || !user?.id) {
-      alert('Erro: Firebase não inicializado ou usuário não autenticado')
+    console.log('🔄 Iniciando alternância de acesso para módulo:', moduleId)
+    console.log('📊 Estado atual:', { 
+      dbExists: !!db, 
+      userExists: !!user, 
+      userId: user?.id || user?.uid, 
+      userEmail: user?.email 
+    })
+    
+    // Verificação melhorada de autenticação
+    if (!db) {
+      console.error('❌ Firebase database não disponível')
+      alert('Erro: Sistema de banco de dados não disponível')
+      return
+    }
+    
+    if (!user) {
+      console.error('❌ Usuário não autenticado')
+      alert('Erro: Você precisa estar logado como professor')
+      return
+    }
+    
+    const userId = user.id || user.uid
+    if (!userId) {
+      console.error('❌ ID do usuário não encontrado')
+      alert('Erro: ID do usuário não identificado')
       return
     }
 
@@ -181,6 +209,7 @@ export function SimplifiedProfessorDashboard({
 
       // Garantir que sempre há pelo menos um módulo desbloqueado
       if (newUnlocked.length === 0) {
+        console.warn('⚠️ Tentativa de bloquear todos os módulos')
         alert('Erro: Pelo menos um módulo deve permanecer ativo')
         return
       }
@@ -188,18 +217,33 @@ export function SimplifiedProfessorDashboard({
       const updateData = {
         unlocked: newUnlocked,
         lastUpdated: new Date(),
-        lastUpdatedBy: user.id,
+        lastUpdatedBy: userId,
         lastUpdateType: isCurrentlyUnlocked ? 'bloquear' : 'desbloquear',
-        moduleId: moduleId
+        moduleId: moduleId,
+        userEmail: user.email || 'n/a'
       }
+      
+      console.log('📦 Dados para atualização:', updateData)
 
       await setDoc(doc(db, 'settings', 'modules'), updateData, { merge: true })
       
       console.log(`✅ Módulo ${moduleId} ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`)
       
     } catch (error) {
-      console.error(`❌ Erro ao alterar módulo ${moduleId}:`, error)
-      alert(`Erro ao alterar módulo. Tente novamente.`)
+      console.error(`❌ Erro detalhado ao alterar módulo ${moduleId}:`, error)
+      
+      // Tratamento melhor de erros
+      let errorMessage = 'Erro desconhecido ao alterar módulo'
+      
+      if (error?.code === 'permission-denied') {
+        errorMessage = 'Sem permissão para alterar módulos. Verifique se você está logado como professor.'
+      } else if (error?.code === 'unauthenticated') {
+        errorMessage = 'Sessão expirada. Faça login novamente.'
+      } else if (error?.message) {
+        errorMessage = `Erro técnico: ${error.message}`
+      }
+      
+      alert(errorMessage)
     }
   }
 

@@ -352,7 +352,10 @@ function ModuleCard({
           <div className="flex items-center space-x-2">
             <Switch
               checked={isAvailable}
-              onCheckedChange={onToggleAccess}
+              onCheckedChange={() => {
+                console.log('Switch acionado para módulo:', module.id, 'Estado atual:', isAvailable)
+                onToggleAccess()
+              }}
               className="data-[state=checked]:bg-green-500"
             />
             <span className="text-sm text-gray-600">
