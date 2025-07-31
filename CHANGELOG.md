@@ -11,6 +11,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.9.6 – 2025-07-31
+
+### 🔧 **Critical Fixes**
+- **Fixed Module Blocking/Unblocking System**:
+  - Removed incorrect disabled condition that prevented blocking modules
+  - Professors can now block/unblock any module (keeping at least 1 active)
+  - Fixed issue where professors always saw modules as unlocked in /jogos
+  - Now professors see exactly what students see
+  - **Files Modified**: 
+    - `src/components/professor/SimplifiedProfessorDashboard.tsx`
+    - `src/app/jogos/page.tsx`
+
+- **Removed Duplicate /professor Page**:
+  - Deleted entire `/professor` directory to avoid confusion
+  - Kept only `/docente` as the single professor interface
+  - Updated all references from `/professor` to `/docente`
+  - **Files Modified**: 
+    - `src/components/auth/ProfessorRegistration.tsx`
+    - `src/components/layout/Navigation.tsx`
+  - **Files Removed**: All files under `src/app/professor/`
+
+- **Fixed Firestore Security Rules**:
+  - Removed overly permissive debug rule that allowed all operations
+  - Added specific rules for settings/modules collection
+  - Only professors can modify global module settings
+  - All authenticated users can read settings
+  - **Files Modified**: `firestore.rules`
+
+---
+
 ## Version 0.9.5 – 2025-07-31
 
 ### 🔧 **Improvements & Fixes**
