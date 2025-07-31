@@ -17,7 +17,6 @@ import {
   VolumeX,
   Timer,
   Zap,
-  ArrowRightLeft,
   Sparkles,
   Camera,
   Waves,
@@ -113,7 +112,6 @@ export default function Module2QuizPage() {
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
   
   // Estados de configuração
-  const [gameMode, setGameMode] = useState<'nameToDesc' | 'descToName'>('nameToDesc');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timeLimit, setTimeLimit] = useState(180); // 3 minutos
@@ -247,53 +245,8 @@ export default function Module2QuizPage() {
 
   const initializeQuiz = async (forceNewQuiz = false) => {
     try {
-      // Verificar se já existe tentativa anterior (apenas se não estiver forçando novo quiz)
-      if (!forceNewQuiz && user?.uid) {
-        const attemptsQuery = query(
-          collection(db, 'quiz_attempts'),
-          where('studentId', '==', user.uid),
-          where('moduleId', '==', MODULE_ID),
-          where('passed', '==', true),
-          orderBy('completedAt', 'desc'),
-          limit(1)
-        );
-        
-        const snapshot = await getDocs(attemptsQuery);
-        if (!snapshot.empty) {
-          // Já completou o módulo
-          setIsComplete(true);
-          setShowResults(true);
-          const data = snapshot.docs[0].data();
-          setScore(data.percentage || 0);
-          // Restaurar tempo e feedback corretos dos dados salvos
-          setTimeElapsed(data.timeSpent || 0);
-          const correctAnswers = data.correctAnswers || 0;
-          const totalQuestions = data.questionsAnswered || 4;
-          // Criar feedback fictício para exibir corretamente os acertos
-          const mockFeedback: Record<string, 'correct' | 'incorrect'> = {};
-          const mockDetailedFeedback: Record<string, any> = {};
-          
-          for (let i = 0; i < correctAnswers; i++) {
-            mockFeedback[`q${i}`] = 'correct';
-            mockDetailedFeedback[`q${i}`] = {
-              isCorrect: true,
-              explanation: '✅ Resposta correta nesta tentativa anterior.',
-              tip: '👏 Continue assim!'
-            };
-          }
-          for (let i = correctAnswers; i < totalQuestions; i++) {
-            mockFeedback[`q${i}`] = 'incorrect';
-            mockDetailedFeedback[`q${i}`] = {
-              isCorrect: false,
-              explanation: '❌ Resposta incorreta nesta tentativa anterior.',
-              tip: '💡 Tente novamente para melhorar sua pontuação!'
-            };
-          }
-          setFeedback(mockFeedback);
-          setDetailedFeedback(mockDetailedFeedback);
-          return;
-        }
-      }
+      // ✅ CORREÇÃO: Sempre carregar novo quiz - removido bloqueio de tentativas anteriores
+      // Agora o módulo sempre permite novas tentativas sem precisar de F5
 
       // Configurar métodos aleatórios
       const randomMethods = getRandomMethods(4);
@@ -512,7 +465,6 @@ export default function Module2QuizPage() {
         questionsAnswered: 4,
         correctAnswers: Math.round((percentage / 100) * 4),
         moduleTitle: 'Métodos de Avaliação Nutricional',
-        gameMode: gameMode,
         timerEnabled: timerEnabled,
         soundEnabled: soundEnabled
       };
@@ -657,7 +609,7 @@ export default function Module2QuizPage() {
                       <ul className="space-y-1 text-sm text-blue-800">
                         <li>• Arraste cada método para sua categoria correta</li>
                         <li>• Pontuação total: 30 pontos</li>
-                        <li>• Aprovação: 70% ou mais</li>
+                        <li>• Qualquer pontuação conclui o módulo</li>
                       </ul>
                     </div>
                   </div>
@@ -667,31 +619,6 @@ export default function Module2QuizPage() {
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-900">Configurações do Jogo</h3>
                   
-                  {/* Modo de jogo */}
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <ArrowRightLeft className="w-5 h-5 text-gray-600" />
-                        <span className="font-medium">Modo de Jogo</span>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant={gameMode === 'nameToDesc' ? 'default' : 'outline'}
-                          onClick={() => setGameMode('nameToDesc')}
-                        >
-                          Nome → Categoria
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={gameMode === 'descToName' ? 'default' : 'outline'}
-                          onClick={() => setGameMode('descToName')}
-                        >
-                          Descrição → Categoria
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Som */}
                   <div className="flex items-center justify-between">
@@ -878,9 +805,7 @@ export default function Module2QuizPage() {
                 <CardHeader>
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                     <FlaskConical className="w-5 h-5 text-purple-600" />
-                    <span>
-                      {gameMode === 'nameToDesc' ? 'Métodos para Classificar' : 'Descrições para Classificar'}
-                    </span>
+                    <span>Métodos para Classificar</span>
                   </h3>
                   <p className="text-sm text-gray-600">
                     {selectedItem ? 'Clique em uma categoria à direita' : 'Arraste ou clique em um item'}
@@ -909,15 +834,9 @@ export default function Module2QuizPage() {
                           `}
                         >
                           <div className="space-y-2">
-                            {gameMode === 'nameToDesc' ? (
-                              <h4 className="font-semibold text-gray-900 text-lg">
-                                {method.name}
-                              </h4>
-                            ) : (
-                              <p className="text-gray-700 leading-relaxed">
-                                {method.description}
-                              </p>
-                            )}
+                            <h4 className="font-semibold text-gray-900 text-lg">
+                              {method.name}
+                            </h4>
                           </div>
                         </motion.div>
                       ))}
@@ -1000,7 +919,7 @@ export default function Module2QuizPage() {
                             >
                               <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium">
-                                  {gameMode === 'nameToDesc' ? item.name : 'Método Classificado'}
+                                  {item.name}
                                 </span>
                                 {feedback[item.id] && (
                                   <div className="ml-2">
@@ -1012,11 +931,6 @@ export default function Module2QuizPage() {
                                   </div>
                                 )}
                               </div>
-                              {gameMode === 'descToName' && (
-                                <p className="text-xs text-gray-600 mt-1">
-                                  {item.description}
-                                </p>
-                              )}
                             </motion.div>
                           ))}
                         </AnimatePresence>

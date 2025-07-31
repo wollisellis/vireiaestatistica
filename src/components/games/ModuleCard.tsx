@@ -303,20 +303,20 @@ const AttemptedModuleContent = ({ game, rating }: { game: any, rating: any }) =>
       </div>
     </div>
 
-    {/* Progresso visual mais suave */}
+    {/* Estatísticas da tentativa */}
     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 space-y-3">
       <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Progresso para Aprovação</span>
-        <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{game.bestScore}/70%</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Melhor Pontuação</span>
+        <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{game.bestScore}%</span>
       </div>
       <Progress 
-        value={(game.bestScore / 70) * 100} 
+        value={game.bestScore} 
         className="h-2 bg-gray-200 dark:bg-gray-600" 
         indicatorClassName="bg-gradient-to-r from-orange-400 to-orange-500"
       />
       <div className="text-center">
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          Faltam <span className="font-semibold text-gray-900 dark:text-gray-100">{Math.max(0, 70 - game.bestScore)}%</span> para aprovação
+          Módulo tentado - <span className="font-semibold text-green-600">Pode continuar estudando</span>
         </span>
       </div>
     </div>

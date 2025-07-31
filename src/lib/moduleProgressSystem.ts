@@ -58,8 +58,8 @@ export interface StudentModuleProgress {
 }
 
 export class ModuleProgressSystem {
-  private static readonly COMPLETION_THRESHOLD = 70 // 70% para considerar exercício completo (UNIFICADO)
-  private static readonly MODULE_COMPLETION_THRESHOLD = 70 // 70% exercícios completados para módulo completo (UNIFICADO)
+  private static readonly COMPLETION_THRESHOLD = 0 // Qualquer pontuação é aceita para conclusão
+  private static readonly MODULE_COMPLETION_THRESHOLD = 0 // Qualquer progresso completa o módulo
   private static readonly PERFECT_SCORE_THRESHOLD = 95 // 95%+ para considerar perfeito
   
   // Calcular progresso de um exercício
@@ -90,7 +90,7 @@ export class ModuleProgressSystem {
 
     const attempts = (previousProgress?.attempts || 0) + 1
     const bestScore = Math.max(previousProgress?.bestScore || 0, normalizedScore)
-    const completed = normalizedScore >= this.COMPLETION_THRESHOLD
+    const completed = attempts > 0 // Considera completo se teve pelo menos uma tentativa
 
     return {
       exerciseId,
@@ -141,8 +141,8 @@ export class ModuleProgressSystem {
     // Tempo total gasto
     const timeSpent = moduleExercises.reduce((sum, ex) => sum + ex.timeSpent, 0)
     
-    // Módulo está completo?
-    const isCompleted = completionPercentage >= this.MODULE_COMPLETION_THRESHOLD
+    // Módulo está completo se houver alguma tentativa nos exercícios
+    const isCompleted = moduleExercises.some(ex => ex.attempts > 0)
     
     // Estatísticas adicionais
     const perfectExercises = moduleExercises.filter(ex => 
@@ -204,7 +204,7 @@ export class ModuleProgressSystem {
       ? new Date(Math.max(...lastActivities.map(d => d.getTime())))
       : new Date()
 
-    // Nível de conquista baseado no progresso
+    // Nível de conquista baseado apenas na pontuação (sem requisito mínimo)
     const achievementLevel = this.calculateAchievementLevel(overallProgress, totalNormalizedScore)
     
     // Atividade recente (últimos 7 dias)
@@ -329,10 +329,10 @@ export class ModuleProgressSystem {
   }
 
   private static calculateAchievementLevel(overallProgress: number, totalScore: number): string {
-    // Critério unificado com 70% como base para conclusão
-    if (overallProgress >= 100 && totalScore >= 280) return 'Expert' // 70% de 400 pontos máximos
-    if (overallProgress >= 75 && totalScore >= 210) return 'Avançado' // 70% de 300 pontos
-    if (overallProgress >= 50 && totalScore >= 140) return 'Intermediário' // 70% de 200 pontos
+    // Critério baseado apenas no progresso e pontuação total (sem mínimos)
+    if (overallProgress >= 100 && totalScore >= 350) return 'Expert'
+    if (overallProgress >= 75 && totalScore >= 250) return 'Avançado'
+    if (overallProgress >= 50 && totalScore >= 150) return 'Intermediário'
     return 'Iniciante'
   }
 
@@ -385,10 +385,10 @@ export class ModuleProgressSystem {
       nextSteps.push(`Completar ${incompleteExercises.length} exercícios do ${nextModule.moduleName}`)
     }
 
-    // Conquistas (critério unificado 70%)
+    // Conquistas sem requisitos mínimos
     const achievements = []
     if (completedModules > 0) achievements.push(`${completedModules} módulo(s) completado(s)`)
-    if (totalNormalizedScore >= 280) achievements.push('Pontuação de Elite (280+)') // 70% de 400 pontos
+    if (totalNormalizedScore >= 350) achievements.push('Pontuação de Elite (350+)')
     if (studentProgress.currentStreak >= 7) achievements.push('Sequência de 7+ dias')
 
     return {

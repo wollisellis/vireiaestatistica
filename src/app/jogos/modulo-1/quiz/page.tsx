@@ -107,7 +107,7 @@ export default function Module1QuizPage() {
               <ul className="space-y-2 text-gray-700">
                 <li className="flex items-center">
                   <Target className="w-4 h-4 text-blue-600 mr-2 flex-shrink-0" />
-                  <span><strong>Mínimo de 70% de acertos</strong> para conclusão do módulo</span>
+                  <span><strong>Pontuação total: 70 pontos</strong> - Qualquer nota conclui o módulo</span>
                 </li>
                 <li className="flex items-center">
                   <Trophy className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
