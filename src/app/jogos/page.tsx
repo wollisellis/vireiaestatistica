@@ -34,6 +34,7 @@ import { Footer } from '@/components/layout';
 import { useFlexibleAccess } from '@/hooks/useRoleRedirect';
 import { StudentClassInfo } from '@/components/student/StudentClassInfo';
 import { SimpleRankingPanel } from '@/components/ranking/SimpleRankingPanel';
+import { MobileCollapsibleRanking } from '@/components/ranking/MobileCollapsibleRanking';
 import unifiedScoringService from '@/services/unifiedScoringService';
 import { debounce, devLog } from '@/utils/debounce';
 import ProfessorClassService from '@/services/professorClassService';
@@ -593,6 +594,19 @@ function JogosPageContent() {
 
         {/* 🎯 MAIN CONTENT - RESPONSIVO */}
         <div className="max-w-8xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          {/* 🎯 SEÇÃO MOBILE - Informações da Turma e Ranking Colapsável */}
+          <div className="lg:hidden space-y-4 mb-4 sm:mb-6">
+            {/* Informações da Turma - Versão Mobile */}
+            {user && <StudentClassInfo studentId={getUserId() || ''} />}
+            
+            {/* Ranking Colapsável Mobile */}
+            <MobileCollapsibleRanking
+              currentUserId={getUserId() || undefined}
+              limit={8}
+              defaultExpanded={false}
+            />
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6 xl:gap-8">
             
             {/* 🎯 MÓDULOS - COL PRINCIPAL RESPONSIVA */}
@@ -650,29 +664,6 @@ function JogosPageContent() {
             </div>
           </div>
 
-          {/* 🎯 SIDEBAR MOBILE - Visível apenas em dispositivos móveis */}
-          <div className="lg:hidden mt-6 sm:mt-8 space-y-4">
-            <div className="border-t border-gray-200 pt-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 px-1">Informações Adicionais</h2>
-              
-              {/* Informações da Turma - Versão Mobile */}
-              {user && (
-                <div className="mb-4">
-                  <StudentClassInfo studentId={getUserId() || ''} />
-                </div>
-              )}
-              
-              {/* Ranking - Versão Mobile Compacta */}
-              <div>
-                <SimpleRankingPanel
-                  currentUserId={getUserId() || undefined}
-                  limit={5}
-                  compact={true}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* 🎯 MODAL DE CONCLUSÃO APRIMORADO */}

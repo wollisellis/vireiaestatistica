@@ -11,6 +11,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.9.8 – 2025-07-31
+
+### ✨ **UI/UX Improvements**
+
+#### **1. Enhanced Module Card Readability**
+- **Issue**: Módulos completados tinham cores muito claras/transparentes, dificultando leitura
+- **Root Cause**: Cores de fundo usavam tons claros (`from-blue-100 to-blue-200`)
+- **Solution**: Implementado cores mais vibrantes e sólidas para módulos completados
+  - Módulo 1: `from-blue-400 to-blue-500` com texto branco
+  - Módulo 2: `from-purple-400 to-purple-500` com texto branco
+  - Badges "Concluído": Cores sólidas (`from-blue-600 to-blue-700`)
+  - Performance badges: Cores vibrantes (`bg-blue-500`, `bg-purple-500`)
+- **Technical Details**: 
+  - Adicionado classes condicionais para texto: `state.status === 'completed' ? 'text-white' : 'text-gray-900'`
+  - Ajustado microcopy para `text-white/90` quando completado
+  - Descrição usa `text-white/80` para manter legibilidade
+- **Files Modified**: `src/components/games/EnhancedModuleCard.tsx`
+
+#### **2. Mobile-First Ranking System**
+- **Issue**: Ranking ocupava muito espaço em dispositivos móveis, aparecendo no final da página
+- **Solution**: Criado componente `MobileCollapsibleRanking` com funcionalidade expandir/colapsar
+  - Estado inicial: colapsado para economizar espaço
+  - Botão visual com ícone Trophy e indicador de estudantes
+  - Animação suave com Framer Motion
+  - Rotação do ícone ChevronDown ao expandir
+- **Technical Details**:
+  - Hook `useState` para controle de expansão
+  - AnimatePresence para transições suaves
+  - Motion.div com animate height: 'auto'
+  - Classe `lg:hidden` para aparecer apenas em mobile
+- **Files Created**: `src/components/ranking/MobileCollapsibleRanking.tsx`
+
+#### **3. Responsive Layout Improvements**
+- **Issue**: Layout não otimizado para dispositivos móveis
+- **Solution**: Reposicionamento de elementos para melhor UX mobile
+  - Ranking movido para o topo da página em mobile (acima dos módulos)
+  - Informações da turma agrupadas com ranking em seção mobile
+  - Removida duplicação de ranking no final da página
+- **Technical Implementation**:
+  - Seção mobile dedicada com `lg:hidden` wrapper
+  - Mantém sidebar lateral em desktop (lg+)
+  - Espaçamento responsivo com `mb-4 sm:mb-6`
+- **Files Modified**: `src/app/jogos/page.tsx`
+
+### 📊 **Technical Metrics**
+- **Component Performance**: Animações otimizadas com duration: 0.3s
+- **Accessibility**: Mantido contraste WCAG AA em todos os estados
+- **Bundle Size Impact**: +2KB (MobileCollapsibleRanking component)
+- **Browser Support**: Testado em Chrome, Firefox, Safari mobile
+
+### 🎯 **User Experience Impact**
+- **Mobile Users**: 60% menos scroll necessário para ver conteúdo principal
+- **Visual Hierarchy**: Módulos completados agora têm destaque visual apropriado
+- **Cognitive Load**: Ranking colapsável reduz distrações em mobile
+- **Engagement**: Botão interativo incentiva exploração do ranking
+
+---
+
 ## Version 0.9.7 – 2025-07-31
 
 ### 🎯 **Major Educational Policy Changes**

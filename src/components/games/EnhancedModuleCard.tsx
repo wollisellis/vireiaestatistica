@@ -153,10 +153,10 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             ? 'border-red-300 hover:border-red-400 bg-gradient-to-br from-white to-red-50 dark:border-red-600 dark:bg-gradient-to-br dark:from-gray-700 dark:to-red-900/20'
             : state.status === 'completed'
               ? module.id === 'module-1'
-                ? 'border-blue-500 hover:border-blue-600 bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 hover:ring-4 hover:ring-blue-400/50 shadow-blue-300/50'
+                ? 'border-blue-600 hover:border-blue-700 bg-gradient-to-br from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 hover:ring-4 hover:ring-blue-400/50 shadow-blue-400/50 text-white'
                 : module.id === 'module-2'
-                  ? 'border-purple-500 hover:border-purple-600 bg-gradient-to-br from-purple-100 to-purple-200 hover:from-purple-200 hover:to-purple-300 hover:ring-4 hover:ring-purple-400/50 shadow-purple-300/50'
-                  : 'border-green-500 hover:border-green-600 bg-gradient-to-br from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 hover:ring-4 hover:ring-green-400/50 shadow-green-300/50'
+                  ? 'border-purple-600 hover:border-purple-700 bg-gradient-to-br from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 hover:ring-4 hover:ring-purple-400/50 shadow-purple-400/50 text-white'
+                  : 'border-green-600 hover:border-green-700 bg-gradient-to-br from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 hover:ring-4 hover:ring-green-400/50 shadow-green-400/50 text-white'
               : module.id === 'module-1'
                 ? 'border-blue-300 hover:border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-300/50 dark:hover:ring-blue-500/20'
                 : module.id === 'module-2'
@@ -183,19 +183,13 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                 variant="success"
                 className={`flex items-center space-x-1 text-xs px-2 py-1 shadow-md ${
                   module.id === 'module-1'
-                    ? 'bg-gradient-to-r from-blue-200 to-blue-300 text-blue-900 border-blue-400'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white border-blue-800'
                     : module.id === 'module-2'
-                      ? 'bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900 border-purple-400'
-                      : 'bg-gradient-to-r from-green-200 to-green-300 text-green-900 border-green-400'
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white border-purple-800'
+                      : 'bg-gradient-to-r from-green-600 to-green-700 text-white border-green-800'
                 }`}
               >
-                <CheckCircle className={`w-3 h-3 ${
-                  module.id === 'module-1'
-                    ? 'text-blue-700'
-                    : module.id === 'module-2'
-                      ? 'text-purple-700'
-                      : 'text-green-700'
-                }`} />
+                <CheckCircle className="w-3 h-3 text-white" />
                 <span className="font-semibold">Concluído</span>
               </Badge>
             </div>
@@ -260,12 +254,16 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
 
             <div className="flex-1 min-w-0 space-y-2">
               {/* Título com quebra controlada */}
-              <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100 leading-tight max-w-[200px]">
+              <h3 className={`font-bold text-xl leading-tight max-w-[200px] ${
+                state.status === 'completed' ? 'text-white' : 'text-gray-900 dark:text-gray-100'
+              }`}>
                 {module.title}
               </h3>
 
               {/* Microcopy com tempo estimado e pontos */}
-              <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+              <div className={`flex items-center space-x-4 text-sm ${
+                state.status === 'completed' ? 'text-white/90' : 'text-gray-500 dark:text-gray-400'
+              }`}>
                 <div className="flex items-center space-x-1">
                   <Clock className="w-4 h-4" />
                   <span>{module.estimatedTime}</span>
@@ -312,27 +310,15 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
               <div
                 className={`inline-flex items-center space-x-2 px-3 py-2 rounded-lg border cursor-help ${
                   module.id === 'module-1'
-                    ? 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-800/50 dark:text-blue-100 dark:border-blue-500'
+                    ? 'bg-blue-500 text-white border-blue-600 shadow-md'
                     : module.id === 'module-2'
-                      ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-800/50 dark:text-purple-100 dark:border-purple-500'
-                      : 'bg-green-100 text-green-900 border-green-300 dark:bg-green-800/50 dark:text-green-100 dark:border-green-500'
+                      ? 'bg-purple-500 text-white border-purple-600 shadow-md'
+                      : 'bg-green-500 text-white border-green-600 shadow-md'
                 }`}
                 title={`Detalhes: ${state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • ${state.score}% • ${state.passed ? 'Aprovado' : 'Reprovado'} • ${state.stars} estrela${state.stars !== 1 ? 's' : ''}`}
               >
-                <Award className={`w-4 h-4 ${
-                  module.id === 'module-1'
-                    ? 'text-blue-700 dark:text-blue-300'
-                    : module.id === 'module-2'
-                      ? 'text-purple-700 dark:text-purple-300'
-                      : 'text-green-700 dark:text-green-300'
-                }`} />
-                <CheckCircle className={`w-4 h-4 ${
-                  module.id === 'module-1'
-                    ? 'text-blue-700 dark:text-blue-300'
-                    : module.id === 'module-2'
-                      ? 'text-purple-700 dark:text-purple-300'
-                      : 'text-green-700 dark:text-green-300'
-                }`} />
+                <Award className="w-4 h-4 text-white" />
+                <CheckCircle className="w-4 h-4 text-white" />
                 <span className="font-semibold text-sm">
                   {state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • {state.score}% • {module.maxPoints ? `${((state.score / 100) * module.maxPoints).toFixed(1)} pts • ` : ''}Aprovado
                 </span>
@@ -347,7 +333,9 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
 
           {/* 🎯 DESCRIÇÃO DO MÓDULO */}
           <div className="flex-1 mb-6">
-            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+            <p className={`text-sm leading-relaxed ${
+              state.status === 'completed' ? 'text-white/80' : 'text-gray-600 dark:text-gray-300'
+            }`}>
               {module.description || "Aprenda os conceitos fundamentais da avaliação nutricional com dados brasileiros e exercícios práticos."}
             </p>
           </div>
