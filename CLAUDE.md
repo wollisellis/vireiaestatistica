@@ -52,9 +52,21 @@ rm -rf .next
 - **OBRIGATÓRIO**: Sempre fazer `git add .` e `git commit` após completar qualquer alteração no código
 - **OBRIGATÓRIO**: Sempre atualizar o `CHANGELOG.md` ANTES de fazer commit com:
   - Versão incrementada (patch/minor/major conforme o tipo de mudança)
-  - Descrição clara das mudanças implementadas
-  - Arquivos modificados e impacto das mudanças
-  - Seguir o formato existente no arquivo
+  - **Root Cause Analysis**: Para bugs, explicar causa raiz e solução técnica
+  - **Código específico**: Linhas de código importantes, funções modificadas
+  - **Context completo**: Por que a mudança foi necessária
+  - **Arquivos modificados**: Lista completa com caminhos específicos
+  - **Impacto educacional/técnico**: Como afeta usuários e sistema
+  - **Detalhes de implementação**: Estados adicionados, lógica alterada
+  - Seguir o formato existente no arquivo (🎯 🐛 ✨ 📊 etc.)
+- **EXEMPLO de entrada completa no CHANGELOG**:
+  ```markdown
+  - **Issue**: Descrição específica do problema
+  - **Root Cause**: Linha X usava Y ao invés de Z
+  - **Solution**: Implementado estado `newState` que preserva W
+  - **Files Modified**: `src/path/file.tsx` (linhas 123-145)
+  - **Technical Details**: Adicionado useEffect para X, modificado handleY()
+  ```
 - Usar mensagens de commit descritivas em português
 - Fazer commit frequentes durante o desenvolvimento
 - Nunca deixar alterações sem commit ao finalizar uma tarefa
@@ -63,6 +75,32 @@ rm -rf .next
   - Adicionar novos tipos de documentos ou estruturas de dados
   - Modificar a estrutura de acesso aos dados ou permissões
   - Implementar novas funcionalidades que usem o banco de dados
+
+## 📚 CHANGELOG como Memória do Projeto
+
+**CRITICAL**: O `CHANGELOG.md` serve como **memória técnica completa** do projeto, permitindo:
+
+### 🎯 **Por que é obrigatório documentar tudo?**
+- **Continuidade**: Próximas sessões Claude Code podem entender exatamente o que foi feito
+- **Root Cause**: Evita repetir os mesmos bugs/problemas
+- **Context**: Preserva o "por que" das decisões técnicas, não apenas o "o que"
+- **Rastreabilidade**: Localiza rapidamente quando/onde mudanças específicas foram feitas
+
+### 📋 **O que deve ser SEMPRE documentado:**
+- **Estados adicionados**: `const [newState, setNewState] = useState()`
+- **Hooks modificados**: `useEffect`, `useCallback`, mudanças em dependências
+- **Lógica de negócio**: Algoritmos, validações, condições importantes
+- **Integrações**: Calls para APIs, Firebase, serviços externos
+- **Correções de bugs**: Causa raiz técnica + solução específica
+- **Refatorações**: O que mudou na arquitetura e por que
+
+### ⚠️ **Sem essa documentação:**
+- Futuras sessões perdem contexto técnico crucial
+- Bugs podem reaparecer por falta de context
+- Decisões arquiteturais são esquecidas
+- Tempo perdido re-investigando problemas já resolvidos
+
+**Regra de Ouro**: Se você mudou código, deve documentar no CHANGELOG com detalhes técnicos suficientes para alguém entender e dar continuidade.
 
 ## 🧠 Sistema de Memória Persistente
 
