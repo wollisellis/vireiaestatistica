@@ -319,8 +319,7 @@ service cloud.firestore {
     // Coleções de configuração e sistema (PROFESSORES)
     match /{collection}/{document} {
       allow read, write: if isProfessor() && 
-        (collection == 'settings' || 
-         collection == 'system_health' ||
+        (collection == 'system_health' ||
          collection == 'audit_logs' ||
          collection.matches('.*[Ss]ystem.*'));
     }
@@ -356,23 +355,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ========================================
-    // COLEÇÕES GERAIS - CONTROLE BÁSICO
-    // ========================================
 
-    // Coleções de configuração e sistema (PROFESSORES)
-    match /{collection}/{document} {
-      allow read, write: if isProfessor() &&
-        (collection == 'settings' ||
-         collection == 'system_health' ||
-         collection == 'audit_logs' ||
-         collection.matches('.*[Ss]ystem.*'));
-    }
-
-    // Coleções de estudantes e dados gerais (TEMPORARIAMENTE MUITO PERMISSIVO PARA DEBUG)
-    match /{collection}/{document} {
-      // 🔧 DEBUG: Permitir tudo para usuários autenticados
-      allow read, write, create, update, delete: if isAuthenticated();
+    // SETTINGS - Configurações globais do sistema
+    match /settings/{settingId} {
+      // ✅ Todos os usuários autenticados podem ler configurações
+      allow read: if isAuthenticated();
+      
+      // ✅ Apenas professores verificados podem escrever configurações
+      allow write: if isProfessor() || isProfessorVerified();
+      
+      // ✅ Regra específica para módulos
+      allow write: if settingId == 'modules' && (isProfessor() || isProfessorVerified());
     }
   }
 }

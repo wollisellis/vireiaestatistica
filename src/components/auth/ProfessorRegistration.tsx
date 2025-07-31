@@ -57,7 +57,7 @@ export function ProfessorRegistration() {
       setSuccess(true)
       // Redirect to professor dashboard after successful registration
       setTimeout(() => {
-        window.location.href = '/professor'
+        window.location.href = '/docente'
       }, 2000)
 
     } catch (err: unknown) {

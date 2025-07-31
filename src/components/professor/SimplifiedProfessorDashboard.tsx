@@ -606,13 +606,10 @@ export function SimplifiedProfessorDashboard({
                         size="sm"
                         variant={isUnlocked ? "destructive" : "default"}
                         onClick={() => toggleModuleAccess(module.id)}
-                        disabled={unlockedModules.length === 1 && isUnlocked}
                         title={
-                          unlockedModules.length === 1 && isUnlocked
-                            ? "Pelo menos um módulo deve permanecer ativo"
-                            : isUnlocked
-                              ? "Bloquear módulo para todos os alunos"
-                              : "Desbloquear módulo para todos os alunos"
+                          isUnlocked
+                            ? "Bloquear módulo para todos os alunos"
+                            : "Desbloquear módulo para todos os alunos"
                         }
                       >
                         {isUnlocked ? (

@@ -28,7 +28,7 @@ const getNavigationItems = (userRole?: string) => {
   if (userRole === 'professor') {
     return [
       ...baseItems,
-      { href: '/professor', label: 'Dashboard', icon: BarChart3 },
+      { href: '/docente', label: 'Dashboard', icon: BarChart3 },
       { href: '/jogos', label: t('navigation.games'), icon: Gamepad2 },
       { href: '/profile', label: t('navigation.profile'), icon: User },
     ]

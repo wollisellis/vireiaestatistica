@@ -616,7 +616,7 @@ function JogosPageContent() {
                         key={module.id}
                         module={{
                           ...module,
-                          isLocked: !unlockedModules.includes(module.id) && !isProfessor
+                          isLocked: !unlockedModules.includes(module.id)
                         }}
                         userId={getUserId() || null}
                         onStart={handleModuleStart}
