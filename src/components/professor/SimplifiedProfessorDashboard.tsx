@@ -19,11 +19,16 @@ import {
   Medal,
   ChevronDown,
   ChevronUp,
-  Star
+  Star,
+  BookOpen,
+  Lock,
+  Play,
+  Settings
 } from 'lucide-react'
-import { collection, getDocs, onSnapshot } from 'firebase/firestore'
+import { collection, getDocs, onSnapshot, doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import unifiedScoringService from '@/services/unifiedScoringService'
+import { modules } from '@/data/modules'
 
 interface SimplifiedProfessorDashboardProps {
   className?: string
@@ -46,6 +51,8 @@ export function SimplifiedProfessorDashboard({
   const [loading, setLoading] = useState(true)
   const [expandedRanking, setExpandedRanking] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1'])
+  const [moduleLoading, setModuleLoading] = useState(true)
   
   // Buscar dados globais de todos os estudantes
   const fetchGlobalStats = async () => {
@@ -116,16 +123,110 @@ export function SimplifiedProfessorDashboard({
     }
   }
 
+  // Carregar módulos desbloqueados do Firebase
+  const loadModules = () => {
+    if (!db) {
+      setModuleLoading(false)
+      return
+    }
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'settings', 'modules'), 
+      (docSnapshot) => {
+        try {
+          if (docSnapshot.exists()) {
+            const data = docSnapshot.data()
+            const unlockedList = data?.unlocked || ['module-1']
+            setUnlockedModules(Array.isArray(unlockedList) ? unlockedList : ['module-1'])
+          } else {
+            // Criar documento padrão se não existir
+            setDoc(docSnapshot.ref, { 
+              unlocked: ['module-1'], 
+              lastUpdated: new Date(),
+              createdBy: user?.id || 'system'
+            }, { merge: true }).catch(error => {
+              console.error('Erro ao criar documento padrão:', error)
+            })
+            setUnlockedModules(['module-1'])
+          }
+        } catch (error) {
+          console.error('Erro ao processar dados dos módulos:', error)
+          setUnlockedModules(['module-1'])
+        } finally {
+          setModuleLoading(false)
+        }
+      },
+      (error) => {
+        console.error('Erro do Firestore ao buscar módulos:', error)
+        setUnlockedModules(['module-1'])
+        setModuleLoading(false)
+      }
+    )
+
+    return unsubscribe
+  }
+
+  // Alternar acesso de módulo
+  const toggleModuleAccess = async (moduleId: string) => {
+    if (!db || !user?.id) {
+      alert('Erro: Firebase não inicializado ou usuário não autenticado')
+      return
+    }
+
+    try {
+      const isCurrentlyUnlocked = unlockedModules.includes(moduleId)
+      const newUnlocked = isCurrentlyUnlocked 
+        ? unlockedModules.filter(id => id !== moduleId)
+        : [...new Set([...unlockedModules, moduleId])]
+
+      // Garantir que sempre há pelo menos um módulo desbloqueado
+      if (newUnlocked.length === 0) {
+        alert('Erro: Pelo menos um módulo deve permanecer ativo')
+        return
+      }
+
+      const updateData = {
+        unlocked: newUnlocked,
+        lastUpdated: new Date(),
+        lastUpdatedBy: user.id,
+        lastUpdateType: isCurrentlyUnlocked ? 'bloquear' : 'desbloquear',
+        moduleId: moduleId
+      }
+
+      await setDoc(doc(db, 'settings', 'modules'), updateData, { merge: true })
+      
+      console.log(`✅ Módulo ${moduleId} ${isCurrentlyUnlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`)
+      
+    } catch (error) {
+      console.error(`❌ Erro ao alterar módulo ${moduleId}:`, error)
+      alert(`Erro ao alterar módulo. Tente novamente.`)
+    }
+  }
+
+  const getModuleIcon = (moduleIcon: string) => {
+    switch (moduleIcon) {
+      case '📊': return <BarChart3 className="w-6 h-6" />
+      case '🔬': return <Activity className="w-6 h-6" />
+      case '📏': return <Settings className="w-6 h-6" />
+      case '🎯': return <Trophy className="w-6 h-6" />
+      default: return <BookOpen className="w-6 h-6" />
+    }
+  }
+
   useEffect(() => {
     if (!db || !user) {
       setLoading(false)
+      setModuleLoading(false)
       return
     }
 
     fetchGlobalStats()
+    
+    // Carregar módulos
+    const unsubscribeModules = loadModules()
 
-    // Listener para mudanças em tempo real
-    const unsubscribe = onSnapshot(
+    // Listener para mudanças em tempo real no ranking
+    const unsubscribeScores = onSnapshot(
       collection(db, 'unified_scores'),
       () => {
         if (!refreshing) {
@@ -135,7 +236,10 @@ export function SimplifiedProfessorDashboard({
     )
 
     return () => {
-      unsubscribe()
+      unsubscribeScores()
+      if (unsubscribeModules) {
+        unsubscribeModules()
+      }
     }
   }, [user])
   
@@ -378,6 +482,142 @@ export function SimplifiedProfessorDashboard({
                 )}
               </>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Controle de Módulos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings className="w-6 h-6 text-indigo-600" />
+            <span>Controle de Módulos</span>
+            <Badge variant="info" className="ml-2">
+              Global
+            </Badge>
+          </CardTitle>
+          <p className="text-sm text-gray-600 mt-2">
+            Ative ou desative módulos para todos os alunos do sistema
+          </p>
+        </CardHeader>
+        <CardContent>
+          {moduleLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
+              <p className="text-gray-500 mt-2">Carregando módulos...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {modules.map((module) => {
+                const isUnlocked = unlockedModules.includes(module.id)
+                return (
+                  <div
+                    key={module.id}
+                    className={`
+                      p-4 rounded-lg border-2 transition-all duration-200
+                      ${isUnlocked 
+                        ? 'border-green-300 bg-green-50 hover:border-green-400' 
+                        : 'border-gray-300 bg-gray-50 hover:border-gray-400'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className={`
+                          w-10 h-10 rounded-lg flex items-center justify-center text-white
+                          ${isUnlocked ? 'bg-green-500' : 'bg-gray-400'}
+                        `}>
+                          {getModuleIcon(module.icon)}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 text-sm">
+                            {module.title}
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            {module.estimatedTime}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Badge 
+                        variant={isUnlocked ? "success" : "secondary"}
+                        className="text-xs"
+                      >
+                        {isUnlocked ? (
+                          <>
+                            <Play className="w-3 h-3 mr-1" />
+                            Ativo
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3 mr-1" />
+                            Bloqueado
+                          </>
+                        )}
+                      </Badge>
+                      
+                      <Button
+                        size="sm"
+                        variant={isUnlocked ? "destructive" : "default"}
+                        onClick={() => toggleModuleAccess(module.id)}
+                        disabled={unlockedModules.length === 1 && isUnlocked}
+                        title={
+                          unlockedModules.length === 1 && isUnlocked
+                            ? "Pelo menos um módulo deve permanecer ativo"
+                            : isUnlocked
+                              ? "Bloquear módulo para todos os alunos"
+                              : "Desbloquear módulo para todos os alunos"
+                        }
+                      >
+                        {isUnlocked ? (
+                          <>
+                            <Lock className="w-3 h-3 mr-1" />
+                            Bloquear
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3 h-3 mr-1" />
+                            Ativar
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {/* Informações adicionais */}
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-600 mb-1">
+                        {module.description?.slice(0, 80)}...
+                      </p>
+                      {module.maxPoints && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Star className="w-3 h-3 mr-1" />
+                          {module.maxPoints} pontos máximos
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          
+          {/* Estatísticas dos módulos */}
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+                <span className="font-medium text-blue-900">Status do Sistema</span>
+              </div>
+              <Badge variant="info" className="bg-blue-100 text-blue-800">
+                {unlockedModules.length}/{modules.length} módulos ativos
+              </Badge>
+            </div>
+            <p className="text-sm text-blue-700 mt-2">
+              Módulos ativos são visíveis para todos os alunos em <strong>/jogos</strong>. 
+              Alterações são aplicadas imediatamente no sistema.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -149,10 +149,10 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             : state.status === 'completed'
               ? 'border-green-400 hover:border-green-500 bg-gradient-to-br from-green-50/30 to-green-50/30 hover:ring-4 hover:ring-green-300/50 shadow-green-200/50'
               : module.id === 'module-1'
-                ? 'border-blue-200 hover:border-blue-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-200/50 dark:hover:ring-blue-500/20'
+                ? 'border-blue-300 hover:border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-300/50 dark:hover:ring-blue-500/20'
                 : module.id === 'module-2'
-                  ? 'border-emerald-200 hover:border-emerald-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-emerald-200/50 dark:hover:ring-emerald-500/20'
-                  : 'border-blue-200 hover:border-blue-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-200/50 dark:hover:ring-blue-500/20'
+                  ? 'border-emerald-300 hover:border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-emerald-300/50 dark:hover:ring-emerald-500/20'
+                  : 'border-blue-300 hover:border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-300/50 dark:hover:ring-blue-500/20'
         }
         ${className}
       `} onClick={handleClick}>
@@ -161,9 +161,9 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
           {!module.isLocked && (
             <div className="absolute top-6 left-6">
               <div className={`w-3 h-3 rounded-full animate-pulse opacity-75 group-hover:scale-150 transition-transform duration-300 ${
-                module.id === 'module-1' ? 'bg-blue-400' : 
-                module.id === 'module-2' ? 'bg-emerald-400' : 
-                'bg-blue-400'
+                module.id === 'module-1' ? 'bg-blue-500' : 
+                module.id === 'module-2' ? 'bg-emerald-500' : 
+                'bg-blue-500'
               }`}></div>
             </div>
           )}
@@ -196,8 +196,16 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
               {/* Indicador de interatividade - Anel pulsante para módulos disponíveis */}
               {!module.isLocked && state.status === 'new' && (
                 <div className="absolute inset-0 rounded-2xl">
-                  <div className="w-16 h-16 rounded-2xl border-2 border-blue-400 animate-pulse opacity-75"></div>
-                  <div className="absolute inset-0 w-16 h-16 rounded-2xl border border-blue-300 animate-ping"></div>
+                  <div className={`w-16 h-16 rounded-2xl border-2 animate-pulse opacity-75 ${
+                    module.id === 'module-1' ? 'border-blue-500' : 
+                    module.id === 'module-2' ? 'border-emerald-500' : 
+                    'border-blue-500'
+                  }`}></div>
+                  <div className={`absolute inset-0 w-16 h-16 rounded-2xl border animate-ping ${
+                    module.id === 'module-1' ? 'border-blue-400' : 
+                    module.id === 'module-2' ? 'border-emerald-400' : 
+                    'border-blue-400'
+                  }`}></div>
                 </div>
               )}
 

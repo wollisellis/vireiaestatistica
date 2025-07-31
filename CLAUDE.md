@@ -13,6 +13,7 @@ Sempre fale comigo em pt-br
 ### Organização da Documentação
 - `./docs/archive/` - Documentação histórica (AVALIANUTRI_*, correções antigas)
 - `./docs/development/` - Guias técnicos (setup, deploy, especificações)
+  - `MODULE_FLOW.md` - **Fluxo completo de produção de módulos educacionais**
 - `./docs/features/` - Documentação de funcionalidades específicas
 - **Raiz**: Apenas arquivos essenciais (CLAUDE.md, README.md, LICENSE)
 
@@ -198,10 +199,12 @@ src/
 - **Contexto**: Todos os exemplos e dados são brasileiros
 
 ### Sistema de Jogos
-1. **Jogo 1**: Indicadores Antropométricos (Liberado)
-2. **Jogo 2**: Indicadores Clínicos e Bioquímicos (Bloqueado)
-3. **Jogo 3**: Fatores Demográficos e Socioeconômicos (Bloqueado)
-4. **Jogo 4**: Curvas de Crescimento Interativas (Liberado)
+1. **Módulo 1**: Indicadores Antropométricos (Múltipla escolha - 70 pontos)
+2. **Módulo 2**: Métodos de Avaliação Nutricional (Drag-and-drop - 30 pontos) 
+3. **Módulo 3**: Fatores Demográficos e Socioeconômicos (Planejado)
+4. **Módulo 4**: Curvas de Crescimento Interativas (Planejado)
+
+**📋 Para criar novos módulos**: Consulte [`docs/development/MODULE_FLOW.md`](docs/development/MODULE_FLOW.md)
 
 ### Considerações de Segurança
 - **IDs Anônimos**: Para privacidade dos estudantes

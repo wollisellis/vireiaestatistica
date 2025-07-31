@@ -109,7 +109,6 @@ function JogosPageContent() {
   };
   
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
-  const [moduleSettings, setModuleSettings] = useState<any[]>([]);
   
   // 🎯 ESTADO UNIFICADO DE CARREGAMENTO
   const [dataLoadingState, setDataLoadingState] = useState({
@@ -170,43 +169,60 @@ function JogosPageContent() {
     setIsHydrated(true);
   }, []);
 
-  // 🎯 FUNÇÃO PARA BUSCAR CONFIGURAÇÕES DE MÓDULOS DA TURMA
-  const fetchModuleSettings = async (studentId: string) => {
-    try {
-      // Buscar turmas do estudante
-      const studentClasses = await ProfessorClassService.getStudentClasses(studentId);
-      
-      if (studentClasses.length > 0) {
-        // Pegar a primeira turma ativa (pode melhorar para múltiplas turmas no futuro)
-        const activeClass = studentClasses.find(c => c.status === 'active') || studentClasses[0];
-        
-        if (activeClass) {
-          // Buscar configurações de módulos da turma
-          const settings = await ProfessorClassService.getModuleSettings(activeClass.classId);
-          setModuleSettings(settings);
-          
-          // Atualizar módulos desbloqueados baseado nas configurações
-          const unlocked = settings
-            .filter(s => s.isAvailable)
-            .map(s => s.moduleId);
-          
-          // Sempre incluir module-1 como desbloqueado por padrão
-          if (!unlocked.includes('module-1')) {
-            unlocked.push('module-1');
-          }
-          
-          setUnlockedModules(unlocked);
-          devLog('Módulos desbloqueados da turma:', unlocked);
-        }
-      } else {
-        // Se não está em nenhuma turma, usar padrão
-        devLog('Estudante não está em nenhuma turma, usando módulos padrão');
-        setUnlockedModules(['module-1']);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar configurações de módulos:', error);
-      // Em caso de erro, manter comportamento padrão
+  // 🎯 FUNÇÃO PARA BUSCAR CONFIGURAÇÕES GLOBAIS DE MÓDULOS
+  const fetchGlobalModuleSettings = () => {
+    if (!db) {
+      console.warn('Firebase database not available, using default modules');
       setUnlockedModules(['module-1']);
+      return;
+    }
+
+    try {
+      devLog('Carregando configurações globais de módulos...');
+      
+      // Listener em tempo real para configurações globais
+      const unsubscribe = onSnapshot(
+        doc(db, 'settings', 'modules'), 
+        (docSnapshot) => {
+          try {
+            if (docSnapshot.exists()) {
+              const data = docSnapshot.data();
+              const globalUnlocked = data?.unlocked || ['module-1'];
+              
+              // Filtrar apenas módulos que realmente existem no sistema
+              const validModules = globalUnlocked.filter((moduleId: string) => 
+                modules.some(m => m.id === moduleId)
+              );
+              
+              // Garantir que pelo menos module-1 esteja sempre disponível
+              if (!validModules.includes('module-1')) {
+                validModules.push('module-1');
+              }
+              
+              setUnlockedModules(validModules);
+              devLog('Módulos globalmente desbloqueados:', validModules);
+            } else {
+              // Se não existe documento, usar padrão e criar
+              devLog('Documento de configurações não existe, usando padrão');
+              setUnlockedModules(['module-1']);
+            }
+          } catch (error) {
+            console.error('Erro ao processar configurações globais:', error);
+            setUnlockedModules(['module-1']);
+          }
+        },
+        (error) => {
+          console.error('Erro do Firestore ao buscar configurações globais:', error);
+          setUnlockedModules(['module-1']);
+        }
+      );
+
+      // Retornar função de cleanup
+      return unsubscribe;
+    } catch (error) {
+      console.error('Erro ao configurar listener de módulos globais:', error);
+      setUnlockedModules(['module-1']);
+      return undefined;
     }
   };
 
@@ -254,6 +270,8 @@ function JogosPageContent() {
 
   // 🎯 UNIFIED DATA LOADING EFFECT - Reduz re-renders
   useEffect(() => {
+    let unsubscribeModules: (() => void) | undefined = undefined;
+
     const updateDataStates = async () => {
       const newState = { ...dataLoadingState };
       const userId = getUserId();
@@ -269,18 +287,10 @@ function JogosPageContent() {
         newState.classInfo = true;
         newState.ranking = true;
       } else {
-        // Set modules based on role
-        if (isProfessor) {
-          // Professores veem todos os módulos
-          const allModules = ['module-1', 'module-2', 'module-3', 'module-4'];
-          startTransition(() => {
-            setUnlockedModules(allModules);
-          });
-          devLog('Professor: todos os módulos desbloqueados');
-        } else {
-          // Estudantes: buscar configurações da turma
-          await fetchModuleSettings(userId);
-        }
+        // Buscar configurações globais para todos os usuários (professores e alunos)
+        unsubscribeModules = fetchGlobalModuleSettings();
+        
+        devLog('Configurações globais carregadas para:', isProfessor ? 'Professor' : 'Aluno');
         
         newState.modules = true;
         newState.classInfo = true;
@@ -305,6 +315,13 @@ function JogosPageContent() {
     };
 
     updateDataStates();
+
+    // Cleanup function
+    return () => {
+      if (unsubscribeModules) {
+        unsubscribeModules();
+      }
+    };
   }, [loading, getUserId(), isProfessor]);
   
   // 🎯 MODULE COMPLETED EVENT LISTENER

@@ -644,7 +644,7 @@ export default function ProfessorDashboardPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Aviso sobre controle por turma */}
+                  {/* Aviso sobre controle global */}
                   <Card className="border-l-4 border-yellow-500 bg-yellow-50">
                     <CardContent className="p-4 sm:p-6">
                       <div className="flex flex-col sm:flex-row items-start gap-3 sm:space-x-4">
@@ -653,17 +653,13 @@ export default function ProfessorDashboardPage() {
                         </div>
                         <div className="flex-1">
                           <h3 className="font-semibold text-yellow-900 mb-2 text-base sm:text-lg">
-                            ⚠️ Controle de Módulos por Turma
+                            ⚠️ Controle Global de Módulos
                           </h3>
                           <div className="text-yellow-800 text-xs sm:text-sm space-y-1 sm:space-y-2">
-                            <p><strong>🎯 IMPORTANTE:</strong> O controle abaixo é GLOBAL e afeta TODOS os alunos.</p>
-                            <p><strong>👥 Para controlar módulos POR TURMA:</strong></p>
-                            <ol className="list-decimal list-inside ml-4 space-y-1">
-                              <li>Vá para a aba <strong>"Turmas"</strong></li>
-                              <li>Selecione a turma desejada</li>
-                              <li>Use o <strong>"Painel de Gerenciamento de Módulos"</strong> que aparecerá</li>
-                            </ol>
-                            <p className="text-yellow-700 italic">Isso permite ativar/desativar módulos específicos para cada turma individualmente.</p>
+                            <p><strong>🎯 IMPORTANTE:</strong> O controle abaixo afeta TODOS os alunos do sistema.</p>
+                            <p><strong>🔒 Bloquear um módulo:</strong> Nenhum aluno conseguirá acessá-lo em /jogos</p>
+                            <p><strong>🔓 Desbloquear um módulo:</strong> Todos os alunos poderão acessá-lo</p>
+                            <p className="text-yellow-700 italic mt-2">As mudanças são aplicadas imediatamente para todos.</p>
                           </div>
                         </div>
                       </div>
