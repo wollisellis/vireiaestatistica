@@ -316,7 +316,7 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                     : module.id === 'module-2'
                       ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-800/50 dark:text-purple-100 dark:border-purple-500'
                       : 'bg-green-100 text-green-900 border-green-300 dark:bg-green-800/50 dark:text-green-100 dark:border-green-500'
-                }`}`
+                }`}
                 title={`Detalhes: ${state.score >= 90 ? 'Excelente' : state.score >= 70 ? 'Bom' : 'Precisa Melhorar'} • ${state.score}% • ${state.passed ? 'Aprovado' : 'Reprovado'} • ${state.stars} estrela${state.stars !== 1 ? 's' : ''}`}
               >
                 <Award className={`w-4 h-4 ${
