@@ -14,7 +14,10 @@ import {
   Users,
   Award,
   HelpCircle,
-  MessageCircle
+  MessageCircle,
+  Brain,
+  Lightbulb,
+  Target
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 
@@ -24,7 +27,7 @@ export function Footer() {
   return (
     <footer className="bg-gradient-to-r from-emerald-50 to-teal-50 border-t border-emerald-100 mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           
           {/* Platform Info */}
           <div className="space-y-4">
@@ -84,6 +87,48 @@ export function Footer() {
                 Datasets Brasileiros Reais
               </li>
             </ul>
+          </div>
+
+          {/* Learning Methods */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Métodos de Aprendizado</h3>
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-3 rounded-lg border border-purple-200">
+                <div className="flex items-start space-x-2">
+                  <Brain className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-purple-900">Método EA2</h4>
+                    <p className="text-xs text-purple-700 mt-1">
+                      Exposição e Análise: Aprenda conceitos através de exemplos práticos e análise crítica de casos reais.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-3 rounded-lg border border-amber-200">
+                <div className="flex items-start space-x-2">
+                  <Lightbulb className="w-5 h-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-amber-900">Gamificação</h4>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Aprenda jogando: conceitos complexos apresentados de forma lúdica e interativa.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-3 rounded-lg border border-emerald-200">
+                <div className="flex items-start space-x-2">
+                  <Target className="w-5 h-5 text-emerald-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-emerald-900">Prática Direcionada</h4>
+                    <p className="text-xs text-emerald-700 mt-1">
+                      Exercícios focados em competências específicas com feedback imediato.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Developer Attribution */}

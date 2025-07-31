@@ -13,7 +13,8 @@ import {
   Star,
   RefreshCw,
   AlertCircle,
-  Activity
+  Activity,
+  Trophy
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -99,8 +100,18 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
   const iconBgClass = useMemo(() => {
     if (module.isLocked) return 'bg-gray-400';
     
-    // Se já foi completado, sempre mostrar verde
+    // Se já foi completado, usar cores diferentes para cada módulo
     if (state.status === 'completed') {
+      if (module.id === 'module-1') {
+        return 'bg-gradient-to-br from-emerald-500 to-emerald-600';
+      } else if (module.id === 'module-2') {
+        return 'bg-gradient-to-br from-purple-500 to-purple-600';
+      } else if (module.id === 'module-3') {
+        return 'bg-gradient-to-br from-indigo-500 to-indigo-600';
+      } else if (module.id === 'module-4') {
+        return 'bg-gradient-to-br from-amber-500 to-amber-600';
+      }
+      // Default para módulos futuros
       return 'bg-gradient-to-br from-green-500 to-green-600';
     }
     
@@ -140,16 +151,18 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
     >
       <Card className={`
         h-full border-2 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl hover:scale-[1.03] 
-        transform-gpu hover:-translate-y-2 backdrop-blur-sm
+        transform-gpu hover:-translate-y-2 backdrop-blur-sm relative overflow-hidden
         ${module.isLocked
           ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800'
           : error
             ? 'border-red-300 hover:border-red-400 bg-gradient-to-br from-white to-red-50 dark:border-red-600 dark:bg-gradient-to-br dark:from-gray-700 dark:to-red-900/20'
-            : module.id === 'module-1'
-              ? 'border-blue-200 hover:border-blue-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-200/50 dark:hover:ring-blue-500/20'
-              : module.id === 'module-2'
-                ? 'border-emerald-200 hover:border-emerald-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-emerald-200/50 dark:hover:ring-emerald-500/20'
-                : 'border-blue-200 hover:border-blue-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-200/50 dark:hover:ring-blue-500/20'
+            : state.status === 'completed'
+              ? 'border-amber-400 hover:border-amber-500 bg-gradient-to-br from-amber-50/30 to-yellow-50/30 hover:ring-4 hover:ring-amber-300/50 shadow-amber-200/50'
+              : module.id === 'module-1'
+                ? 'border-blue-200 hover:border-blue-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-200/50 dark:hover:ring-blue-500/20'
+                : module.id === 'module-2'
+                  ? 'border-emerald-200 hover:border-emerald-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-emerald-200/50 dark:hover:ring-emerald-500/20'
+                  : 'border-blue-200 hover:border-blue-400 bg-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-200/50 dark:hover:ring-blue-500/20'
         }
         ${className}
       `} onClick={handleClick}>
@@ -169,10 +182,10 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             <div className="absolute top-4 right-4">
               <Badge
                 variant="success"
-                className="flex items-center space-x-1 text-xs px-2 py-1 bg-green-100 text-green-800 border-green-200 dark:bg-green-800 dark:text-green-100 dark:border-green-600"
+                className="flex items-center space-x-1 text-xs px-2 py-1 bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 border-amber-300 shadow-md"
               >
-                <CheckCircle className="w-3 h-3" />
-                <span>Concluído</span>
+                <Trophy className="w-3 h-3 text-amber-600" />
+                <span className="font-semibold">Concluído</span>
               </Badge>
             </div>
           )}

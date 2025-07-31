@@ -90,14 +90,18 @@ export function AuthForm() {
         )
         if (error) throw new Error(error.message)
 
-        // Sempre redirecionar para jogos após registro
-        window.location.href = '/jogos'
+        // Verificar se há URL de retorno
+        const returnUrl = sessionStorage.getItem('returnUrl') || '/jogos'
+        sessionStorage.removeItem('returnUrl')
+        window.location.href = returnUrl
       } else {
         const { error } = await signIn(data.email, data.password)
         if (error) throw new Error(error.message)
 
-        // Sempre redirecionar para jogos após login
-        window.location.replace('/jogos')
+        // Verificar se há URL de retorno
+        const returnUrl = sessionStorage.getItem('returnUrl') || '/jogos'
+        sessionStorage.removeItem('returnUrl')
+        window.location.replace(returnUrl)
       }
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Erro desconhecido'
@@ -163,9 +167,11 @@ export function AuthForm() {
         console.log('✅ Usuário Google existente:', data.profile)
       }
 
-      // Sempre redirecionar para jogos
-      console.log('🔄 Redirecionando para jogos...')
-      window.location.href = '/jogos'
+      // Verificar se há URL de retorno
+      const returnUrl = sessionStorage.getItem('returnUrl') || '/jogos'
+      sessionStorage.removeItem('returnUrl')
+      console.log('🔄 Redirecionando para:', returnUrl)
+      window.location.href = returnUrl
     } catch (err: unknown) {
       console.log('❌ Erro final:', err)
       setError((err as Error).message || 'Erro ao fazer login com Google')
