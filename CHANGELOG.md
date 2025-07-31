@@ -11,6 +11,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.9.7 – 2025-07-31
+
+### 🎯 **Major Educational Policy Changes**
+- **Removed 70% Minimum Score Requirement**:
+  - Any score now completes modules (eliminates student anxiety)
+  - Module 1: Changed "70% Mín. Aprovação" to "✓ Conclusão Garantida"
+  - Module 2: Removed "Você precisa de 70% ou mais para passar"
+  - RandomizedQuizComponent: Updated messaging throughout
+  - **Philosophy**: Focus on continuous learning over grade thresholds
+  - **Files Modified**: 
+    - `src/lib/moduleProgressSystem.ts`: Updated completion thresholds to 0%
+    - `src/app/jogos/modulo-1/quiz/page.tsx`: UI text updates
+    - `src/components/quiz/RandomizedQuizComponent.tsx`: Progress messaging
+    - `src/components/games/ModuleCard.tsx`: Progress display logic
+    - `src/app/jogos/modulo-2/quiz/page.tsx`: Results screen messaging
+
+### 🐛 **Critical Bug Fixes**
+- **Fixed Module 2 Feedback System**:
+  - **Issue**: Only 3 out of 4 methods showed feedback when 4 were placed
+  - **Root Cause**: Used `availableMethods` (placed items) instead of `originalMethods` (all items)
+  - **Solution**: Added `originalMethods` state to preserve complete list
+  - Methods not classified now receive educational feedback automatically
+  - **Files Modified**: `src/app/jogos/modulo-2/quiz/page.tsx`
+
+- **Fixed Module 2 Loading Issue**:
+  - **Issue**: Module would get stuck on "loading" screen, requiring F5 refresh
+  - **Root Cause**: System blocked new attempts after completion
+  - **Solution**: Always load fresh quiz, removed completion checks
+  - **Files Modified**: `src/app/jogos/modulo-2/quiz/page.tsx`
+
+### ✨ **New Features**
+- **Mandatory Confirmation System for Module 2**:
+  - Students must classify all 4 methods before submitting
+  - Visual progress counter: "X/4 métodos classificados"
+  - Two-step confirmation process:
+    1. "Revisar Respostas" - Review mode with editing capability
+    2. "Confirmar e Finalizar" - Final submission
+  - Prevents accidental incomplete submissions
+  - **Files Modified**: `src/app/jogos/modulo-2/quiz/page.tsx`
+
+- **Simplified Module 2 Interface**:
+  - Removed dual-mode system (Name→Category vs Description→Category)
+  - Now only shows method names for classification
+  - Cleaner, less confusing user experience
+  - **Files Modified**: `src/app/jogos/modulo-2/quiz/page.tsx`
+
+### 📊 **Impact Summary**
+- **Student Experience**: Reduced anxiety, clearer feedback, mandatory completion
+- **Educational Value**: Focus on learning over grades, comprehensive feedback
+- **Technical Reliability**: Fixed loading issues, eliminated incomplete submissions
+- **User Interface**: Simplified interactions, better progress visibility
+
+---
+
 ## Version 0.9.6 – 2025-07-31
 
 ### 🔧 **Critical Fixes**
