@@ -277,7 +277,9 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
 
                 {/* Última atividade como microcopy */}
                 {state.status === 'completed' && state.lastActivity && (
-                  <span className="text-gray-500 dark:text-gray-400">
+                  <span className={`${
+                    state.status === 'completed' ? 'text-white/80 font-medium' : 'text-gray-800 dark:text-gray-400'
+                  }`}>
                     {(() => {
                       try {
                         const activityDate = state.lastActivity instanceof Date
