@@ -218,7 +218,7 @@ service cloud.firestore {
       
       // ✅ Estudantes podem ler configurações da sua turma
       allow read: if isStudent() && 
-        resource.data.classId in resource.data.get('enrolledClasses', []);
+        exists(/databases/$(database)/documents/class_students/$(request.auth.uid + '_' + resource.data.classId));
     }
 
     // NUTRITIONAL DATASETS - Dados brasileiros (ACESSO CONTROLADO)

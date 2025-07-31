@@ -109,6 +109,7 @@ function JogosPageContent() {
   };
   
   const [unlockedModules, setUnlockedModules] = useState<string[]>(['module-1']);
+  const [moduleSettings, setModuleSettings] = useState<any[]>([]);
   
   // 🎯 ESTADO UNIFICADO DE CARREGAMENTO
   const [dataLoadingState, setDataLoadingState] = useState({
@@ -169,6 +170,46 @@ function JogosPageContent() {
     setIsHydrated(true);
   }, []);
 
+  // 🎯 FUNÇÃO PARA BUSCAR CONFIGURAÇÕES DE MÓDULOS DA TURMA
+  const fetchModuleSettings = async (studentId: string) => {
+    try {
+      // Buscar turmas do estudante
+      const studentClasses = await ProfessorClassService.getStudentClasses(studentId);
+      
+      if (studentClasses.length > 0) {
+        // Pegar a primeira turma ativa (pode melhorar para múltiplas turmas no futuro)
+        const activeClass = studentClasses.find(c => c.status === 'active') || studentClasses[0];
+        
+        if (activeClass) {
+          // Buscar configurações de módulos da turma
+          const settings = await ProfessorClassService.getModuleSettings(activeClass.classId);
+          setModuleSettings(settings);
+          
+          // Atualizar módulos desbloqueados baseado nas configurações
+          const unlocked = settings
+            .filter(s => s.isAvailable)
+            .map(s => s.moduleId);
+          
+          // Sempre incluir module-1 como desbloqueado por padrão
+          if (!unlocked.includes('module-1')) {
+            unlocked.push('module-1');
+          }
+          
+          setUnlockedModules(unlocked);
+          devLog('Módulos desbloqueados da turma:', unlocked);
+        }
+      } else {
+        // Se não está em nenhuma turma, usar padrão
+        devLog('Estudante não está em nenhuma turma, usando módulos padrão');
+        setUnlockedModules(['module-1']);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar configurações de módulos:', error);
+      // Em caso de erro, manter comportamento padrão
+      setUnlockedModules(['module-1']);
+    }
+  };
+
   // 🎯 REDIRECIONAMENTO PARA USUÁRIOS NÃO LOGADOS E ONBOARDING
   useEffect(() => {
     // Se não está carregando e não há usuário autenticado, redirecionar para /
@@ -228,12 +269,19 @@ function JogosPageContent() {
         newState.classInfo = true;
         newState.ranking = true;
       } else {
-        // Set modules
-        const defaultUnlocked = isProfessor ? ['module-1', 'module-2', 'module-3', 'module-4'] : ['module-1', 'module-2'];
-        startTransition(() => {
-          setUnlockedModules(defaultUnlocked);
-        });
-        devLog('Unlocked modules set to default:', defaultUnlocked);
+        // Set modules based on role
+        if (isProfessor) {
+          // Professores veem todos os módulos
+          const allModules = ['module-1', 'module-2', 'module-3', 'module-4'];
+          startTransition(() => {
+            setUnlockedModules(allModules);
+          });
+          devLog('Professor: todos os módulos desbloqueados');
+        } else {
+          // Estudantes: buscar configurações da turma
+          await fetchModuleSettings(userId);
+        }
+        
         newState.modules = true;
         newState.classInfo = true;
 

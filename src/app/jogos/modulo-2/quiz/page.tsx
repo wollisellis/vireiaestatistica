@@ -124,6 +124,13 @@ export default function Module2QuizPage() {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(timeLimit);
   const [feedback, setFeedback] = useState<Record<string, 'correct' | 'incorrect'>>({});
+  const [detailedFeedback, setDetailedFeedback] = useState<Record<string, {
+    isCorrect: boolean;
+    correctCategory: string;
+    wrongCategory?: string;
+    explanation: string;
+    tip: string;
+  }>>({});
   
   // Refs
   const timerRef = useRef<NodeJS.Timeout>();
@@ -138,6 +145,47 @@ export default function Module2QuizPage() {
     imaging: Camera,
     electrical: Zap,
     dilution: Waves
+  };
+
+  // Helper para gerar feedback educativo
+  const generateEducationalFeedback = (
+    method: DragDropMethod, 
+    wrongCategory: string, 
+    correctCategory: string
+  ) => {
+    const categoryNames = {
+      imaging: 'Métodos de Imagem',
+      electrical: 'Métodos Elétricos',
+      dilution: 'Métodos de Diluição'
+    };
+
+    const categoryExplanations = {
+      imaging: 'utilizam radiação ou ondas para criar imagens do corpo',
+      electrical: 'medem a resistência elétrica do corpo',
+      dilution: 'calculam a composição corporal através da diluição de substâncias'
+    };
+
+    let explanation = `${method.name} pertence aos ${categoryNames[correctCategory]} porque ${categoryExplanations[correctCategory]}.`;
+    
+    // Adicionar explicação específica do método
+    if (method.characteristics && method.characteristics.length > 0) {
+      explanation += ` Este método ${method.characteristics[0].toLowerCase()}.`;
+    }
+
+    // Gerar dica baseada nas características do método
+    let tip = '';
+    if (correctCategory === 'imaging') {
+      tip = '💡 Dica: Métodos de imagem sempre envolvem algum tipo de visualização interna do corpo.';
+    } else if (correctCategory === 'electrical') {
+      tip = '💡 Dica: Métodos elétricos aproveitam o fato de que diferentes tecidos conduzem eletricidade de forma diferente.';
+    } else if (correctCategory === 'dilution') {
+      tip = '💡 Dica: Métodos de diluição calculam volumes corporais através da distribuição de substâncias no organismo.';
+    }
+
+    return {
+      explanation,
+      tip
+    };
   };
 
   // Cores aprimoradas para categorias
@@ -223,13 +271,26 @@ export default function Module2QuizPage() {
           const totalQuestions = data.questionsAnswered || 4;
           // Criar feedback fictício para exibir corretamente os acertos
           const mockFeedback: Record<string, 'correct' | 'incorrect'> = {};
+          const mockDetailedFeedback: Record<string, any> = {};
+          
           for (let i = 0; i < correctAnswers; i++) {
             mockFeedback[`q${i}`] = 'correct';
+            mockDetailedFeedback[`q${i}`] = {
+              isCorrect: true,
+              explanation: '✅ Resposta correta nesta tentativa anterior.',
+              tip: '👏 Continue assim!'
+            };
           }
           for (let i = correctAnswers; i < totalQuestions; i++) {
             mockFeedback[`q${i}`] = 'incorrect';
+            mockDetailedFeedback[`q${i}`] = {
+              isCorrect: false,
+              explanation: '❌ Resposta incorreta nesta tentativa anterior.',
+              tip: '💡 Tente novamente para melhorar sua pontuação!'
+            };
           }
           setFeedback(mockFeedback);
+          setDetailedFeedback(mockDetailedFeedback);
           return;
         }
       }
@@ -378,16 +439,45 @@ export default function Module2QuizPage() {
   const calculateScore = async () => {
     let correctCount = 0;
     const newFeedback: Record<string, 'correct' | 'incorrect'> = {};
+    const newDetailedFeedback: Record<string, any> = {};
+
+    // Primeiro, criar um mapa de métodos por ID para fácil acesso
+    const methodsMap: Record<string, DragDropMethod> = {};
+    availableMethods.forEach(method => {
+      methodsMap[method.id] = method;
+    });
 
     dropZones.forEach(zone => {
       zone.items.forEach(item => {
         const isCorrect = zone.acceptedMethods.includes(item.id);
         newFeedback[item.id] = isCorrect ? 'correct' : 'incorrect';
+        
+        // Gerar feedback detalhado
+        const method = methodsMap[item.id] || item;
+        const correctCategory = method.category;
+        
         if (isCorrect) {
           correctCount++;
           if (soundEnabled) playSound('correct');
+          
+          newDetailedFeedback[item.id] = {
+            isCorrect: true,
+            correctCategory: zone.id,
+            wrongCategory: undefined,
+            explanation: `✅ Correto! ${method.name} realmente pertence aos ${zone.title}.`,
+            tip: '👏 Excelente! Você demonstrou compreender este método.'
+          };
         } else {
           if (soundEnabled) playSound('incorrect');
+          
+          const feedbackData = generateEducationalFeedback(method, zone.id, correctCategory);
+          newDetailedFeedback[item.id] = {
+            isCorrect: false,
+            correctCategory: correctCategory,
+            wrongCategory: zone.id,
+            explanation: feedbackData.explanation,
+            tip: feedbackData.tip
+          };
         }
       });
     });
@@ -397,6 +487,7 @@ export default function Module2QuizPage() {
     
     setScore(calculatedScore);
     setFeedback(newFeedback);
+    setDetailedFeedback(newDetailedFeedback);
     setIsComplete(true);
     setShowResults(true);
     
@@ -448,6 +539,7 @@ export default function Module2QuizPage() {
     setShowResults(false);
     setScore(0);
     setFeedback({});
+    setDetailedFeedback({});
     setTimeElapsed(0);
     setTimeRemaining(timeLimit);
     setStartTime(null);
@@ -698,34 +790,60 @@ export default function Module2QuizPage() {
                   </div>
                 </div>
 
-                {/* Detalhamento das respostas */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-900">Suas Respostas</h3>
-                  {dropZones.map(zone => (
-                    <div key={zone.id} className="space-y-2">
-                      <div className="flex items-center space-x-2 text-sm font-medium">
-                        <zone.icon className="w-4 h-4" />
-                        <span>{zone.title}</span>
-                      </div>
-                      <div className="pl-6 space-y-1">
-                        {zone.items.map(item => (
-                          <div 
-                            key={item.id}
-                            className={`flex items-center space-x-2 text-sm ${
-                              feedback[item.id] === 'correct' ? 'text-green-600' : 'text-red-600'
-                            }`}
-                          >
-                            {feedback[item.id] === 'correct' ? (
-                              <CheckCircle className="w-3 h-3" />
-                            ) : (
-                              <XCircle className="w-3 h-3" />
-                            )}
-                            <span>{item.name}</span>
-                          </div>
-                        ))}
-                      </div>
+                {/* Detalhamento das respostas com feedback educativo */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900">Suas Respostas e Feedback</h3>
+                  
+                  {/* Mostrar respostas corretas primeiro */}
+                  {Object.entries(detailedFeedback).filter(([_, fb]) => fb.isCorrect).length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-green-700">✅ Respostas Corretas</h4>
+                      {Object.entries(detailedFeedback)
+                        .filter(([_, fb]) => fb.isCorrect)
+                        .map(([methodId, fb]) => {
+                          const method = availableMethods.find(m => m.id === methodId);
+                          return (
+                            <div key={methodId} className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <p className="text-sm text-green-800">{fb.explanation}</p>
+                            </div>
+                          );
+                        })}
                     </div>
-                  ))}
+                  )}
+                  
+                  {/* Mostrar respostas incorretas com feedback detalhado */}
+                  {Object.entries(detailedFeedback).filter(([_, fb]) => !fb.isCorrect).length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-red-700">❌ Respostas que Precisam de Atenção</h4>
+                      {Object.entries(detailedFeedback)
+                        .filter(([_, fb]) => !fb.isCorrect)
+                        .map(([methodId, fb]) => {
+                          const method = availableMethods.find(m => m.id === methodId);
+                          const categoryNames = {
+                            imaging: 'Métodos de Imagem',
+                            electrical: 'Métodos Elétricos',
+                            dilution: 'Métodos de Diluição'
+                          };
+                          
+                          return (
+                            <div key={methodId} className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
+                              <div className="flex items-start space-x-2">
+                                <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1 space-y-2">
+                                  <p className="text-sm font-medium text-red-800">
+                                    {method?.name || 'Método'} foi colocado incorretamente em {categoryNames[fb.wrongCategory as keyof typeof categoryNames]}
+                                  </p>
+                                  <p className="text-sm text-gray-700">{fb.explanation}</p>
+                                  <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                                    <p className="text-sm text-yellow-800">{fb.tip}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
