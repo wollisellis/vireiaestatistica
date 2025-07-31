@@ -11,6 +11,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.9.4 – 2025-07-31
+
+### ✨ **New Features**
+- **Module Blocking/Unblocking System for Professors**:
+  - Professors can now control which modules are available to their students
+  - Integration with Firebase module_settings collection
+  - Real-time synchronization across student devices
+  - **Files Modified**:
+    - `src/app/jogos/page.tsx` - Added Firebase module settings fetching
+    - `firestore.rules` - Fixed permissions for student access to module_settings
+  - **Impact**: Professors have full control over course progression
+
+- **Educational Feedback in Module 2 (EA2 Method)**:
+  - Comprehensive explanations when students make mistakes
+  - Follows EA2 (Exposição e Análise) pedagogical method
+  - Category-specific tips and correct method explanations
+  - **Files Modified**: `src/app/jogos/modulo-2/quiz/page.tsx`
+  - **New Function**: `generateEducationalFeedback` provides detailed learning insights
+
+- **Learning Methods Section in Footer**:
+  - New section explaining pedagogical approaches used in the platform
+  - Covers EA2 method, gamification, and directed practice
+  - **Files Modified**: `src/components/layout/Footer.tsx`
+  - **UI**: 4-column layout on large screens to accommodate new content
+
+### 🎨 **UI/UX Improvements**
+- **Login Modal for /jogos**:
+  - Replaced automatic redirect with elegant modal dialog
+  - Preserves user context with returnUrl in sessionStorage
+  - Better user experience for non-authenticated visitors
+  - **Files Modified**: 
+    - `src/app/jogos/page.tsx` - Added login modal component
+    - `src/components/auth/AuthForm.tsx` - Return URL handling
+
+- **Distinct Colors for Completed Modules**:
+  - Module 1: Emerald green gradient
+  - Module 2: Purple gradient
+  - Module 3: Indigo gradient
+  - Module 4: Amber gradient
+  - Golden trophy badge replaces generic checkmark
+  - **Files Modified**: `src/components/games/EnhancedModuleCard.tsx`
+
+### 🔧 **Technical Improvements**
+- **Firebase Integration**: Enhanced module settings synchronization
+- **Session Management**: Better preservation of navigation context
+- **Component Architecture**: More modular and maintainable code structure
+
+---
+
 ## Version 0.9.3 – 2025-07-30
 
 ### 🐛 **Bug Fixes**

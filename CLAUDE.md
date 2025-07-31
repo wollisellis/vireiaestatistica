@@ -49,6 +49,11 @@ rm -rf .next
 
 ## Workflow de Desenvolvimento
 - **OBRIGATÓRIO**: Sempre fazer `git add .` e `git commit` após completar qualquer alteração no código
+- **OBRIGATÓRIO**: Sempre atualizar o `CHANGELOG.md` ANTES de fazer commit com:
+  - Versão incrementada (patch/minor/major conforme o tipo de mudança)
+  - Descrição clara das mudanças implementadas
+  - Arquivos modificados e impacto das mudanças
+  - Seguir o formato existente no arquivo
 - Usar mensagens de commit descritivas em português
 - Fazer commit frequentes durante o desenvolvimento
 - Nunca deixar alterações sem commit ao finalizar uma tarefa
