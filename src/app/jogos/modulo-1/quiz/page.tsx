@@ -74,9 +74,9 @@ export default function Module1QuizPage() {
           
           <Card>
             <CardContent className="p-4 text-center">
-              <Target className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">70%</div>
-              <div className="text-sm text-gray-600">Mín. Aprovação</div>
+              <Trophy className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-900">✓</div>
+              <div className="text-sm text-gray-600">Conclusão Garantida</div>
             </CardContent>
           </Card>
           

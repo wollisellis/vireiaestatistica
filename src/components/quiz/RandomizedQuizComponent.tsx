@@ -393,7 +393,7 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
               ) : (
                 <>
                   <Target className="h-5 w-5 mr-2" />
-                  Continue Tentando! (necessário ≥70%)
+                  Continue Praticando!
                 </>
               )}
             </Badge>
@@ -703,7 +703,7 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
               Quiz: Introdução à Avaliação Nutricional
             </CardTitle>
             <p className="text-gray-600 mb-4">
-              Responda 7 questões sorteadas aleatoriamente. Você precisa de 70% de acertos para concluir o módulo.
+              Responda 7 questões sorteadas aleatoriamente. Qualquer pontuação registra sua conclusão do módulo.
             </p>
 
             {/* Métricas do Quiz */}

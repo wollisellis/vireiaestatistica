@@ -106,6 +106,7 @@ export default function Module2QuizPage() {
   
   // Estados do drag-and-drop
   const [availableMethods, setAvailableMethods] = useState<DragItem[]>([]);
+  const [originalMethods, setOriginalMethods] = useState<DragItem[]>([]); // ✅ Para feedback completo
   const [dropZones, setDropZones] = useState<DropZone[]>([]);
   const [draggedItem, setDraggedItem] = useState<DragItem | null>(null);
   const [selectedItem, setSelectedItem] = useState<DragItem | null>(null); // Para mobile
@@ -129,6 +130,10 @@ export default function Module2QuizPage() {
     explanation: string;
     tip: string;
   }>>({});
+  
+  // ✅ Estados do sistema de confirmação
+  const [isReadyToConfirm, setIsReadyToConfirm] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   // Refs
   const timerRef = useRef<NodeJS.Timeout>();
@@ -251,6 +256,7 @@ export default function Module2QuizPage() {
       // Configurar métodos aleatórios
       const randomMethods = getRandomMethods(4);
       setAvailableMethods(randomMethods);
+      setOriginalMethods([...randomMethods]); // ✅ Salvar cópia dos métodos originais
       
       // Configurar zonas de drop com ícones
       const zones: DropZone[] = [
@@ -373,12 +379,11 @@ export default function Module2QuizPage() {
   };
 
   const checkIfComplete = () => {
-    // Pequeno delay para garantir que o estado foi atualizado
+    // ✅ CORREÇÃO: Não finalizar automaticamente, mostrar confirmação
     setTimeout(() => {
       setAvailableMethods(prev => {
-        if (prev.length === 0) {
-          calculateScore();
-        }
+        const methodsPlaced = 4 - prev.length;
+        setIsReadyToConfirm(prev.length === 0); // Pronto quando todos os 4 foram colocados
         return prev;
       });
     }, 100);
@@ -389,14 +394,27 @@ export default function Module2QuizPage() {
     calculateScore();
   };
 
+  // ✅ Funções do sistema de confirmação
+  const handleConfirmAnswers = () => {
+    calculateScore();
+  };
+
+  const handleReviewAnswers = () => {
+    setShowConfirmation(true);
+  };
+
+  const handleContinueEditing = () => {
+    setShowConfirmation(false);
+  };
+
   const calculateScore = async () => {
     let correctCount = 0;
     const newFeedback: Record<string, 'correct' | 'incorrect'> = {};
     const newDetailedFeedback: Record<string, any> = {};
 
-    // Primeiro, criar um mapa de métodos por ID para fácil acesso
+    // ✅ CORREÇÃO: Usar métodos originais para ter todos os 4 métodos no feedback
     const methodsMap: Record<string, DragDropMethod> = {};
-    availableMethods.forEach(method => {
+    originalMethods.forEach(method => {
       methodsMap[method.id] = method;
     });
 
@@ -433,6 +451,21 @@ export default function Module2QuizPage() {
           };
         }
       });
+    });
+
+    // ✅ CORREÇÃO: Processar métodos não colocados como incorretos
+    originalMethods.forEach(method => {
+      if (!newFeedback[method.id]) {
+        // Método não foi colocado em nenhuma zona
+        newFeedback[method.id] = 'incorrect';
+        newDetailedFeedback[method.id] = {
+          isCorrect: false,
+          correctCategory: method.category,
+          wrongCategory: 'not_placed',
+          explanation: `❌ ${method.name} não foi classificado. Pertence aos ${method.category === 'imaging' ? 'Métodos de Imagem' : method.category === 'electrical' ? 'Métodos Elétricos' : 'Métodos de Diluição'}.`,
+          tip: '💡 Dica: Leia com atenção as características de cada método para classificá-lo corretamente.'
+        };
+      }
     });
 
     const totalItems = 4; // Sempre 4 métodos por quiz
@@ -497,6 +530,9 @@ export default function Module2QuizPage() {
     setStartTime(null);
     setSelectedItem(null);
     setHoveredZone(null);
+    // ✅ Reset estados de confirmação
+    setIsReadyToConfirm(false);
+    setShowConfirmation(false);
     // Forçar novo quiz ao tentar novamente
     initializeQuiz(true);
   };
@@ -683,7 +719,7 @@ export default function Module2QuizPage() {
                   <p className="text-gray-600">
                     {score >= PASSING_SCORE 
                       ? 'Você completou o módulo com sucesso!'
-                      : 'Você precisa de 70% ou mais para passar'}
+                      : 'Continue praticando para melhorar sua pontuação!'}
                   </p>
                 </div>
               </CardHeader>
@@ -803,10 +839,16 @@ export default function Module2QuizPage() {
               {/* Lado esquerdo - Itens disponíveis */}
               <Card className="h-fit">
                 <CardHeader>
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                    <FlaskConical className="w-5 h-5 text-purple-600" />
-                    <span>Métodos para Classificar</span>
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                      <FlaskConical className="w-5 h-5 text-purple-600" />
+                      <span>Métodos para Classificar</span>
+                    </h3>
+                    {/* ✅ Contador de progresso */}
+                    <Badge variant={isReadyToConfirm ? 'success' : 'secondary'} className="text-sm">
+                      {4 - availableMethods.length}/4 classificados
+                    </Badge>
+                  </div>
                   <p className="text-sm text-gray-600">
                     {selectedItem ? 'Clique em uma categoria à direita' : 'Arraste ou clique em um item'}
                   </p>
@@ -940,6 +982,82 @@ export default function Module2QuizPage() {
                 })}
               </div>
             </div>
+
+            {/* ✅ Sistema de confirmação obrigatório */}
+            {!showConfirmation && isReadyToConfirm && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6"
+              >
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-6 text-center">
+                    <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-green-900 mb-2">
+                      Todos os métodos foram classificados!
+                    </h3>
+                    <p className="text-green-700 mb-4">
+                      Revise suas escolhas e confirme quando estiver pronto.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button
+                        onClick={handleReviewAnswers}
+                        variant="outline"
+                        className="border-green-500 text-green-700 hover:bg-green-100"
+                      >
+                        <Target className="w-4 h-4 mr-2" />
+                        Revisar Respostas
+                      </Button>
+                      <Button
+                        onClick={handleConfirmAnswers}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Confirmar e Finalizar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* ✅ Modo de revisão */}
+            {showConfirmation && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6"
+              >
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-6 text-center">
+                    <Info className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                      Modo de Revisão
+                    </h3>
+                    <p className="text-blue-700 mb-4">
+                      Você pode ainda mover os métodos para ajustar suas respostas.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button
+                        onClick={handleContinueEditing}
+                        variant="outline"
+                        className="border-blue-500 text-blue-700 hover:bg-blue-100"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Continuar Editando
+                      </Button>
+                      <Button
+                        onClick={handleConfirmAnswers}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Confirmar Respostas
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
           </div>
         )}
       </div>
