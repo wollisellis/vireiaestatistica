@@ -11,6 +11,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.10.2 – 2025-08-01
+
+### 🐛 **Critical Bug Fix: Infinite Loading Loop in Module Access**
+
+#### **Loop Infinito ao Verificar Permissões de Módulo**
+- **Issue**: Ao acessar módulos, ficava girando infinitamente "Verificando permissões..." sem nunca carregar
+- **Root Cause**: 
+  - `useEffect` tinha `router` nas dependências, causando re-renders infinitos
+  - `useCallback` com `router` como dependência estava recriando a função constantemente
+  - Múltiplas verificações simultâneas do mesmo módulo
+- **Solution**: 
+  - Removido `useCallback` e movido função async para dentro do `useEffect`
+  - Removido `router` das dependências do `useEffect` 
+  - Adicionado flag `isChecking` para evitar verificações duplicadas
+  - Melhorado controle de estados para evitar loops
+- **Technical Details**:
+  - `useModuleAccess.ts`: Removido linha 3 (`useCallback` import)
+  - Linhas 28-134: Refatorado todo o hook para evitar re-renders
+  - Adicionado state `isChecking` (linha 27) para controle de execução
+  - Logs detalhados do user object para debug (linhas 55-61)
+- **Files Modified**: 
+  - `src/hooks/useModuleAccess.ts` (refatoração completa do useEffect)
+- **Impact**: 
+  - Módulos agora carregam corretamente sem loops infinitos
+  - Melhor performance e experiência do usuário
+  - Debug mais fácil com logs detalhados
+
 ## Version 0.10.1 – 2025-08-01
 
 ### ✨ **Feature: Module Access Protection**

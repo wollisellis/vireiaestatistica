@@ -24,10 +24,22 @@ export function useModuleAccess(moduleId: string): ModuleAccessResult {
   const [isLoading, setIsLoading] = useState(true)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isChecking, setIsChecking] = useState(false)
 
   useEffect(() => {
+    console.log(`🔄 [useModuleAccess] Effect triggered - authLoading: ${authLoading}, user: ${user ? 'exists' : 'null'}, moduleId: ${moduleId}`)
+    
+    // Se ainda não tem um moduleId, não fazer nada
+    if (!moduleId) {
+      console.log('⚠️ [useModuleAccess] Sem moduleId - aguardando...')
+      setIsLoading(false)
+      return
+    }
+    
     // Aguardar autenticação
     if (authLoading) {
+      console.log('⏳ [useModuleAccess] Aguardando autenticação...')
+      setIsLoading(true)
       return
     }
 
@@ -35,66 +47,91 @@ export function useModuleAccess(moduleId: string): ModuleAccessResult {
     if (!user) {
       console.log('🚫 [useModuleAccess] Usuário não autenticado - redirecionando para login')
       setIsRedirecting(true)
+      setIsLoading(false)
       router.push('/')
       return
     }
 
-    // Verificar acesso ao módulo
-    checkModuleAccess()
-  }, [user, authLoading, moduleId])
+    // Log detalhado do usuário
+    console.log('👤 [useModuleAccess] User object:', {
+      uid: (user as any)?.uid,
+      id: (user as any)?.id,
+      email: user?.email,
+      displayName: user?.displayName
+    })
 
-  const checkModuleAccess = async () => {
-    if (!user?.id || !moduleId) {
+    // Evitar verificações duplicadas
+    if (isChecking) {
+      console.log('🔄 [useModuleAccess] Já está verificando - pulando...')
       return
     }
 
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      console.log(`🔍 [useModuleAccess] Verificando acesso ao módulo ${moduleId}`)
+    // Função async dentro do useEffect
+    const checkModuleAccess = async () => {
+      // FirebaseUser usa uid, não id
+      const userId = (user as any)?.uid || (user as any)?.id;
       
-      const hasAccess = await ProfessorClassService.isModuleAvailableForStudent(
-        user.id,
-        moduleId
-      )
+      if (!userId) {
+        console.log(`⚠️ [useModuleAccess] Missing userId`)
+        setIsLoading(false)
+        setHasAccess(false)
+        return
+      }
 
-      setHasAccess(hasAccess)
+      try {
+        setIsChecking(true)
+        setError(null)
 
-      if (!hasAccess) {
-        console.log(`🔒 [useModuleAccess] Acesso negado ao módulo ${moduleId}`)
+        console.log(`🔍 [useModuleAccess] Verificando acesso ao módulo ${moduleId} para usuário ${userId}`)
         
-        // Mostrar mensagem ao usuário
-        toast.error(
-          '🔒 Módulo bloqueado - Este módulo ainda não está disponível para você.',
-          {
-            duration: 4000,
-            icon: '🚫',
-          }
+        const accessResult = await ProfessorClassService.isModuleAvailableForStudent(
+          userId,
+          moduleId
         )
 
-        // Redirecionar após um pequeno delay para mostrar a mensagem
+        console.log(`📊 [useModuleAccess] Resultado da verificação:`, accessResult)
+
+        setHasAccess(accessResult)
+
+        if (!accessResult) {
+          console.log(`🔒 [useModuleAccess] Acesso negado ao módulo ${moduleId}`)
+          
+          // Mostrar mensagem ao usuário
+          toast.error(
+            '🔒 Módulo bloqueado - Este módulo ainda não está disponível para você.',
+            {
+              duration: 4000,
+              icon: '🚫',
+            }
+          )
+
+          // Redirecionar após um pequeno delay para mostrar a mensagem
+          setIsRedirecting(true)
+          setTimeout(() => {
+            router.push('/jogos')
+          }, 1500)
+        } else {
+          console.log(`✅ [useModuleAccess] Acesso permitido ao módulo ${moduleId}`)
+        }
+      } catch (error) {
+        console.error('❌ [useModuleAccess] Erro ao verificar acesso:', error)
+        setError('Erro ao verificar permissões')
+        
+        // Em caso de erro, ser restritivo e redirecionar
+        toast.error('Erro ao verificar permissões. Redirecionando...')
         setIsRedirecting(true)
         setTimeout(() => {
           router.push('/jogos')
         }, 1500)
-      } else {
-        console.log(`✅ [useModuleAccess] Acesso permitido ao módulo ${moduleId}`)
+      } finally {
+        setIsLoading(false)
+        setIsChecking(false)
       }
-    } catch (error) {
-      console.error('❌ [useModuleAccess] Erro ao verificar acesso:', error)
-      setError('Erro ao verificar permissões')
-      
-      // Em caso de erro, ser restritivo e redirecionar
-      toast.error('Erro ao verificar permissões. Redirecionando...')
-      setIsRedirecting(true)
-      setTimeout(() => {
-        router.push('/jogos')
-      }, 1500)
-    } finally {
-      setIsLoading(false)
     }
-  }
+
+    // Verificar acesso ao módulo
+    checkModuleAccess()
+  }, [user, authLoading, moduleId, isChecking]) // Removido router das dependências
 
   return {
     hasAccess,
