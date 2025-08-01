@@ -25,6 +25,7 @@ import {
   Play,
   Settings
 } from 'lucide-react'
+import { RegistrationControl } from './RegistrationControl'
 import { collection, getDocs, onSnapshot, doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import unifiedScoringService from '@/services/unifiedScoringService'
@@ -428,6 +429,9 @@ export function SimplifiedProfessorDashboard({
           </CardContent>
         </Card>
       </div>
+
+      {/* Controle de Cadastros */}
+      <RegistrationControl className="mt-6" />
 
       {/* Ranking Completo */}
       <Card>

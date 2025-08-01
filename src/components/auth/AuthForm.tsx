@@ -117,6 +117,8 @@ export function AuthForm() {
         setError('Usuário não encontrado. Verifique o email ou crie uma nova conta.')
       } else if (errorMessage.includes('auth/wrong-password')) {
         setError('Senha incorreta. Tente novamente.')
+      } else if (errorMessage.includes('Novos cadastros estão temporariamente fechados')) {
+        setError('⚠️ Cadastros fechados - A turma não está aceitando novos alunos no momento. Entre em contato com seu professor.')
       } else {
         setError(errorMessage)
       }
@@ -349,10 +351,16 @@ export function AuthForm() {
               )}
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-red-600 text-sm">{error}</p>
-
-
+                <div className={`rounded-lg p-3 ${
+                  error.includes('Cadastros fechados') 
+                    ? 'bg-yellow-50 border border-yellow-200' 
+                    : 'bg-red-50 border border-red-200'
+                }`}>
+                  <p className={`text-sm ${
+                    error.includes('Cadastros fechados')
+                      ? 'text-yellow-800'
+                      : 'text-red-600'
+                  }`}>{error}</p>
                 </div>
               )}
 

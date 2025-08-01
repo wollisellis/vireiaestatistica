@@ -11,7 +11,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## Version 0.9.9 – 2025-08-01
+## Version 0.10.0 – 2025-08-01
+
+### ✨ **Feature: Registration Control System**
+
+#### **Sistema de Controle de Cadastros**
+- **Issue**: Professores precisavam de uma forma de fechar cadastros quando a turma estivesse completa
+- **Solution**: Implementado sistema de controle de cadastros acessível em /docente
+- **Technical Details**:
+  - Criado componente `RegistrationControl.tsx` com switch para ativar/desativar cadastros
+  - Configuração salva em `settings/registration_control` no Firestore
+  - `useFirebaseAuth.ts`: Adicionada verificação antes de criar novos usuários (linha 243-250)
+  - `AuthForm.tsx`: Mensagem personalizada quando cadastros estão fechados (linha 121, 355-363)
+  - UI indica claramente o status (aberto/fechado) com cores e ícones
+- **Files Created**: 
+  - `src/components/professor/RegistrationControl.tsx`
+- **Files Modified**: 
+  - `src/components/professor/SimplifiedProfessorDashboard.tsx` (linha 28, 434)
+  - `src/hooks/useFirebaseAuth.ts` (linhas 243-250)
+  - `src/components/auth/AuthForm.tsx` (linhas 121, 355-363)
+- **Impact**: 
+  - Professores podem controlar quando novos alunos podem se cadastrar
+  - Alunos existentes continuam podendo fazer login normalmente
+  - Interface clara mostra quantidade de alunos cadastrados
 
 ### ✨ **Feature: Hide Professors from General Ranking**
 

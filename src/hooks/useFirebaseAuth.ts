@@ -239,6 +239,16 @@ export function useFirebaseAuth() {
         console.log('Professor registration with email:', email)
       }
 
+      // Check if registrations are allowed for students
+      if (role === 'student') {
+        const registrationSettingsDoc = await getDoc(doc(db, 'settings', 'registration_control'))
+        const registrationSettings = registrationSettingsDoc.data()
+        
+        if (registrationSettings && registrationSettings.allowNewRegistrations === false) {
+          throw new Error('Novos cadastros estão temporariamente fechados. Entre em contato com seu professor.')
+        }
+      }
+
       // Create user with email and password
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password)
 
