@@ -52,11 +52,12 @@ async function generateGlobalRankingData(): Promise<RankingEntry[]> {
           const userDoc = await getDoc(doc(db, 'users', studentId));
           const userData = userDoc.exists() ? userDoc.data() : {};
           
-          // Verificar se tem pontuação válida
+          // Verificar se tem pontuação válida e não é professor
           const hasValidScore = scoreData.normalizedScore > 0 || 
                                Object.values(scoreData.moduleScores || {}).some((score: any) => score > 0);
           
-          if (hasValidScore) {
+          // Filtrar professores do ranking
+          if (hasValidScore && userData.role !== 'professor') {
             rankingData.push({
               studentId: studentId,
               anonymousId: userData.anonymousId || studentId.slice(-4),

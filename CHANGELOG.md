@@ -11,6 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.9.9 – 2025-08-01
+
+### ✨ **Feature: Hide Professors from General Ranking**
+
+#### **Ocultar Professores do Ranking Geral**
+- **Issue**: Professores apareciam no ranking geral junto com alunos, o que não era apropriado
+- **Root Cause**: Sistema não filtrava usuários por role ao exibir rankings
+- **Solution**: Implementado filtro para excluir usuários com `role === 'professor'` de todos os rankings públicos
+- **Technical Details**:
+  - `rankingService.ts`: Adicionado verificação `userData.role !== 'professor'` na linha 93
+  - `RankingPanel.tsx`: Filtro aplicado na linha 60 em `generateGlobalRankingData()`
+  - `SimpleRankingPanel.tsx`: Filtros adicionados nas linhas 92 e 195 para ambos métodos de carregamento
+  - Professores ainda podem jogar e ver suas próprias pontuações
+  - Dados dos professores são preservados para análise interna
+- **Files Modified**: 
+  - `src/services/rankingService.ts` (linha 93)
+  - `src/components/ranking/RankingPanel.tsx` (linha 60)
+  - `src/components/ranking/SimpleRankingPanel.tsx` (linhas 92, 195)
+- **Impact**: Professores podem testar os jogos sem aparecer no ranking competitivo dos alunos
+
+---
+
 ## Version 0.9.8 – 2025-07-31
 
 ### ✨ **UI/UX Improvements**

@@ -88,7 +88,8 @@ export function SimpleRankingPanel({
           const completedModules = Object.values(moduleScores).filter((score: any) => score >= 70).length;
           const totalModules = 2; // Total de módulos desbloqueados (pode ser dinâmico futuramente)
           
-          if (totalScore > 0) {
+          // Filtrar professores do ranking
+          if (totalScore > 0 && userData.role !== 'professor') {
             studentsData.push({
               studentId: studentId,
               studentName: userData.fullName || userData.name || 'Estudante',
@@ -190,16 +191,19 @@ export function SimpleRankingPanel({
           const completedModules = Object.values(moduleScores).filter((score: number) => score >= 70).length;
           const totalModules = 2; // Total de módulos desbloqueados (pode ser dinâmico futuramente)
 
-          studentsData.push({
-            studentId: studentId,
-            studentName: userData.fullName || userData.name || 'Estudante',
-            anonymousId: userData.anonymousId || studentId.slice(-4),
-            totalScore: Math.round(avgScore),
-            position: 0,
-            isCurrentUser: studentId === currentUserId,
-            completedModules,
-            totalModules
-          });
+          // Filtrar professores do ranking
+          if (userData.role !== 'professor') {
+            studentsData.push({
+              studentId: studentId,
+              studentName: userData.fullName || userData.name || 'Estudante',
+              anonymousId: userData.anonymousId || studentId.slice(-4),
+              totalScore: Math.round(avgScore),
+              position: 0,
+              isCurrentUser: studentId === currentUserId,
+              completedModules,
+              totalModules
+            });
+          }
         } catch (error) {
           console.error(`[SimpleRanking] Erro ao processar ${studentId}:`, error);
         }

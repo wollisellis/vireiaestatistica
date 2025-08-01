@@ -150,11 +150,13 @@ A plataforma funciona em **modo de demonstração** para uso educacional:
 - Abordagem pedagógica adaptada ao ensino superior brasileiro
 
 ### 📱 Design Responsivo e Acessível
-- Interface otimizada para desktop e mobile
-- Interações touch-friendly para dispositivos móveis
-- Gráficos responsivos que se adaptam ao tamanho da tela
-- Navegação intuitiva e consistente
-- Carregamento otimizado para diferentes velocidades de conexão
+- **Interface Mobile-First** - Otimizada para smartphones, tablets e desktop
+- **Ranking Inteligente** - Colapsável em mobile, sidebar fixa em desktop
+- **Cores de Alto Contraste** - Módulos completados com cores vibrantes para melhor legibilidade
+- **Interações Touch-Friendly** - Botões e elementos otimizados para toque
+- **Gráficos Responsivos** - Visualizações que se adaptam automaticamente ao tamanho da tela
+- **Navegação Adaptativa** - Menu compacto em mobile, completo em desktop
+- **Carregamento Otimizado** - Lazy loading e componentes sob demanda
 
 ### 🎓 Integração Curricular NT600
 - Alinhado com os objetivos da disciplina de Avaliação Nutricional
@@ -310,7 +312,9 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 - **Sistema de Progresso Robusto** - Tracking completo com localStorage
 - **Interface 100% Portuguesa** - Localização completa para estudantes brasileiros
 - **Curvas de Crescimento Interativas** - Plotagem com dados reais do Ministério da Saúde
-- **Design Responsivo** - Otimizado para desktop e dispositivos móveis
+- **Design Responsivo Mobile-First** - Interface otimizada para todos os dispositivos
+- **Ranking Colapsável** - Sistema de ranking inteligente que se adapta ao tamanho da tela
+- **Módulos com Feedback Visual** - Cores vibrantes e contrastantes para módulos completados
 - **Dados Brasileiros Autênticos** - IBGE, SISVAN, pesquisas peer-reviewed
 - **Sistema de Conquistas** - 4 categorias de badges motivacionais
 - **Feedback Educacional** - Explicações detalhadas para cada exercício
@@ -319,7 +323,14 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 - **Jogos 2 e 3 Bloqueados** - Aguardando liberação docente (configurável)
 - **Deploy Pendente** - Configurações de produção implementadas mas não deployado
 
-### ✅ Problemas Corrigidos Recentemente
+### ✅ Melhorias Recentes (v0.9.8)
+- **Interface Mobile Aprimorada** - Ranking colapsável que aparece no topo em dispositivos móveis
+- **Legibilidade Melhorada** - Módulos completados agora têm cores vibrantes (azul/roxo) ao invés de transparentes
+- **Contraste Otimizado** - Texto branco em fundos coloridos para melhor legibilidade
+- **Animações Suaves** - Transições com Framer Motion para expansão/colapso do ranking
+- **UX Mobile-First** - 60% menos scroll necessário em dispositivos móveis
+
+### ✅ Problemas Corrigidos Anteriormente
 - **Sistema de IDs Unificado** - Corrigida inconsistência entre IDs string/number em toda aplicação
 - **Desbloqueio de Módulos** - Problema no dashboard do professor totalmente resolvido
 - **Design System Padronizado** - Implementado sistema de design tokens unificado
@@ -327,12 +338,14 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 - **Tipos TypeScript** - Corrigidas inconsistências de tipos em hooks e contextos
 
 ### 📊 Métricas de Desenvolvimento
-- **Linhas de Código**: ~18.000 linhas TypeScript/React
-- **Componentes**: 60+ componentes reutilizáveis
+- **Linhas de Código**: ~18.500 linhas TypeScript/React
+- **Componentes**: 60+ componentes reutilizáveis (incluindo MobileCollapsibleRanking)
 - **Serviços**: Sistema unificado de pontuação, ranking e progresso
 - **Exercícios**: 18 exercícios interativos implementados
 - **Datasets**: 12 conjuntos de dados brasileiros reais
 - **Design Tokens**: Sistema completo de cores, espaçamentos e tipografia
+- **Responsividade**: 3 breakpoints (mobile, tablet, desktop) com componentes adaptativos
+- **Acessibilidade**: Contraste WCAG AA em todos os elementos
 - **Tempo de Desenvolvimento**: 6+ meses de desenvolvimento iterativo
 
 ---

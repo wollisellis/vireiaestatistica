@@ -90,7 +90,7 @@ class RankingService {
         const userDoc = await getDoc(doc(db, 'users', scoreData.studentId))
         const userData = userDoc.data()
 
-        if (userData) {
+        if (userData && userData.role !== 'professor') { // Filtrar professores do ranking
           const entry: RankingEntry = {
             studentId: scoreData.studentId,
             anonymousId: userData.anonymousId || 'N/A',
