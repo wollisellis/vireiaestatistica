@@ -1,5 +1,110 @@
-import { useState, useEffect } from 'react'
+'use client'
 
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useFirebaseAuth } from './useFirebaseAuth'
+import ProfessorClassService from '@/services/professorClassService'
+import { toast } from 'react-hot-toast'
+
+interface ModuleAccessResult {
+  hasAccess: boolean
+  isLoading: boolean
+  isRedirecting: boolean
+  error: string | null
+}
+
+/**
+ * Hook para verificar acesso a um módulo específico
+ * Redireciona para /jogos se o módulo estiver bloqueado
+ */
+export function useModuleAccess(moduleId: string): ModuleAccessResult {
+  const router = useRouter()
+  const { user, loading: authLoading } = useFirebaseAuth()
+  const [hasAccess, setHasAccess] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Aguardar autenticação
+    if (authLoading) {
+      return
+    }
+
+    // Se não está autenticado, redirecionar para login
+    if (!user) {
+      console.log('🚫 [useModuleAccess] Usuário não autenticado - redirecionando para login')
+      setIsRedirecting(true)
+      router.push('/')
+      return
+    }
+
+    // Verificar acesso ao módulo
+    checkModuleAccess()
+  }, [user, authLoading, moduleId])
+
+  const checkModuleAccess = async () => {
+    if (!user?.id || !moduleId) {
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      console.log(`🔍 [useModuleAccess] Verificando acesso ao módulo ${moduleId}`)
+      
+      const hasAccess = await ProfessorClassService.isModuleAvailableForStudent(
+        user.id,
+        moduleId
+      )
+
+      setHasAccess(hasAccess)
+
+      if (!hasAccess) {
+        console.log(`🔒 [useModuleAccess] Acesso negado ao módulo ${moduleId}`)
+        
+        // Mostrar mensagem ao usuário
+        toast.error(
+          '🔒 Módulo bloqueado - Este módulo ainda não está disponível para você.',
+          {
+            duration: 4000,
+            icon: '🚫',
+          }
+        )
+
+        // Redirecionar após um pequeno delay para mostrar a mensagem
+        setIsRedirecting(true)
+        setTimeout(() => {
+          router.push('/jogos')
+        }, 1500)
+      } else {
+        console.log(`✅ [useModuleAccess] Acesso permitido ao módulo ${moduleId}`)
+      }
+    } catch (error) {
+      console.error('❌ [useModuleAccess] Erro ao verificar acesso:', error)
+      setError('Erro ao verificar permissões')
+      
+      // Em caso de erro, ser restritivo e redirecionar
+      toast.error('Erro ao verificar permissões. Redirecionando...')
+      setIsRedirecting(true)
+      setTimeout(() => {
+        router.push('/jogos')
+      }, 1500)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return {
+    hasAccess,
+    isLoading: isLoading || authLoading,
+    isRedirecting,
+    error
+  }
+}
+
+// Manter o hook antigo para compatibilidade (pode ser removido futuramente)
 interface ModuleSettings {
   moduleId: string
   isLocked: boolean
@@ -13,7 +118,7 @@ interface ModuleAccessHook {
   loading: boolean
 }
 
-export function useModuleAccess(): ModuleAccessHook {
+export function useModuleAccessLegacy(): ModuleAccessHook {
   const [moduleSettings, setModuleSettings] = useState<ModuleSettings[]>([])
   const [loading, setLoading] = useState(true)
 

@@ -11,6 +11,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.10.1 – 2025-08-01
+
+### ✨ **Feature: Module Access Protection**
+
+#### **Proteção contra Acesso Direto a Módulos Bloqueados**
+- **Issue**: Alunos podiam acessar módulos bloqueados diretamente via URL (ex: /jogos/modulo-2/quiz)
+- **Solution**: Implementado sistema de proteção que verifica permissões antes de renderizar módulos
+- **Technical Details**:
+  - `isModuleAvailableForStudent()`: Método adicionado em professorClassService.ts (linha 1204-1264)
+  - Verifica: role do usuário, configurações globais, configurações da turma
+  - Hook `useModuleAccess`: Verifica permissões e redireciona se bloqueado
+  - Componente `ModuleAccessGuard`: Wrapper que protege páginas de módulos
+  - Toast de erro ao tentar acessar módulo bloqueado
+  - Redirecionamento automático para /jogos após 1.5s
+- **Files Created**:
+  - `src/components/guards/ModuleAccessGuard.tsx`
+- **Files Modified**:
+  - `src/services/professorClassService.ts` (método isModuleAvailableForStudent)
+  - `src/hooks/useModuleAccess.ts` (novo hook substituindo versão legacy)
+  - `src/app/jogos/modulo-1/quiz/page.tsx` (linhas 12, 29, 134)
+  - `src/app/jogos/modulo-2/quiz/page.tsx` (linhas 31, 559, 1067)
+- **Impact**: 
+  - Alunos não podem mais burlar o sistema acessando URLs diretamente
+  - Professores sempre têm acesso a todos os módulos
+  - Mensagem clara ao ser bloqueado
+
 ## Version 0.10.0 – 2025-08-01
 
 ### ✨ **Feature: Registration Control System**

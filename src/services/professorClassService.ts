@@ -1194,6 +1194,74 @@ export class ProfessorClassService {
       }
     })
   }
+
+  /**
+   * Verifica se um estudante tem acesso a um módulo específico
+   * @param studentId ID do estudante
+   * @param moduleId ID do módulo
+   * @returns true se o estudante tem acesso, false caso contrário
+   */
+  static async isModuleAvailableForStudent(studentId: string, moduleId: string): Promise<boolean> {
+    try {
+      console.log(`🔍 [ProfessorClassService] Verificando acesso ao módulo ${moduleId} para estudante ${studentId}`)
+      
+      // 1. Verificar se o usuário é professor (sempre tem acesso)
+      const userDoc = await getDoc(doc(db, 'users', studentId))
+      if (userDoc.exists() && userDoc.data().role === 'professor') {
+        console.log('✅ [ProfessorClassService] Usuário é professor - acesso garantido')
+        return true
+      }
+
+      // 2. Verificar configurações globais primeiro
+      const globalSettingsDoc = await getDoc(doc(db, 'settings', 'modules'))
+      if (globalSettingsDoc.exists()) {
+        const globalSettings = globalSettingsDoc.data()
+        const globalUnlocked = globalSettings.unlockedModules || ['module-1']
+        
+        if (!globalUnlocked.includes(moduleId)) {
+          console.log(`🔒 [ProfessorClassService] Módulo ${moduleId} bloqueado globalmente`)
+          return false
+        }
+      }
+
+      // 3. Buscar turma do estudante
+      const studentClassQuery = query(
+        collection(db, 'class_students'),
+        where('studentId', '==', studentId)
+      )
+      const studentClassSnapshot = await getDocs(studentClassQuery)
+      
+      if (studentClassSnapshot.empty) {
+        console.log('⚠️ [ProfessorClassService] Estudante não está em nenhuma turma - usando configuração global')
+        // Se não está em turma, usar configuração global (apenas module-1)
+        return moduleId === 'module-1'
+      }
+
+      // 4. Verificar configuração específica da turma
+      const classId = studentClassSnapshot.docs[0].data().classId
+      const moduleSettingsQuery = query(
+        collection(db, 'module_settings'),
+        where('classId', '==', classId),
+        where('moduleId', '==', moduleId)
+      )
+      const moduleSettingsSnapshot = await getDocs(moduleSettingsQuery)
+      
+      if (!moduleSettingsSnapshot.empty) {
+        const moduleSettings = moduleSettingsSnapshot.docs[0].data() as ModuleSettings
+        console.log(`📊 [ProfessorClassService] Módulo ${moduleId} ${moduleSettings.isAvailable ? 'disponível' : 'bloqueado'} para turma ${classId}`)
+        return moduleSettings.isAvailable
+      }
+
+      // 5. Se não há configuração específica, usar padrão (apenas module-1)
+      console.log(`📋 [ProfessorClassService] Sem configuração específica - usando padrão`)
+      return moduleId === 'module-1'
+      
+    } catch (error) {
+      console.error('❌ [ProfessorClassService] Erro ao verificar acesso ao módulo:', error)
+      // Em caso de erro, ser restritivo (bloquear acesso exceto module-1)
+      return moduleId === 'module-1'
+    }
+  }
 }
 
 export default ProfessorClassService
