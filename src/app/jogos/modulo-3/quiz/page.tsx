@@ -87,9 +87,19 @@ export default function Module3QuizPage() {
   // Constantes
   const MODULE_ID = 'module-3';
   const TOTAL_POINTS = 50;
-  const currentPoint = currentPointIndex < pointsOrder.length 
-    ? anatomicalPoints[pointsOrder[currentPointIndex]] 
+
+  // Debug logs
+  console.log('[Module3Quiz] pointsOrder:', pointsOrder);
+  console.log('[Module3Quiz] anatomicalPoints:', anatomicalPoints);
+  console.log('[Module3Quiz] currentPointIndex:', currentPointIndex);
+  console.log('[Module3Quiz] hasStarted:', hasStarted);
+  console.log('[Module3Quiz] showConfidenceAssessment:', showConfidenceAssessment);
+
+  const currentPoint = currentPointIndex < pointsOrder.length
+    ? anatomicalPoints.find(p => p.id === pointsOrder[currentPointIndex])
     : null;
+
+  console.log('[Module3Quiz] currentPoint:', currentPoint);
 
   // Timer
   useEffect(() => {
