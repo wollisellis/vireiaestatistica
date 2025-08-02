@@ -64,7 +64,6 @@ export default function Module3QuizPage() {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   
   // Estados do quiz
-  const [isLoading, setIsLoading] = useState(true);
   const [hasStarted, setHasStarted] = useState(false);
   const [showConfidenceAssessment, setShowConfidenceAssessment] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
@@ -109,10 +108,7 @@ export default function Module3QuizPage() {
     };
   }, [hasStarted, isComplete, startTime]);
 
-  // Inicialização
-  useEffect(() => {
-    setIsLoading(false);
-  }, []);
+  // Inicialização - removido loading duplicate (ModuleAccessGuard cuida disso)
 
   const handleStart = () => {
     if (showConfidenceAssessment) {
@@ -298,16 +294,7 @@ export default function Module3QuizPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-teal-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
-          <p className="text-gray-600">Carregando módulo...</p>
-        </div>
-      </div>
-    );
-  }
+  // Loading removido - ModuleAccessGuard cuida do loading
 
   return (
     <ModuleAccessGuard moduleId="module-3">
