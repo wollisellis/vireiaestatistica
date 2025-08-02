@@ -107,26 +107,23 @@ service cloud.firestore {
       allow read, write, create, update, delete: if isAuthenticated();
     }
 
-    // CLASSES - Turmas (CONTROLE COM ISOLAMENTO POR PROFESSOR)
+    // CLASSES - Turmas (CONTROLE OTIMIZADO PARA RANKING)
     match /classes/{classId} {
-      // ✅ Professores podem ler suas próprias turmas
-      allow read: if isProfessor() && 
-        (resource.data.professorId == request.auth.uid ||
-         // Permitir leitura de turmas públicas/abertas
-         resource.data.get('visibility', 'private') == 'public');
-      
+      // ✅ Professores podem ler TODAS as turmas (necessário para ranking global)
+      allow read: if isProfessor();
+
       // ✅ Estudantes podem ler turmas em que estão matriculados
-      allow read: if isStudent() && 
-        exists(/databases/$(database)/documents/classStudents/$(request.auth.uid + '_' + classId));
-      
+      allow read: if isStudent() &&
+        exists(/databases/$(database)/documents/classStudents/$(classId + '_' + request.auth.uid));
+
       // ✅ Professores podem criar suas próprias turmas
       allow create: if isProfessor() &&
         request.resource.data.professorId == request.auth.uid;
-      
+
       // ✅ Professores podem editar apenas suas próprias turmas
       allow update: if isProfessor() &&
         resource.data.professorId == request.auth.uid;
-        
+
       // ✅ Professores podem deletar apenas suas próprias turmas
       allow delete: if isProfessor() &&
         resource.data.professorId == request.auth.uid;
@@ -217,8 +214,8 @@ service cloud.firestore {
       allow read, write: if isProfessor();
       
       // ✅ Estudantes podem ler configurações da sua turma
-      allow read: if isStudent() && 
-        exists(/databases/$(database)/documents/class_students/$(request.auth.uid + '_' + resource.data.classId));
+      allow read: if isStudent() &&
+        exists(/databases/$(database)/documents/classStudents/$(resource.data.classId + '_' + request.auth.uid));
     }
 
     // NUTRITIONAL DATASETS - Dados brasileiros (ACESSO CONTROLADO)
