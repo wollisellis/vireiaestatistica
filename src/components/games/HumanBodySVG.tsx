@@ -21,6 +21,7 @@ export default function HumanBodySVG({
 }: HumanBodySVGProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const handleClick = (event: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
@@ -34,6 +35,32 @@ export default function HumanBodySVG({
     const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
     
     onPointClick(svgP.x, svgP.y);
+  };
+
+  const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current) return;
+
+    const svg = svgRef.current;
+    const pt = svg.createSVGPoint();
+    pt.x = event.clientX;
+    pt.y = event.clientY;
+    
+    // Converter coordenadas do mouse para coordenadas SVG
+    const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+    setMousePosition({ x: svgP.x, y: svgP.y });
+
+    // Detectar qual zona está sendo hover
+    let foundZone: string | null = null;
+    for (const [zoneId, zone] of Object.entries(anatomicalZones)) {
+      const distance = Math.sqrt(
+        Math.pow(svgP.x - zone.cx, 2) + Math.pow(svgP.y - zone.cy, 2)
+      );
+      if (distance <= zone.r) {
+        foundZone = zoneId;
+        break;
+      }
+    }
+    setHoveredZone(foundZone);
   };
 
   // Áreas clicáveis para cada ponto anatômico
@@ -53,7 +80,9 @@ export default function HumanBodySVG({
         viewBox="0 0 400 800"
         className="w-full h-auto"
         onClick={handleClick}
-        style={{ maxHeight: '70vh', cursor: 'crosshair' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredZone(null)}
+        style={{ maxHeight: '70vh', cursor: hoveredZone ? 'pointer' : 'crosshair' }}
       >
         <defs>
           {/* Gradientes para profundidade e realismo */}
@@ -235,19 +264,67 @@ export default function HumanBodySVG({
         )}
 
         {/* Áreas destacadas ao passar o mouse */}
-        {hoveredZone && anatomicalZones[hoveredZone as keyof typeof anatomicalZones] && (
-          <motion.circle
-            cx={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].cx}
-            cy={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].cy}
-            r={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].r}
-            fill="rgba(59, 130, 246, 0.1)"
-            stroke="rgba(59, 130, 246, 0.4)"
-            strokeWidth="2"
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-          />
+        {hoveredZone && anatomicalZones[hoveredZone as keyof typeof anatomicalZones] && currentTargetPoint && (
+          <motion.g>
+            {/* Área de destaque */}
+            <motion.circle
+              cx={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].cx}
+              cy={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].cy}
+              r={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].r}
+              fill="rgba(59, 130, 246, 0.2)"
+              stroke="rgba(59, 130, 246, 0.6)"
+              strokeWidth="3"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ 
+                scale: [0.95, 1.05, 0.95],
+                opacity: 1
+              }}
+              transition={{ 
+                scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                opacity: { duration: 0.2 }
+              }}
+            />
+            {/* Ponto central */}
+            <motion.circle
+              cx={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].cx}
+              cy={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].cy}
+              r="5"
+              fill="#3b82f6"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.2 }}
+            />
+          </motion.g>
         )}
       </svg>
+
+      {/* Tooltip do ponto anatômico em hover */}
+      {hoveredZone && currentTargetPoint && (
+        <motion.div
+          className="absolute bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg pointer-events-none"
+          style={{
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          {(() => {
+            const zoneNames: Record<string, string> = {
+              waist: 'Cintura',
+              hip: 'Quadril',
+              arm: 'Braço',
+              calf: 'Panturrilha',
+              shoulder: 'Ombro',
+              wrist: 'Pulso'
+            };
+            return zoneNames[hoveredZone] || hoveredZone;
+          })()}
+        </motion.div>
+      )}
 
       {/* Labels dos pontos anatômicos */}
       <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-gray-600">

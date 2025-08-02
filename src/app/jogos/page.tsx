@@ -425,6 +425,8 @@ function JogosPageContent() {
         router.push('/jogos/modulo-1/quiz');
       } else if (moduleId === 'module-2') {
         router.push('/jogos/modulo-2/quiz');
+      } else if (moduleId === 'module-3') {
+        router.push('/jogos/modulo-3/quiz');
       }
     } catch (error) {
       console.error('Error starting module:', error);
@@ -433,6 +435,8 @@ function JogosPageContent() {
         router.push('/jogos/modulo-1/quiz');
       } else if (moduleId === 'module-2') {
         router.push('/jogos/modulo-2/quiz');
+      } else if (moduleId === 'module-3') {
+        router.push('/jogos/modulo-3/quiz');
       }
     }
   }, [router, getUserId(), getModuleProgress]);
@@ -443,6 +447,8 @@ function JogosPageContent() {
       router.push('/jogos/modulo-1/quiz');
     } else if (selectedModuleForModal?.moduleId === 'module-2') {
       router.push('/jogos/modulo-2/quiz');
+    } else if (selectedModuleForModal?.moduleId === 'module-3') {
+      router.push('/jogos/modulo-3/quiz');
     }
   }, [router, selectedModuleForModal]);
   

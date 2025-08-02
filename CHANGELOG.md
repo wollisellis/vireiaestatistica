@@ -64,6 +64,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Coordenadas agora correspondem diretamente ao viewBox do SVG
 - **Files Modified**: `src/data/questionBanks/module3AnthropometricData.ts`
 
+#### **Melhorias Visuais e UX**
+- **Feedback Visual Aprimorado**:
+  - Adicionado detecção de hover com animação pulsante
+  - Tooltip mostrando nome do ponto anatômico ao passar o mouse
+  - Cursor muda de crosshair para pointer nas áreas clicáveis
+  - Animação suave de escala e opacidade no hover
+  - Ponto central azul para indicar área de clique
+- **Rotas do Módulo 3**:
+  - Adicionado roteamento para module-3 em `handleModuleStart` e `handleRetryModule`
+  - Suporte completo para navegação do módulo 3
+- **Technical Details**:
+  - `handleMouseMove`: Detecta zona de hover em tempo real
+  - `AnimatePresence` para transições suaves do tooltip
+  - Estados `hoveredZone` e `mousePosition` para tracking
+- **Files Modified**: 
+  - `src/components/games/HumanBodySVG.tsx` (linhas 24, 40-64, 83-85, 267-327)
+  - `src/app/jogos/page.tsx` (linhas 428-429, 438-439, 450-451)
+
 ## Version 0.10.2 – 2025-08-01
 
 ### 🐛 **Critical Bug Fix: Infinite Loading Loop in Module Access**
