@@ -55,7 +55,12 @@
       "Bash(sudo apt install:*)",
       "Bash(timeout 30s npx tsc --noEmit)",
       "mcp__browser-tools__getConsoleLogs",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:smart.servier.com)",
+      "WebFetch(domain:upload.wikimedia.org)",
+      "WebFetch(domain:www.vecteezy.com)"
     ],
     "deny": []
   }

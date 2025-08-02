@@ -46,14 +46,14 @@ export default function HybridHumanBodyInteraction({
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
   const [draggedOverZone, setDraggedOverZone] = useState<string | null>(null);
 
-  // Zonas anatômicas para cliques e drops
+  // Zonas anatômicas para cliques e drops - Ajustadas para figura realista
   const anatomicalZones = {
-    waist: { cx: 200, cy: 340, r: 40, label: 'Cintura' },
-    hip: { cx: 200, cy: 440, r: 45, label: 'Quadril' },
-    arm: { cx: 135, cy: 280, r: 35, label: 'Braço' },
-    calf: { cx: 180, cy: 650, r: 35, label: 'Panturrilha' },
-    shoulder: { cx: 200, cy: 175, r: 50, label: 'Ombro' },
-    wrist: { cx: 88, cy: 420, r: 25, label: 'Pulso' }
+    waist: { cx: 200, cy: 247, r: 45, label: 'Cintura' },
+    hip: { cx: 200, cy: 340, r: 50, label: 'Quadril' },
+    arm: { cx: 115, cy: 280, r: 40, label: 'Braço' },
+    calf: { cx: 175, cy: 600, r: 38, label: 'Panturrilha' },
+    shoulder: { cx: 200, cy: 147, r: 55, label: 'Ombro' },
+    wrist: { cx: 88, cy: 380, r: 30, label: 'Pulso' }
   };
 
   // Itens arrastáveis
@@ -124,78 +124,105 @@ export default function HybridHumanBodyInteraction({
   }, [onDragComplete]);
 
   const renderProfessionalBody = () => (
-    <g id="professional-body">
-      {/* Cabeça */}
-      <ellipse cx="200" cy="80" rx="35" ry="45" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="2" />
+    <g id="medical-grade-body">
+      {/* Gradientes para realismo */}
+      <defs>
+        <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style={{stopColor: '#f4c2a1', stopOpacity: 1}} />
+          <stop offset="50%" style={{stopColor: '#f7d4b3', stopOpacity: 1}} />
+          <stop offset="100%" style={{stopColor: '#f4c2a1', stopOpacity: 1}} />
+        </linearGradient>
+        <linearGradient id="limbGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style={{stopColor: '#e8b394', stopOpacity: 1}} />
+          <stop offset="50%" style={{stopColor: '#f4c2a1', stopOpacity: 1}} />
+          <stop offset="100%" style={{stopColor: '#e8b394', stopOpacity: 1}} />
+        </linearGradient>
+      </defs>
+
+      {/* Cabeça - Proporção anatômica correta */}
+      <path d="M 165 25 C 165 15, 180 5, 200 5 C 220 5, 235 15, 235 25 
+               C 235 35, 235 45, 235 55 C 235 75, 220 85, 200 85 
+               C 180 85, 165 75, 165 55 C 165 45, 165 35, 165 25 Z" 
+            fill="url(#bodyGradient)" stroke="#d4a574" strokeWidth="1.5" />
       
       {/* Pescoço */}
-      <ellipse cx="200" cy="130" rx="20" ry="25" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
+      <path d="M 185 85 L 185 115 L 215 115 L 215 85 Z" 
+            fill="url(#bodyGradient)" stroke="#d4a574" strokeWidth="1" />
       
-      {/* Ombros */}
-      <ellipse cx="200" cy="175" rx="60" ry="25" 
-               fill="#f4a09c" stroke="#d48b82" strokeWidth="2" />
+      {/* Tórax - Formato anatômico realista */}
+      <path d="M 140 115 C 140 115, 160 120, 200 120 C 240 120, 260 115, 260 115
+               L 255 180 C 255 190, 250 200, 245 210 L 155 210 
+               C 150 200, 145 190, 145 180 L 140 115 Z" 
+            fill="url(#bodyGradient)" stroke="#d4a574" strokeWidth="2" />
       
-      {/* Tórax */}
-      <ellipse cx="200" cy="230" rx="45" ry="50" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="2" />
+      {/* Braço esquerdo - Anatomicamente correto */}
+      <path d="M 140 140 C 130 140, 120 145, 115 155 
+               L 110 200 C 108 215, 105 230, 102 245
+               L 98 280 C 95 295, 92 310, 88 325
+               L 85 360 C 83 375, 80 390, 78 405
+               L 75 425 C 73 430, 75 435, 80 435
+               L 95 435 C 100 435, 102 430, 100 425
+               L 103 405 C 105 390, 108 375, 110 360
+               L 113 325 C 116 310, 119 295, 122 280
+               L 126 245 C 129 230, 132 215, 134 200
+               L 139 155 C 141 145, 140 140, 140 140 Z" 
+            fill="url(#limbGradient)" stroke="#d4a574" strokeWidth="1.5" />
       
-      {/* Braço esquerdo */}
-      <ellipse cx="135" cy="220" rx="20" ry="35" 
-               fill="#f4a09c" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="115" cy="280" rx="17" ry="30" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="100" cy="340" rx="15" ry="25" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="88" cy="390" rx="18" ry="35" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
+      {/* Braço direito - Simétrico */}
+      <path d="M 260 140 C 270 140, 280 145, 285 155 
+               L 290 200 C 292 215, 295 230, 298 245
+               L 302 280 C 305 295, 308 310, 312 325
+               L 315 360 C 317 375, 320 390, 322 405
+               L 325 425 C 327 430, 325 435, 320 435
+               L 305 435 C 300 435, 298 430, 300 425
+               L 297 405 C 295 390, 292 375, 290 360
+               L 287 325 C 284 310, 281 295, 278 280
+               L 274 245 C 271 230, 268 215, 266 200
+               L 261 155 C 259 145, 260 140, 260 140 Z" 
+            fill="url(#limbGradient)" stroke="#d4a574" strokeWidth="1.5" />
       
-      {/* Braço direito */}
-      <ellipse cx="265" cy="220" rx="20" ry="35" 
-               fill="#f4a09c" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="285" cy="280" rx="17" ry="30" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="300" cy="340" rx="15" ry="25" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="312" cy="390" rx="18" ry="35" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
+      {/* Cintura - Região de medida */}
+      <path d="M 155 210 C 160 220, 175 225, 200 225 
+               C 225 225, 240 220, 245 210
+               L 250 260 C 250 270, 245 280, 240 285
+               L 160 285 C 155 280, 150 270, 150 260 L 155 210 Z" 
+            fill="url(#bodyGradient)" stroke="#d4a574" strokeWidth="2" />
       
-      {/* Abdômen */}
-      <ellipse cx="200" cy="310" rx="40" ry="35" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="2" />
+      {/* Quadril - Região de medida */}
+      <path d="M 150 285 C 145 295, 140 310, 140 325
+               C 140 340, 145 355, 150 370
+               C 155 385, 165 395, 175 400
+               L 225 400 C 235 395, 245 385, 250 370
+               C 255 355, 260 340, 260 325
+               C 260 310, 255 295, 250 285 L 150 285 Z" 
+            fill="url(#bodyGradient)" stroke="#d4a574" strokeWidth="2" />
       
-      {/* Cintura */}
-      <ellipse cx="200" cy="340" rx="35" ry="25" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="2" />
+      {/* Perna esquerda - Proporções realistas */}
+      <path d="M 175 400 C 170 410, 165 425, 162 440
+               L 158 480 C 155 520, 152 560, 150 600
+               L 148 640 C 146 680, 145 720, 145 760
+               C 145 770, 150 775, 160 775
+               L 190 775 C 200 775, 205 770, 205 760
+               C 205 720, 204 680, 202 640
+               L 200 600 C 198 560, 195 520, 192 480
+               L 188 440 C 185 425, 180 410, 175 400 Z" 
+            fill="url(#limbGradient)" stroke="#d4a574" strokeWidth="1.5" />
       
-      {/* Quadril */}
-      <ellipse cx="200" cy="410" rx="45" ry="35" 
-               fill="#f4a09c" stroke="#d48b82" strokeWidth="2" />
+      {/* Perna direita - Simétrica */}
+      <path d="M 225 400 C 230 410, 235 425, 238 440
+               L 242 480 C 245 520, 248 560, 250 600
+               L 252 640 C 254 680, 255 720, 255 760
+               C 255 770, 250 775, 240 775
+               L 210 775 C 200 775, 195 770, 195 760
+               C 195 720, 196 680, 198 640
+               L 200 600 C 202 560, 205 520, 208 480
+               L 212 440 C 215 425, 220 410, 225 400 Z" 
+            fill="url(#limbGradient)" stroke="#d4a574" strokeWidth="1.5" />
       
-      {/* Perna esquerda */}
-      <ellipse cx="175" cy="480" rx="25" ry="40" 
-               fill="#f4a09c" stroke="#d48b82" strokeWidth="2" />
-      <ellipse cx="175" cy="550" rx="22" ry="35" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="175" cy="620" rx="20" ry="30" 
-               fill="#f4a09c" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="175" cy="680" rx="18" ry="25" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="175" cy="720" rx="25" ry="15" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      
-      {/* Perna direita */}
-      <ellipse cx="225" cy="480" rx="25" ry="40" 
-               fill="#f4a09c" stroke="#d48b82" strokeWidth="2" />
-      <ellipse cx="225" cy="550" rx="22" ry="35" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="225" cy="620" rx="20" ry="30" 
-               fill="#f4a09c" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="225" cy="680" rx="18" ry="25" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
-      <ellipse cx="225" cy="720" rx="25" ry="15" 
-               fill="#fdbcb4" stroke="#d48b82" strokeWidth="1.5" />
+      {/* Detalhes anatômicos sutis */}
+      <circle cx="185" cy="145" r="3" fill="#d4a574" opacity="0.6" />
+      <circle cx="215" cy="145" r="3" fill="#d4a574" opacity="0.6" />
+      <line x1="180" y1="170" x2="220" y2="170" stroke="#d4a574" strokeWidth="1" opacity="0.4" />
     </g>
   );
 

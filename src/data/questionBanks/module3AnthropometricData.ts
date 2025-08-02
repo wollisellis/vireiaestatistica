@@ -22,7 +22,7 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'waist',
     name: 'Cintura',
     description: 'Circunferência da cintura',
-    position: { x: 200, y: 340 }, // Centro da cintura no SVG
+    position: { x: 200, y: 247 }, // Centro da cintura no SVG
     tolerance: 40,
     correctLocation: 'Ponto médio entre a última costela e a crista ilíaca, geralmente na altura do umbigo',
     commonErrors: [
@@ -37,7 +37,7 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'hip',
     name: 'Quadril',
     description: 'Circunferência do quadril',
-    position: { x: 200, y: 440 }, // Parte mais larga do quadril
+    position: { x: 200, y: 340 }, // Parte mais larga do quadril
     tolerance: 45,
     correctLocation: 'Maior proeminência dos glúteos, passando pela sínfise púbica',
     commonErrors: [
@@ -52,7 +52,7 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'arm',
     name: 'Braço',
     description: 'Circunferência do braço',
-    position: { x: 135, y: 280 }, // Braço esquerdo, meio do bíceps
+    position: { x: 115, y: 280 }, // Braço esquerdo, meio do bíceps
     tolerance: 35,
     correctLocation: 'Ponto médio entre o acrômio (ombro) e o olécrano (cotovelo), com o braço relaxado',
     commonErrors: [
@@ -67,7 +67,7 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'calf',
     name: 'Panturrilha',
     description: 'Circunferência da panturrilha',
-    position: { x: 180, y: 650 }, // Meio da panturrilha
+    position: { x: 175, y: 600 }, // Meio da panturrilha
     tolerance: 35,
     correctLocation: 'Maior circunferência da panturrilha, geralmente no terço superior',
     commonErrors: [
@@ -82,7 +82,7 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'shoulder',
     name: 'Ombro',
     description: 'Circunferência do ombro',
-    position: { x: 200, y: 175 }, // Linha dos ombros
+    position: { x: 200, y: 147 }, // Linha dos ombros
     tolerance: 50,
     correctLocation: 'Passando pelos deltoides, axilas e parte superior do tórax',
     commonErrors: [
@@ -97,7 +97,7 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'wrist',
     name: 'Pulso',
     description: 'Circunferência do pulso',
-    position: { x: 88, y: 420 }, // Pulso esquerdo
+    position: { x: 88, y: 380 }, // Pulso esquerdo
     tolerance: 25,
     correctLocation: 'Logo abaixo dos processos estiloides do rádio e ulna',
     commonErrors: [
