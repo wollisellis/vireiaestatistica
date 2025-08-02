@@ -71,16 +71,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cursor muda de crosshair para pointer nas áreas clicáveis
   - Animação suave de escala e opacidade no hover
   - Ponto central azul para indicar área de clique
+- **Redesign Anatômico Completo**:
+  - Substituído braços e pernas lineares por formas volumétricas realistas
+  - Membros agora com elipses proporcionais (18-22px largura)
+  - Tronco redesenhado com ombros, tórax e abdômen mais anatômicos
+  - Proporções baseadas em referências médicas reais
+  - Gradientes e sombreamento para maior realismo
+- **Coordenadas Atualizadas**:
+  - Ajustadas todas as zonas clicáveis para corresponder ao novo design
+  - Braço movido para centro do bíceps (x: 135)
+  - Cintura ajustada para nova posição (y: 340)
+  - Quadril e ombros reposicionados corretamente
 - **Rotas do Módulo 3**:
   - Adicionado roteamento para module-3 em `handleModuleStart` e `handleRetryModule`
   - Suporte completo para navegação do módulo 3
 - **Technical Details**:
+  - Estrutura de membros: bíceps → antebraço → pulso/mão
+  - Estrutura de pernas: coxa → joelho → panturrilha → tornozelo → pé
   - `handleMouseMove`: Detecta zona de hover em tempo real
   - `AnimatePresence` para transições suaves do tooltip
   - Estados `hoveredZone` e `mousePosition` para tracking
 - **Files Modified**: 
-  - `src/components/games/HumanBodySVG.tsx` (linhas 24, 40-64, 83-85, 267-327)
-  - `src/app/jogos/page.tsx` (linhas 428-429, 438-439, 450-451)
+  - `src/components/games/HumanBodySVG.tsx` (redesign completo do SVG)
+  - `src/data/questionBanks/module3AnthropometricData.ts` (coordenadas atualizadas)
+  - `src/app/jogos/page.tsx` (roteamento do módulo 3)
 
 ## Version 0.10.2 – 2025-08-01
 

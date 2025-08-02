@@ -65,11 +65,11 @@ export default function HumanBodySVG({
 
   // Áreas clicáveis para cada ponto anatômico
   const anatomicalZones = {
-    waist: { cx: 200, cy: 360, r: 40 },
-    hip: { cx: 200, cy: 460, r: 45 },
-    arm: { cx: 120, cy: 280, r: 35 },
+    waist: { cx: 200, cy: 340, r: 40 }, // Ajustado para nova cintura
+    hip: { cx: 200, cy: 440, r: 45 }, // Ajustado para novo quadril
+    arm: { cx: 135, cy: 280, r: 35 }, // Ajustado para centro do bíceps
     calf: { cx: 180, cy: 650, r: 35 },
-    shoulder: { cx: 200, cy: 200, r: 50 },
+    shoulder: { cx: 200, cy: 175, r: 50 }, // Ajustado para novos ombros
     wrist: { cx: 88, cy: 420, r: 25 }
   };
 
@@ -131,67 +131,94 @@ export default function HumanBodySVG({
 
           {/* Ombros e tórax */}
           <g id="shoulders-chest">
-            {/* Ombros */}
-            <path d="M 150 150 Q 130 160 120 180 L 140 200 Q 150 190 160 190 L 240 190 Q 250 190 260 200 L 280 180 Q 270 160 250 150 Z"
-                  fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1.5" />
+            {/* Ombros mais definidos */}
+            <ellipse cx="155" cy="175" rx="25" ry="20" fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1" />
+            <ellipse cx="245" cy="175" rx="25" ry="20" fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1" />
             
-            {/* Tórax */}
-            <path d="M 160 190 Q 160 250 165 280 L 235 280 Q 240 250 240 190 Z"
-                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
+            {/* Tórax mais proporcional */}
+            <ellipse cx="200" cy="230" rx="45" ry="55" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
             
-            {/* Definição peitoral */}
-            <path d="M 200 200 L 200 260" stroke="#d48b82" strokeWidth="0.5" opacity="0.4" />
-            <path d="M 180 210 Q 190 215 200 210" stroke="#d48b82" strokeWidth="0.5" opacity="0.4" />
-            <path d="M 200 210 Q 210 215 220 210" stroke="#d48b82" strokeWidth="0.5" opacity="0.4" />
+            {/* Definição peitoral sutil */}
+            <path d="M 200 200 L 200 260" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
+            <ellipse cx="180" cy="215" rx="15" ry="12" fill="none" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
+            <ellipse cx="220" cy="215" rx="15" ry="12" fill="none" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
           </g>
 
           {/* Braços */}
           <g id="arms">
-            {/* Braço esquerdo */}
-            <path d="M 120 180 Q 110 220 105 260 L 105 340 Q 105 360 100 380 L 95 400 Q 90 410 88 420"
-                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="2" />
-            {/* Mão esquerda */}
-            <ellipse cx="88" cy="440" rx="15" ry="20" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            {/* Braço esquerdo - Parte superior (bíceps) */}
+            <ellipse cx="135" cy="220" rx="18" ry="45" fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1" 
+                     transform="rotate(-15 135 220)" />
             
-            {/* Braço direito */}
-            <path d="M 280 180 Q 290 220 295 260 L 295 340 Q 295 360 300 380 L 305 400 Q 310 410 312 420"
-                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="2" />
-            {/* Mão direita */}
-            <ellipse cx="312" cy="440" rx="15" ry="20" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            {/* Braço esquerdo - Antebraço */}
+            <ellipse cx="115" cy="300" rx="15" ry="40" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" 
+                     transform="rotate(-10 115 300)" />
+            
+            {/* Braço esquerdo - Pulso e mão */}
+            <ellipse cx="100" cy="370" rx="12" ry="25" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" 
+                     transform="rotate(-5 100 370)" />
+            <ellipse cx="88" cy="420" rx="16" ry="22" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Braço direito - Parte superior (bíceps) */}
+            <ellipse cx="265" cy="220" rx="18" ry="45" fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1" 
+                     transform="rotate(15 265 220)" />
+            
+            {/* Braço direito - Antebraço */}
+            <ellipse cx="285" cy="300" rx="15" ry="40" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" 
+                     transform="rotate(10 285 300)" />
+            
+            {/* Braço direito - Pulso e mão */}
+            <ellipse cx="300" cy="370" rx="12" ry="25" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" 
+                     transform="rotate(5 300 370)" />
+            <ellipse cx="312" cy="420" rx="16" ry="22" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
           </g>
 
           {/* Abdômen e cintura */}
           <g id="abdomen">
-            <path d="M 165 280 Q 165 320 170 360 Q 175 380 180 400 L 220 400 Q 225 380 230 360 Q 235 320 235 280 Z"
-                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
+            <ellipse cx="200" cy="340" rx="35" ry="45" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
             
-            {/* Definição abdominal */}
-            <line x1="200" y1="300" x2="200" y2="380" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
-            <path d="M 180 320 Q 190 318 200 320 Q 210 318 220 320" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
-            <path d="M 180 350 Q 190 348 200 350 Q 210 348 220 350" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
+            {/* Definição abdominal sutil */}
+            <line x1="200" y1="310" x2="200" y2="370" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
+            <ellipse cx="200" cy="325" rx="8" ry="5" fill="none" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
+            <ellipse cx="200" cy="350" rx="8" ry="5" fill="none" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
           </g>
 
           {/* Quadril e pélvis */}
           <g id="hip-pelvis">
-            <path d="M 180 400 Q 175 420 175 440 Q 175 460 180 480 L 220 480 Q 225 460 225 440 Q 225 420 220 400 Z"
-                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
+            <ellipse cx="200" cy="440" rx="40" ry="35" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
           </g>
 
           {/* Pernas */}
           <g id="legs">
-            {/* Perna esquerda */}
-            <path d="M 180 480 Q 175 520 175 560 L 175 620 Q 175 640 180 660 L 180 700 Q 180 720 175 740"
-                  fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="2" />
-            {/* Pé esquerdo */}
-            <path d="M 175 740 L 165 750 L 165 760 L 195 760 L 195 750 L 185 740"
-                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            {/* Perna esquerda - Coxa */}
+            <ellipse cx="175" cy="520" rx="22" ry="50" fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1" />
             
-            {/* Perna direita */}
-            <path d="M 220 480 Q 225 520 225 560 L 225 620 Q 225 640 220 660 L 220 700 Q 220 720 225 740"
-                  fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="2" />
+            {/* Perna esquerda - Joelho */}
+            <ellipse cx="178" cy="580" rx="20" ry="25" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Perna esquerda - Panturrilha */}
+            <ellipse cx="180" cy="650" rx="18" ry="45" fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Perna esquerda - Tornozelo */}
+            <ellipse cx="178" cy="710" rx="14" ry="20" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Pé esquerdo */}
+            <ellipse cx="175" cy="750" rx="25" ry="12" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Perna direita - Coxa */}
+            <ellipse cx="225" cy="520" rx="22" ry="50" fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Perna direita - Joelho */}
+            <ellipse cx="222" cy="580" rx="20" ry="25" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Perna direita - Panturrilha */}
+            <ellipse cx="220" cy="650" rx="18" ry="45" fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Perna direita - Tornozelo */}
+            <ellipse cx="222" cy="710" rx="14" ry="20" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
             {/* Pé direito */}
-            <path d="M 225 740 L 235 750 L 235 760 L 205 760 L 205 750 L 215 740"
-                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            <ellipse cx="225" cy="750" rx="25" ry="12" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
           </g>
         </g>
 
