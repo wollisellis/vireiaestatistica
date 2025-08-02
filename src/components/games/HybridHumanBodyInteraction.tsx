@@ -57,12 +57,14 @@ export default function HybridHumanBodyInteraction({
   };
 
   // Itens arrastáveis
-  const draggableItems: DroppableItem[] = availablePoints.map(point => ({
-    id: point.id,
-    name: point.name,
-    icon: getIconForPoint(point.id),
-    completed: completedPoints.includes(point.id)
-  }));
+  const draggableItems: DroppableItem[] = availablePoints
+    .filter(point => point && point.id) // Filtrar pontos válidos
+    .map(point => ({
+      id: point.id,
+      name: point.name,
+      icon: getIconForPoint(point.id),
+      completed: completedPoints.includes(point.id)
+    }));
 
   function getIconForPoint(pointId: string): string {
     const icons: Record<string, string> = {

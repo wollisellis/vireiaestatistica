@@ -88,7 +88,9 @@ export default function Module3QuizPage() {
   // Constantes
   const MODULE_ID = 'module-3';
   const TOTAL_POINTS = 50;
-  const currentPoint = anatomicalPoints[pointsOrder[currentPointIndex]];
+  const currentPoint = currentPointIndex < pointsOrder.length 
+    ? anatomicalPoints[pointsOrder[currentPointIndex]] 
+    : null;
 
   // Timer
   useEffect(() => {
@@ -132,7 +134,7 @@ export default function Module3QuizPage() {
   };
 
   const handlePointClick = (x: number, y: number) => {
-    if (!currentPoint || isComplete) return;
+    if (!currentPoint || isComplete || !currentPoint.id) return;
 
     const svgElement = svgContainerRef.current?.querySelector('svg');
     if (!svgElement) return;
@@ -165,7 +167,7 @@ export default function Module3QuizPage() {
   };
 
   const handleDragComplete = (pointId: string, targetZone: string) => {
-    if (!currentPoint || isComplete) return;
+    if (!currentPoint || isComplete || !currentPoint.id) return;
     
     // Verificar se o ponto arrastado corresponde ao ponto atual do quiz
     if (pointId !== currentPoint.id) return;
@@ -596,21 +598,21 @@ export default function Module3QuizPage() {
                 </CardContent>
               </Card>
             </motion.div>
-          ) : (
+          ) : currentPoint ? (
             // Área do jogo
             <div className="max-w-6xl mx-auto">
               <Card>
                 <CardHeader>
                   <div className="text-center">
                     <h2 className="text-xl font-bold text-gray-900 mb-2">
-                      Marque: {currentPoint?.name}
+                      Marque: {currentPoint.name}
                     </h2>
                     <p className="text-gray-600">
-                      Clique no ponto correto para medição da {currentPoint?.name.toLowerCase()}
+                      Clique no ponto correto para medição da {currentPoint.name.toLowerCase()}
                     </p>
                     <div className="mt-2">
                       <Badge variant="secondary">
-                        Tentativa {attempts[currentPoint?.id || ''] || 0} de {module3Config.maxAttempts}
+                        Tentativa {attempts[currentPoint.id] || 0} de {module3Config.maxAttempts}
                       </Badge>
                     </div>
                   </div>
@@ -624,9 +626,21 @@ export default function Module3QuizPage() {
                       currentTargetPoint={currentPoint}
                       feedbackPoint={feedbackPoint || undefined}
                       showHints={false}
-                      availablePoints={[currentPoint]}
+                      availablePoints={currentPoint ? [currentPoint] : []}
                       completedPoints={pointResults.map(result => result.pointId)}
                     />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            // Estado de carregamento ou erro
+            <div className="max-w-4xl mx-auto">
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600 mb-4" />
+                    <p className="text-gray-600">Carregando módulo...</p>
                   </div>
                 </CardContent>
               </Card>
