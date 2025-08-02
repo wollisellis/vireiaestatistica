@@ -78,11 +78,8 @@ service cloud.firestore {
       // ✅ Usuários podem editar apenas seus próprios dados
       allow update: if isAuthenticated() && isOwner(userId);
 
-      // ✅ Professores podem ver dados de todos os usuários
-      allow read: if isProfessor();
-
       // ✅ Permitir criação para usuários autenticados
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.auth.uid == userId &&
         request.resource.data.keys().hasAll(['role', 'email']) &&
         request.resource.data.role in ['professor', 'student'];
@@ -90,13 +87,17 @@ service cloud.firestore {
 
     // QUIZ ATTEMPTS - Tentativas de quiz (PROTEÇÃO CRÍTICA)
     match /quiz_attempts/{attemptId} {
-      // ✅ Estudantes podem apenas criar e ler suas próprias tentativas
-      allow read, create: if isAuthenticated() && 
+      // ✅ Estudantes podem criar suas próprias tentativas
+      allow create: if isAuthenticated() &&
         request.resource.data.studentId == request.auth.uid;
-        
+
+      // ✅ Estudantes podem ler suas próprias tentativas
+      allow read: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid;
+
       // ✅ Professores podem ler todas as tentativas (análise)
       allow read: if isProfessor();
-      
+
       // 🚫 NINGUÉM pode editar tentativas após criação (integridade)
       allow update, delete: if false;
     }

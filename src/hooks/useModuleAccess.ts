@@ -17,6 +17,10 @@ interface ModuleAccessResult {
  * Hook para verificar acesso a um módulo específico
  * Redireciona para /jogos se o módulo estiver bloqueado
  */
+// Cache simples para evitar verificações repetidas
+const accessCache = new Map<string, { result: boolean; timestamp: number }>()
+const CACHE_DURATION = 30000 // 30 segundos
+
 export function useModuleAccess(moduleId: string): ModuleAccessResult {
   const router = useRouter()
   const { user, loading: authLoading } = useFirebaseAuth()
@@ -70,11 +74,23 @@ export function useModuleAccess(moduleId: string): ModuleAccessResult {
     const checkModuleAccess = async () => {
       // FirebaseUser usa uid, não id
       const userId = (user as any)?.uid || (user as any)?.id;
-      
+
       if (!userId) {
         console.log(`⚠️ [useModuleAccess] Missing userId`)
         setIsLoading(false)
         setHasAccess(false)
+        return
+      }
+
+      // Verificar cache primeiro
+      const cacheKey = `${userId}_${moduleId}`
+      const cached = accessCache.get(cacheKey)
+      const now = Date.now()
+
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        console.log(`🎯 [useModuleAccess] Cache hit para ${moduleId}`)
+        setHasAccess(cached.result)
+        setIsLoading(false)
         return
       }
 
@@ -83,11 +99,14 @@ export function useModuleAccess(moduleId: string): ModuleAccessResult {
         setError(null)
 
         console.log(`🔍 [useModuleAccess] Verificando acesso ao módulo ${moduleId} para usuário ${userId}`)
-        
+
         const accessResult = await ProfessorClassService.isModuleAvailableForStudent(
           userId,
           moduleId
         )
+
+        // Salvar no cache
+        accessCache.set(cacheKey, { result: accessResult, timestamp: now })
 
         console.log(`📊 [useModuleAccess] Resultado da verificação:`, accessResult)
 

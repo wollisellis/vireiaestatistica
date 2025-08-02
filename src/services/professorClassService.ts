@@ -1226,7 +1226,7 @@ export class ProfessorClassService {
 
       // 3. Buscar turma do estudante
       const studentClassQuery = query(
-        collection(db, 'class_students'),
+        collection(db, 'classStudents'),
         where('studentId', '==', studentId)
       )
       const studentClassSnapshot = await getDocs(studentClassQuery)
