@@ -131,7 +131,7 @@ export function useModuleAccess(moduleId: string): ModuleAccessResult {
 
     // Verificar acesso ao módulo
     checkModuleAccess()
-  }, [user, authLoading, moduleId, isChecking]) // Removido router das dependências
+  }, [user, authLoading, moduleId]) // Removido isChecking para evitar loop infinito
 
   return {
     hasAccess,
