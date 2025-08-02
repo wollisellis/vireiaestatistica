@@ -54,7 +54,8 @@
       "Bash(sudo apt:*)",
       "Bash(sudo apt install:*)",
       "Bash(timeout 30s npx tsc --noEmit)",
-      "mcp__browser-tools__getConsoleLogs"
+      "mcp__browser-tools__getConsoleLogs",
+      "Bash(npm run lint:*)"
     ],
     "deny": []
   }

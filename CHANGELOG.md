@@ -11,6 +11,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.11.0 – 2025-08-02
+
+### ✨ **Feature: Module 3 - Anatomical Points Identification**
+
+#### **Novo Módulo: Medidas Antropométricas**
+- **Issue**: Implementar módulo interativo para identificação de pontos anatômicos
+- **Solution**: Criado módulo com boneco SVG interativo para prática de medidas corporais
+- **Features**:
+  - 6 pontos anatômicos: cintura, quadril, braço, panturrilha, ombro, pulso
+  - Sistema de autoavaliação de confiança antes do teste
+  - Pontuação baseada em tentativas: 1ª (10pts), 2ª (5pts), 3ª (0pts)
+  - Feedback educativo detalhado após cada ponto
+  - Comparação confiança vs desempenho no relatório final
+- **Technical Details**:
+  - `module3AnthropometricData.ts`: Definições dos pontos com coordenadas e tolerâncias
+  - `HumanBodySVG.tsx`: Componente SVG interativo do corpo humano
+  - `modulo-3/quiz/page.tsx`: Lógica do jogo com sistema de tentativas
+  - Sistema de detecção de cliques com tolerância configurável
+  - Feedback visual instantâneo (✓/✗)
+- **Files Created**:
+  - `src/data/questionBanks/module3AnthropometricData.ts`
+  - `src/components/games/HumanBodySVG.tsx`
+  - `src/app/jogos/modulo-3/quiz/page.tsx`
+- **Files Modified**:
+  - `src/data/modules.ts` (adicionado module-3 com 50 pontos)
+  - `src/services/unifiedScoringService.ts` (peso do module-3: 50pts, total agora 150pts)
+- **Impact**:
+  - Preparação prática antes de aulas presenciais de antropometria
+  - Redução de erros em medições reais através da prática virtual
+  - Sistema de metacognição através da autoavaliação
+  - Feedback personalizado para cada ponto anatômico
+
 ## Version 0.10.2 – 2025-08-01
 
 ### 🐛 **Critical Bug Fix: Infinite Loading Loop in Module Access**

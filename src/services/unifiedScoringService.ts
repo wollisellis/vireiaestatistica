@@ -367,7 +367,8 @@ class UnifiedScoringService {
     // Módulo 1 vale 70 pontos, Módulo 2 vale 30 pontos
     const moduleMaxPoints: Record<string, number> = {
       'module-1': 70,
-      'module-2': 30
+      'module-2': 30,
+      'module-3': 50
     }
 
     let totalModuleScore = 0
@@ -397,7 +398,7 @@ class UnifiedScoringService {
 
   // Calcular nível baseado na pontuação total
   private calculateLevel(totalScore: number): number {
-    // CORREÇÃO: Ajustado para sistema de 100 pontos totais (70 + 30)
+    // CORREÇÃO: Ajustado para sistema de 150 pontos totais (70 + 30 + 50)
     if (totalScore >= 90) return 5 // Excelência (90%+)
     if (totalScore >= 75) return 4 // Muito Bom (75%+)
     if (totalScore >= 60) return 3 // Bom (60%+)

@@ -244,6 +244,85 @@ export const modules: Module[] = [
         ]
       }
     ]
+  },
+  {
+    id: 'module-3',
+    title: '3. Medidas Antropométricas',
+    description: 'Aprenda a identificar os pontos anatômicos corretos para medição de circunferências corporais',
+    order: 3,
+    isLocked: true,
+    icon: '📏',
+    estimatedTime: '5-10 minutos',
+    maxPoints: 50,
+    content: [
+      {
+        id: 'content-3-1',
+        type: 'text',
+        title: 'Importância das Medidas Antropométricas',
+        content: `
+          As medidas de circunferências corporais são fundamentais na avaliação nutricional, 
+          permitindo avaliar a distribuição de gordura corporal e acompanhar mudanças ao longo do tempo.
+
+          **Principais circunferências avaliadas:**
+          - Cintura: indicador de gordura abdominal
+          - Quadril: relação cintura/quadril
+          - Braço: avaliação de massa muscular
+          - Panturrilha: indicador de desnutrição em idosos
+          - Ombro: avaliação de desenvolvimento muscular
+          - Pulso: estrutura óssea e compleição física
+        `,
+        order: 1
+      },
+      {
+        id: 'content-3-2',
+        type: 'text',
+        title: 'Técnica Correta de Medição',
+        content: `
+          **Princípios gerais:**
+          - Paciente em posição ortostática (em pé)
+          - Fita métrica paralela ao solo
+          - Sem comprimir os tecidos
+          - Medição no final da expiração normal
+          
+          **Padronização:**
+          - Sempre medir do mesmo lado do corpo
+          - Utilizar pontos anatômicos de referência
+          - Realizar 2-3 medições para maior precisão
+        `,
+        order: 2
+      }
+    ],
+    exercises: [
+      {
+        id: 'exercise-3-1',
+        type: 'anatomical-points',
+        title: 'Identificação de Pontos Anatômicos',
+        description: 'Clique nos pontos corretos para cada circunferência no modelo anatômico',
+        points: 50,
+        difficulty: 'medium',
+        order: 1
+      }
+    ],
+    realDataSources: [
+      {
+        name: 'Pontos de Corte OMS',
+        source: 'OMS',
+        year: 2024,
+        description: 'Valores de referência para circunferências',
+        dataPoints: [
+          {
+            label: 'Risco cardiovascular (cintura homens)',
+            value: 94,
+            unit: 'cm'
+          },
+          {
+            label: 'Risco cardiovascular (cintura mulheres)',
+            value: 80,
+            unit: 'cm'
+          }
+        ]
+      }
+    ]
   }
 ];
 
