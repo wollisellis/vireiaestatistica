@@ -54,7 +54,7 @@ interface ModuleData {
 }
 
 // 🎯 CONFIGURAÇÃO DOS MÓDULOS DISPONÍVEIS
-const ENABLED_MODULES = ['module-1', 'module-2'] as const;
+const ENABLED_MODULES = ['module-1', 'module-2', 'module-3'] as const;
 type EnabledModuleId = typeof ENABLED_MODULES[number];
 
 // 🎯 CONVERTER MÓDULOS PARA FORMATO LIMPO (COM SAFE GUARDS)

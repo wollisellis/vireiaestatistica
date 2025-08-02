@@ -20,151 +20,186 @@ export default function HumanBodySVG({
   currentTargetPoint
 }: HumanBodySVGProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (svgRef.current) {
-        const rect = svgRef.current.getBoundingClientRect();
-        setSvgDimensions({ width: rect.width, height: rect.height });
-      }
-    };
-
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
+  const [hoveredZone, setHoveredZone] = useState<string | null>(null);
 
   const handleClick = (event: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
 
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    onPointClick(x, y);
+    const svg = svgRef.current;
+    const pt = svg.createSVGPoint();
+    pt.x = event.clientX;
+    pt.y = event.clientY;
+    
+    // Converter coordenadas do mouse para coordenadas SVG
+    const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+    
+    onPointClick(svgP.x, svgP.y);
   };
 
-  // Converter coordenadas percentuais para pixels
-  const getPixelCoordinates = (point: AnatomicalPoint) => {
-    return {
-      x: (point.position.x / 100) * svgDimensions.width,
-      y: (point.position.y / 100) * svgDimensions.height
-    };
+  // Áreas clicáveis para cada ponto anatômico
+  const anatomicalZones = {
+    waist: { cx: 200, cy: 360, r: 40 },
+    hip: { cx: 200, cy: 460, r: 45 },
+    arm: { cx: 120, cy: 280, r: 35 },
+    calf: { cx: 180, cy: 650, r: 35 },
+    shoulder: { cx: 200, cy: 200, r: 50 },
+    wrist: { cx: 88, cy: 420, r: 25 }
   };
 
   return (
-    <div className="relative w-full max-w-md mx-auto">
+    <div className="relative w-full max-w-md mx-auto bg-gray-50 rounded-lg p-4">
       <svg
         ref={svgRef}
-        viewBox="0 0 400 600"
-        className="w-full h-auto cursor-crosshair"
+        viewBox="0 0 400 800"
+        className="w-full h-auto"
         onClick={handleClick}
-        style={{ maxHeight: '70vh' }}
+        style={{ maxHeight: '70vh', cursor: 'crosshair' }}
       >
-        {/* Fundo */}
-        <rect width="400" height="600" fill="#f9fafb" />
+        <defs>
+          {/* Gradientes para profundidade e realismo */}
+          <linearGradient id="skinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: '#fdbcb4', stopOpacity: 1 }} />
+            <stop offset="50%" style={{ stopColor: '#f4a09c', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#e89b92', stopOpacity: 1 }} />
+          </linearGradient>
 
-        {/* Corpo humano simplificado */}
-        <g id="human-body">
-          {/* Cabeça */}
-          <ellipse cx="200" cy="80" rx="40" ry="50" fill="#fde4cf" stroke="#333" strokeWidth="2" />
-          
-          {/* Pescoço */}
-          <rect x="185" y="125" width="30" height="25" fill="#fde4cf" stroke="#333" strokeWidth="2" />
-          
-          {/* Tronco */}
-          <path
-            d="M 150 150 L 150 350 Q 150 370 170 370 L 230 370 Q 250 370 250 350 L 250 150 Z"
-            fill="#e3f2fd"
-            stroke="#333"
-            strokeWidth="2"
-          />
-          
-          {/* Braço esquerdo */}
-          <path
-            d="M 150 160 L 100 160 Q 90 160 90 170 L 90 280 Q 90 290 100 290 L 110 290 Q 120 290 120 280 L 120 190 L 150 190"
-            fill="#fde4cf"
-            stroke="#333"
-            strokeWidth="2"
-          />
-          
-          {/* Braço direito */}
-          <path
-            d="M 250 160 L 300 160 Q 310 160 310 170 L 310 280 Q 310 290 300 290 L 290 290 Q 280 290 280 280 L 280 190 L 250 190"
-            fill="#fde4cf"
-            stroke="#333"
-            strokeWidth="2"
-          />
-          
-          {/* Mão esquerda */}
-          <ellipse cx="100" cy="310" rx="15" ry="20" fill="#fde4cf" stroke="#333" strokeWidth="2" />
-          
-          {/* Mão direita */}
-          <ellipse cx="300" cy="310" rx="15" ry="20" fill="#fde4cf" stroke="#333" strokeWidth="2" />
-          
-          {/* Perna esquerda */}
-          <path
-            d="M 170 370 L 170 480 Q 170 490 160 490 L 150 490 Q 140 490 140 480 L 140 370"
-            fill="#90a4ae"
-            stroke="#333"
-            strokeWidth="2"
-          />
-          
-          {/* Perna direita */}
-          <path
-            d="M 230 370 L 230 480 Q 230 490 240 490 L 250 490 Q 260 490 260 480 L 260 370"
-            fill="#90a4ae"
-            stroke="#333"
-            strokeWidth="2"
-          />
-          
-          {/* Panturrilha esquerda (mais detalhada) */}
-          <ellipse cx="155" cy="490" rx="25" ry="40" fill="#fde4cf" stroke="#333" strokeWidth="2" />
-          
-          {/* Panturrilha direita (mais detalhada) */}
-          <ellipse cx="245" cy="490" rx="25" ry="40" fill="#fde4cf" stroke="#333" strokeWidth="2" />
-          
-          {/* Pé esquerdo */}
-          <rect x="135" y="525" width="40" height="15" rx="5" fill="#fde4cf" stroke="#333" strokeWidth="2" />
-          
-          {/* Pé direito */}
-          <rect x="225" y="525" width="40" height="15" rx="5" fill="#fde4cf" stroke="#333" strokeWidth="2" />
+          <radialGradient id="muscleShading">
+            <stop offset="0%" style={{ stopColor: '#f4a09c', stopOpacity: 1 }} />
+            <stop offset="100%" style={{ stopColor: '#d48b82', stopOpacity: 1 }} />
+          </radialGradient>
 
-          {/* Linha da cintura (referência visual) */}
-          <line 
-            x1="150" y1="270" 
-            x2="250" y2="270" 
-            stroke="#ccc" 
-            strokeWidth="1" 
-            strokeDasharray="5,5" 
-            opacity="0.5"
-          />
+          {/* Filtro de sombra para profundidade */}
+          <filter id="bodyShading" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+            <feOffset dx="2" dy="2" result="offsetblur"/>
+            <feFlood floodColor="#000000" floodOpacity="0.2"/>
+            <feComposite in2="offsetblur" operator="in"/>
+            <feMerge>
+              <feMergeNode/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Corpo humano anatomicamente proporcional */}
+        <g id="human-body" filter="url(#bodyShading)">
           
-          {/* Linha do quadril (referência visual) */}
-          <line 
-            x1="150" y1="350" 
-            x2="250" y2="350" 
-            stroke="#ccc" 
-            strokeWidth="1" 
-            strokeDasharray="5,5" 
-            opacity="0.5"
-          />
+          {/* Cabeça e pescoço */}
+          <g id="head-neck">
+            {/* Cabeça */}
+            <ellipse cx="200" cy="80" rx="40" ry="50" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Pescoço */}
+            <path d="M 180 120 Q 180 140 185 150 L 215 150 Q 220 140 220 120" 
+                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Detalhes faciais simplificados */}
+            <circle cx="185" cy="75" r="2" fill="#8b6355" opacity="0.6" />
+            <circle cx="215" cy="75" r="2" fill="#8b6355" opacity="0.6" />
+            <path d="M 195 85 Q 200 88 205 85" stroke="#d48b82" strokeWidth="1" fill="none" opacity="0.5" />
+            <path d="M 190 100 Q 200 105 210 100" stroke="#d48b82" strokeWidth="1" fill="none" opacity="0.5" />
+          </g>
+
+          {/* Ombros e tórax */}
+          <g id="shoulders-chest">
+            {/* Ombros */}
+            <path d="M 150 150 Q 130 160 120 180 L 140 200 Q 150 190 160 190 L 240 190 Q 250 190 260 200 L 280 180 Q 270 160 250 150 Z"
+                  fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="1.5" />
+            
+            {/* Tórax */}
+            <path d="M 160 190 Q 160 250 165 280 L 235 280 Q 240 250 240 190 Z"
+                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
+            
+            {/* Definição peitoral */}
+            <path d="M 200 200 L 200 260" stroke="#d48b82" strokeWidth="0.5" opacity="0.4" />
+            <path d="M 180 210 Q 190 215 200 210" stroke="#d48b82" strokeWidth="0.5" opacity="0.4" />
+            <path d="M 200 210 Q 210 215 220 210" stroke="#d48b82" strokeWidth="0.5" opacity="0.4" />
+          </g>
+
+          {/* Braços */}
+          <g id="arms">
+            {/* Braço esquerdo */}
+            <path d="M 120 180 Q 110 220 105 260 L 105 340 Q 105 360 100 380 L 95 400 Q 90 410 88 420"
+                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="2" />
+            {/* Mão esquerda */}
+            <ellipse cx="88" cy="440" rx="15" ry="20" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Braço direito */}
+            <path d="M 280 180 Q 290 220 295 260 L 295 340 Q 295 360 300 380 L 305 400 Q 310 410 312 420"
+                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="2" />
+            {/* Mão direita */}
+            <ellipse cx="312" cy="440" rx="15" ry="20" fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+          </g>
+
+          {/* Abdômen e cintura */}
+          <g id="abdomen">
+            <path d="M 165 280 Q 165 320 170 360 Q 175 380 180 400 L 220 400 Q 225 380 230 360 Q 235 320 235 280 Z"
+                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
+            
+            {/* Definição abdominal */}
+            <line x1="200" y1="300" x2="200" y2="380" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
+            <path d="M 180 320 Q 190 318 200 320 Q 210 318 220 320" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
+            <path d="M 180 350 Q 190 348 200 350 Q 210 348 220 350" stroke="#d48b82" strokeWidth="0.5" opacity="0.3" />
+          </g>
+
+          {/* Quadril e pélvis */}
+          <g id="hip-pelvis">
+            <path d="M 180 400 Q 175 420 175 440 Q 175 460 180 480 L 220 480 Q 225 460 225 440 Q 225 420 220 400 Z"
+                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1.5" />
+          </g>
+
+          {/* Pernas */}
+          <g id="legs">
+            {/* Perna esquerda */}
+            <path d="M 180 480 Q 175 520 175 560 L 175 620 Q 175 640 180 660 L 180 700 Q 180 720 175 740"
+                  fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="2" />
+            {/* Pé esquerdo */}
+            <path d="M 175 740 L 165 750 L 165 760 L 195 760 L 195 750 L 185 740"
+                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+            
+            {/* Perna direita */}
+            <path d="M 220 480 Q 225 520 225 560 L 225 620 Q 225 640 220 660 L 220 700 Q 220 720 225 740"
+                  fill="url(#muscleShading)" stroke="#d48b82" strokeWidth="2" />
+            {/* Pé direito */}
+            <path d="M 225 740 L 235 750 L 235 760 L 205 760 L 205 750 L 215 740"
+                  fill="url(#skinGradient)" stroke="#d48b82" strokeWidth="1" />
+          </g>
         </g>
 
-        {/* Indicador de ponto alvo atual (se houver) */}
-        {showHints && currentTargetPoint && (
-          <motion.circle
-            cx={(currentTargetPoint.position.x / 100) * 400}
-            cy={(currentTargetPoint.position.y / 100) * 600}
-            r={currentTargetPoint.tolerance}
-            fill="none"
-            stroke="#3b82f6"
+        {/* Zonas clicáveis invisíveis (para debug e interação) */}
+        {process.env.NODE_ENV === 'development' && Object.entries(anatomicalZones).map(([id, zone]) => (
+          <circle
+            key={id}
+            cx={zone.cx}
+            cy={zone.cy}
+            r={zone.r}
+            fill="rgba(59, 130, 246, 0.2)"
+            stroke="rgba(59, 130, 246, 0.5)"
             strokeWidth="2"
             strokeDasharray="5,5"
+          />
+        ))}
+
+        {/* Indicador visual do ponto alvo atual */}
+        {currentTargetPoint && showHints && anatomicalZones[currentTargetPoint.id as keyof typeof anatomicalZones] && (
+          <motion.circle
+            cx={anatomicalZones[currentTargetPoint.id as keyof typeof anatomicalZones].cx}
+            cy={anatomicalZones[currentTargetPoint.id as keyof typeof anatomicalZones].cy}
+            r={anatomicalZones[currentTargetPoint.id as keyof typeof anatomicalZones].r + 10}
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth="3"
+            strokeDasharray="10,5"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            animate={{ 
+              opacity: [0.3, 0.6, 0.3],
+              scale: [0.95, 1.05, 0.95]
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
           />
         )}
 
@@ -173,84 +208,72 @@ export default function HumanBodySVG({
           <motion.g
             initial={{ scale: 0, opacity: 1 }}
             animate={{ scale: 1.5, opacity: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.6 }}
           >
             <circle
               cx={feedbackPoint.x}
               cy={feedbackPoint.y}
-              r="20"
+              r="25"
               fill={feedbackPoint.correct ? '#10b981' : '#ef4444'}
-              opacity="0.5"
+              opacity="0.6"
             />
             {feedbackPoint.correct ? (
-              <text
-                x={feedbackPoint.x}
-                y={feedbackPoint.y + 5}
-                textAnchor="middle"
-                fill="white"
-                fontSize="20"
-                fontWeight="bold"
-              >
-                ✓
-              </text>
+              <path
+                d="M -10 0 L -3 7 L 10 -7"
+                transform={`translate(${feedbackPoint.x}, ${feedbackPoint.y})`}
+                stroke="white"
+                strokeWidth="3"
+                fill="none"
+              />
             ) : (
-              <text
-                x={feedbackPoint.x}
-                y={feedbackPoint.y + 5}
-                textAnchor="middle"
-                fill="white"
-                fontSize="20"
-                fontWeight="bold"
-              >
-                ✗
-              </text>
+              <g transform={`translate(${feedbackPoint.x}, ${feedbackPoint.y})`}>
+                <line x1="-8" y1="-8" x2="8" y2="8" stroke="white" strokeWidth="3" />
+                <line x1="8" y1="-8" x2="-8" y2="8" stroke="white" strokeWidth="3" />
+              </g>
             )}
           </motion.g>
         )}
 
-        {/* Pontos de referência anatômicos (para debug) */}
-        {process.env.NODE_ENV === 'development' && highlightedPoint && (
-          <circle
-            cx={(highlightedPoint.position.x / 100) * 400}
-            cy={(highlightedPoint.position.y / 100) * 600}
-            r={highlightedPoint.tolerance}
-            fill="rgba(59, 130, 246, 0.2)"
-            stroke="rgba(59, 130, 246, 0.8)"
+        {/* Áreas destacadas ao passar o mouse */}
+        {hoveredZone && anatomicalZones[hoveredZone as keyof typeof anatomicalZones] && (
+          <motion.circle
+            cx={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].cx}
+            cy={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].cy}
+            r={anatomicalZones[hoveredZone as keyof typeof anatomicalZones].r}
+            fill="rgba(59, 130, 246, 0.1)"
+            stroke="rgba(59, 130, 246, 0.4)"
             strokeWidth="2"
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
           />
         )}
       </svg>
 
       {/* Labels dos pontos anatômicos */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Cintura */}
-        <div className="absolute text-xs text-gray-500" style={{ left: '10%', top: '44%' }}>
-          Cintura
+      <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-gray-600">
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-blue-200 rounded-full"></div>
+          <span>Cintura</span>
         </div>
-        
-        {/* Quadril */}
-        <div className="absolute text-xs text-gray-500" style={{ left: '10%', top: '57%' }}>
-          Quadril
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-green-200 rounded-full"></div>
+          <span>Quadril</span>
         </div>
-        
-        {/* Braço */}
-        <div className="absolute text-xs text-gray-500" style={{ left: '15%', top: '32%' }}>
-          Braço
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-purple-200 rounded-full"></div>
+          <span>Braço</span>
         </div>
-        
-        {/* Ombro */}
-        <div className="absolute text-xs text-gray-500" style={{ left: '45%', top: '23%' }}>
-          Ombros
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-yellow-200 rounded-full"></div>
+          <span>Panturrilha</span>
         </div>
-        
-        {/* Panturrilha */}
-        <div className="absolute text-xs text-gray-500" style={{ right: '25%', top: '80%' }}>
-          Panturrilha
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-red-200 rounded-full"></div>
+          <span>Ombro</span>
         </div>
-        
-        {/* Pulso */}
-        <div className="absolute text-xs text-gray-500" style={{ left: '12%', top: '50%' }}>
-          Pulso
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-indigo-200 rounded-full"></div>
+          <span>Pulso</span>
         </div>
       </div>
     </div>

@@ -6,10 +6,10 @@ export interface AnatomicalPoint {
   name: string;
   description: string;
   position: {
-    x: number; // Percentual da largura do SVG (0-100)
-    y: number; // Percentual da altura do SVG (0-100)
+    x: number; // Coordenada X no SVG (viewBox 0 0 400 800)
+    y: number; // Coordenada Y no SVG (viewBox 0 0 400 800)
   };
-  tolerance: number; // Raio de tolerância em pixels
+  tolerance: number; // Raio de tolerância em unidades SVG
   correctLocation: string;
   commonErrors: string[];
   clinicalImportance: string;
@@ -22,8 +22,8 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'waist',
     name: 'Cintura',
     description: 'Circunferência da cintura',
-    position: { x: 50, y: 45 }, // Centro do tronco
-    tolerance: 30,
+    position: { x: 200, y: 360 }, // Centro da cintura no SVG
+    tolerance: 40,
     correctLocation: 'Ponto médio entre a última costela e a crista ilíaca, geralmente na altura do umbigo',
     commonErrors: [
       'Medir muito abaixo, na altura do quadril',
@@ -37,8 +37,8 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'hip',
     name: 'Quadril',
     description: 'Circunferência do quadril',
-    position: { x: 50, y: 58 }, // Parte mais larga do quadril
-    tolerance: 30,
+    position: { x: 200, y: 460 }, // Parte mais larga do quadril
+    tolerance: 45,
     correctLocation: 'Maior proeminência dos glúteos, passando pela sínfise púbica',
     commonErrors: [
       'Medir muito alto, confundindo com a cintura',
@@ -52,8 +52,8 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'arm',
     name: 'Braço',
     description: 'Circunferência do braço',
-    position: { x: 30, y: 35 }, // Braço esquerdo, meio do bíceps
-    tolerance: 25,
+    position: { x: 120, y: 280 }, // Braço esquerdo, meio do bíceps
+    tolerance: 35,
     correctLocation: 'Ponto médio entre o acrômio (ombro) e o olécrano (cotovelo), com o braço relaxado',
     commonErrors: [
       'Medir com o braço flexionado',
@@ -67,8 +67,8 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'calf',
     name: 'Panturrilha',
     description: 'Circunferência da panturrilha',
-    position: { x: 45, y: 82 }, // Meio da panturrilha
-    tolerance: 25,
+    position: { x: 180, y: 650 }, // Meio da panturrilha
+    tolerance: 35,
     correctLocation: 'Maior circunferência da panturrilha, geralmente no terço superior',
     commonErrors: [
       'Medir muito baixo, próximo ao tornozelo',
@@ -82,8 +82,8 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'shoulder',
     name: 'Ombro',
     description: 'Circunferência do ombro',
-    position: { x: 50, y: 25 }, // Linha dos ombros
-    tolerance: 30,
+    position: { x: 200, y: 200 }, // Linha dos ombros
+    tolerance: 50,
     correctLocation: 'Passando pelos deltoides, axilas e parte superior do tórax',
     commonErrors: [
       'Posicionar a fita muito alta (pescoço) ou muito baixa (tórax)',
@@ -97,8 +97,8 @@ export const anatomicalPoints: AnatomicalPoint[] = [
     id: 'wrist',
     name: 'Pulso',
     description: 'Circunferência do pulso',
-    position: { x: 22, y: 52 }, // Pulso esquerdo
-    tolerance: 20,
+    position: { x: 88, y: 420 }, // Pulso esquerdo
+    tolerance: 25,
     correctLocation: 'Logo abaixo dos processos estiloides do rádio e ulna',
     commonErrors: [
       'Medir sobre os ossos proeminentes',
@@ -133,11 +133,8 @@ export function isClickWithinTolerance(
   svgWidth: number,
   svgHeight: number
 ): boolean {
-  // Converter posições percentuais para pixels
-  const pointPixelX = (point.position.x / 100) * svgWidth;
-  const pointPixelY = (point.position.y / 100) * svgHeight;
-  
-  const distance = calculateDistance(clickX, clickY, pointPixelX, pointPixelY);
+  // As coordenadas já estão em unidades SVG absolutas, não precisam conversão
+  const distance = calculateDistance(clickX, clickY, point.position.x, point.position.y);
   return distance <= point.tolerance;
 }
 

@@ -37,11 +37,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Files Modified**:
   - `src/data/modules.ts` (adicionado module-3 com 50 pontos)
   - `src/services/unifiedScoringService.ts` (peso do module-3: 50pts, total agora 150pts)
+  - `src/app/jogos/page.tsx` (linha 57: adicionado 'module-3' ao ENABLED_MODULES)
 - **Impact**:
   - Preparação prática antes de aulas presenciais de antropometria
   - Redução de erros em medições reais através da prática virtual
   - Sistema de metacognição através da autoavaliação
   - Feedback personalizado para cada ponto anatômico
+
+#### **Fixes Implementados**
+- **Issue**: Módulo 3 não aparecia em /jogos
+- **Root Cause**: 'module-3' não estava no array ENABLED_MODULES
+- **Solution**: Adicionado 'module-3' ao array ENABLED_MODULES na linha 57
+- **Files Modified**: `src/app/jogos/page.tsx`
+
+- **Issue**: SVG do corpo humano mal desenhado
+- **Root Cause**: SVG inicial era muito simples e desproporcional
+- **Solution**: Redesenhado SVG anatomicamente correto com gradientes e sombras
+- **Technical Details**: Novo SVG com viewBox 0 0 400 800, proporções realistas
+- **Files Modified**: `src/components/games/HumanBodySVG.tsx`
+
+- **Issue**: Cliques não funcionavam nos pontos anatômicos
+- **Root Cause**: Conversão incorreta de coordenadas percentuais para SVG
+- **Solution**: Atualizado para usar coordenadas SVG absolutas diretamente
+- **Technical Details**: 
+  - Removida conversão percentual na função `isClickWithinTolerance` (linha 136-138)
+  - Coordenadas agora correspondem diretamente ao viewBox do SVG
+- **Files Modified**: `src/data/questionBanks/module3AnthropometricData.ts`
 
 ## Version 0.10.2 – 2025-08-01
 
