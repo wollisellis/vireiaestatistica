@@ -96,6 +96,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/data/questionBanks/module3AnthropometricData.ts` (coordenadas atualizadas)
   - `src/app/jogos/page.tsx` (roteamento do módulo 3)
 
+#### **Interface Híbrida Implementada**
+- **Novo Componente**: `HybridHumanBodyInteraction.tsx`
+  - **Dual Interaction**: Clique direto OU drag-and-drop
+  - **Alternância de Modos**: Botões para escolher método de interação
+  - **Clique Direto**: Funcionalidade original melhorada
+  - **Drag-and-Drop**: Lista lateral com circunferências arrastáveis
+  - **Feedback Visual**: Hover, animações, tooltips, zonas de drop destacadas
+  - **SVG Profissional**: Corpo humano anatomicamente correto
+- **Integração Completa**:
+  - Substituído `HumanBodySVG` por `HybridHumanBodyInteraction`
+  - Função `handleDragComplete` para processar arraste
+  - Mantido sistema de pontuação (10/5/0 pontos)
+  - Mantido feedback educativo detalhado
+  - Compatível com React Beautiful DnD
+- **UX Melhorada**:
+  - Instruções contextuais baseadas no modo selecionado
+  - Lista de itens completados com ícones visuais
+  - Zonas de drop com indicação visual de hover
+  - Transições suaves entre modos de interação
+- **Technical Details**:
+  - `DragDropContext` envolvendo todo o componente
+  - Estados `interactionMode`, `hoveredZone`, `draggedOverZone`
+  - Coordenadas sincronizadas entre clique e drop zones
+  - Tolerância mantida para ambos os métodos
+- **Files Created**:
+  - `src/components/games/HybridHumanBodyInteraction.tsx`
+- **Files Modified**:
+  - `src/app/jogos/modulo-3/quiz/page.tsx` (integração do novo componente)
+
 ## Version 0.10.2 – 2025-08-01
 
 ### 🐛 **Critical Bug Fix: Infinite Loading Loop in Module Access**

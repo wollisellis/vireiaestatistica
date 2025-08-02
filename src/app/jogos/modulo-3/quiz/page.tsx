@@ -36,7 +36,7 @@ import {
   pointsOrder,
   AnatomicalPoint
 } from '@/data/questionBanks/module3AnthropometricData';
-import HumanBodySVG from '@/components/games/HumanBodySVG';
+import HybridHumanBodyInteraction from '@/components/games/HybridHumanBodyInteraction';
 import unifiedScoringService from '@/services/unifiedScoringService';
 
 // Interfaces
@@ -157,6 +157,41 @@ export default function Module3QuizPage() {
     // Mostrar feedback visual
     setFeedbackPoint({ x, y, correct: isCorrect });
     setTimeout(() => setFeedbackPoint(null), 500);
+
+    // Processar resultado
+    if (isCorrect || currentAttempts >= module3Config.maxAttempts) {
+      processPointResult(currentPoint, currentAttempts, isCorrect);
+    }
+  };
+
+  const handleDragComplete = (pointId: string, targetZone: string) => {
+    if (!currentPoint || isComplete) return;
+    
+    // Verificar se o ponto arrastado corresponde ao ponto atual do quiz
+    if (pointId !== currentPoint.id) return;
+
+    // Atualizar tentativas
+    const currentAttempts = (attempts[currentPoint.id] || 0) + 1;
+    setAttempts(prev => ({ ...prev, [currentPoint.id]: currentAttempts }));
+
+    // Verificar se acertou (se o ponto foi arrastado para a zona correta)
+    const isCorrect = pointId === targetZone;
+
+    // Para drag-and-drop, mostrar feedback visual na zona de destino
+    const zones = {
+      waist: { x: 200, y: 340 },
+      hip: { x: 200, y: 440 },
+      arm: { x: 135, y: 280 },
+      calf: { x: 180, y: 650 },
+      shoulder: { x: 200, y: 175 },
+      wrist: { x: 88, y: 420 }
+    };
+    
+    const zone = zones[targetZone as keyof typeof zones];
+    if (zone) {
+      setFeedbackPoint({ x: zone.x, y: zone.y, correct: isCorrect });
+      setTimeout(() => setFeedbackPoint(null), 500);
+    }
 
     // Processar resultado
     if (isCorrect || currentAttempts >= module3Config.maxAttempts) {
@@ -582,17 +617,16 @@ export default function Module3QuizPage() {
                 </CardHeader>
                 
                 <CardContent>
-                  <div ref={svgContainerRef} className="flex justify-center">
-                    <HumanBodySVG
+                  <div ref={svgContainerRef} className="w-full">
+                    <HybridHumanBodyInteraction
                       onPointClick={handlePointClick}
+                      onDragComplete={handleDragComplete}
                       currentTargetPoint={currentPoint}
                       feedbackPoint={feedbackPoint || undefined}
                       showHints={false}
+                      availablePoints={[currentPoint]}
+                      completedPoints={pointResults.map(result => result.pointId)}
                     />
-                  </div>
-                  
-                  <div className="mt-6 text-center text-sm text-gray-500">
-                    <p>Clique no modelo anatômico para marcar o ponto</p>
                   </div>
                 </CardContent>
               </Card>
