@@ -28,7 +28,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Switch } from '@/components/ui/Switch';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { db } from '@/lib/firebase';
-import { ModuleAccessGuard } from '@/components/guards/ModuleAccessGuard';
+// ModuleAccessGuard removido - verificação já feita na página anterior
 import { 
   collection, 
   addDoc, 
@@ -556,8 +556,7 @@ export default function Module2QuizPage() {
   }
 
   return (
-    <ModuleAccessGuard moduleId="module-2">
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1063,7 +1062,6 @@ export default function Module2QuizPage() {
           </div>
         )}
       </div>
-      </div>
-    </ModuleAccessGuard>
+    </div>
   );
 }

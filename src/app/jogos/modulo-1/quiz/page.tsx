@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { BookOpen, Target, Clock, Trophy, X, ArrowLeft } from 'lucide-react';
-import { ModuleAccessGuard } from '@/components/guards/ModuleAccessGuard';
+// ModuleAccessGuard removido - verificação já feita na página anterior
 
 // Disable static generation for this page since it requires authentication
 export const dynamic = 'force-dynamic';
@@ -26,8 +26,7 @@ export default function Module1QuizPage() {
   };
 
   return (
-    <ModuleAccessGuard moduleId="module-1">
-      <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       {/* 🚀 CORREÇÃO: Botão de sair no canto superior direito */}
       <div className="fixed top-4 right-4 z-50">
         <Button
@@ -130,7 +129,6 @@ export default function Module1QuizPage() {
           onComplete={handleQuizComplete}
         />
       </div>
-      </div>
-    </ModuleAccessGuard>
+    </div>
   );
 }

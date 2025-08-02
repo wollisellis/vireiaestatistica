@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Slider } from '@/components/ui/Slider';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { db } from '@/lib/firebase';
-import { ModuleAccessGuard } from '@/components/guards/ModuleAccessGuard';
+// ModuleAccessGuard removido - verificação já feita na página anterior
 import { 
   collection, 
   addDoc, 
@@ -297,8 +297,7 @@ export default function Module3QuizPage() {
   // Loading removido - ModuleAccessGuard cuida do loading
 
   return (
-    <ModuleAccessGuard moduleId="module-3">
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-teal-50">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -635,6 +634,5 @@ export default function Module3QuizPage() {
           )}
         </div>
       </div>
-    </ModuleAccessGuard>
   );
 }
