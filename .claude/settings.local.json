@@ -60,7 +60,8 @@
       "WebFetch(domain:commons.wikimedia.org)",
       "WebFetch(domain:smart.servier.com)",
       "WebFetch(domain:upload.wikimedia.org)",
-      "WebFetch(domain:www.vecteezy.com)"
+      "WebFetch(domain:www.vecteezy.com)",
+      "WebFetch(domain:inovacoes.ea2.unicamp.br)"
     ],
     "deny": []
   }
