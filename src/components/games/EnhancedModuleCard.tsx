@@ -86,9 +86,9 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
       }
     },
     hover: { 
-      scale: 1.04,
-      y: -8,
-      rotateY: 2,
+      scale: 1.02, // Reduzido de 1.04 para 1.02
+      y: -2,      // Reduzido de -8 para -2
+      rotateY: 0,  // Removido rotateY para evitar problemas 3D
       transition: { 
         duration: 0.3,
         type: "spring",
@@ -136,17 +136,25 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
   // 🎯 RENDER COM CARREGAMENTO MAIS SUTIL
   // Não mostrar skeleton completo, apenas indicador de carregamento no badge
 
+  // Detectar se é dispositivo touch
+  const isTouchDevice = typeof window !== 'undefined' && 
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
   return (
     <motion.div
       variants={cardVariants}
       initial="hidden"
       animate="visible"
-      whileHover="hover"
-      className="group"
+      whileHover={!isTouchDevice ? "hover" : undefined}
+      className="group isolate"
     >
       <Card className={`
-        h-full border-2 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl hover:scale-[1.03] 
-        transform-gpu hover:-translate-y-2 backdrop-blur-sm relative overflow-hidden
+        h-full border-2 transition-all duration-300 cursor-pointer shadow-lg backdrop-blur-sm relative overflow-hidden
+        transform-gpu
+        /* Hover apenas em dispositivos com mouse */
+        hover:shadow-2xl lg:hover:scale-[1.02] lg:hover:-translate-y-1
+        /* Reduzir ou remover scale em mobile/tablet */
+        active:scale-[0.98] md:active:scale-100
         ${module.isLocked
           ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800'
           : error
@@ -201,9 +209,11 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
             <div className="relative">
               <div className={`
                 w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg text-white
-                transform transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl
+                transform transition-all duration-300 
+                /* Hover apenas em desktop */
+                lg:group-hover:scale-110 lg:group-hover:shadow-xl
                 ${iconBgClass}
-                ${!module.isLocked && 'group-hover:shadow-blue-500/25'}
+                ${!module.isLocked && 'lg:group-hover:shadow-blue-500/25'}
               `}>
                 {module.isLocked ? '🔒' : module.icon}
               </div>

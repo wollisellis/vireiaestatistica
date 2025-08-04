@@ -228,39 +228,58 @@ export function useFirebaseAuth() {
 
     try {
       setLoading(true)
+      console.log('🔄 [SignUp] Iniciando cadastro para:', email)
 
       // Validate email domain for students (should be @dac.unicamp.br or @unicamp.br)
       if (role === 'student' && !email.endsWith('@dac.unicamp.br') && !email.endsWith('@unicamp.br')) {
+        console.error('❌ [SignUp] Email inválido:', email)
         throw new Error('Estudantes devem usar email institucional @dac.unicamp.br ou @unicamp.br')
       }
 
       // Professors can use any valid email domain
       if (role === 'professor') {
-        console.log('Professor registration with email:', email)
+        console.log('👨‍🏫 [SignUp] Professor registration with email:', email)
+      } else {
+        console.log('👨‍🎓 [SignUp] Student registration with email:', email)
       }
 
       // Check if registrations are allowed for students
       if (role === 'student') {
-        const registrationSettingsDoc = await getDoc(doc(db, 'settings', 'registration_control'))
-        const registrationSettings = registrationSettingsDoc.data()
-        
-        if (registrationSettings && registrationSettings.allowNewRegistrations === false) {
-          throw new Error('Novos cadastros estão temporariamente fechados. Entre em contato com seu professor.')
+        console.log('🔍 [SignUp] Verificando se cadastros estão permitidos...')
+        try {
+          const registrationSettingsDoc = await getDoc(doc(db, 'settings', 'registration_control'))
+          const registrationSettings = registrationSettingsDoc.data()
+          
+          if (registrationSettings && registrationSettings.allowNewRegistrations === false) {
+            console.error('❌ [SignUp] Cadastros bloqueados pelo administrador')
+            throw new Error('Novos cadastros estão temporariamente fechados. Entre em contato com seu professor.')
+          }
+          console.log('✅ [SignUp] Cadastros permitidos')
+        } catch (error) {
+          console.warn('⚠️ [SignUp] Erro ao verificar configurações, permitindo cadastro:', error)
         }
       }
 
       // Create user with email and password
+      console.log('🔐 [SignUp] Criando usuário no Firebase Auth...')
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password)
+      console.log('✅ [SignUp] Usuário criado com sucesso:', firebaseUser.uid)
 
       // Update the user's display name
+      console.log('📝 [SignUp] Atualizando display name...')
       await updateProfile(firebaseUser, {
         displayName: fullName
       })
+      console.log('✅ [SignUp] Display name atualizado')
 
       // Generate anonymous ID for students
       const anonymousId = role === 'student' ? generateAnonymousId() : undefined
+      if (anonymousId) {
+        console.log('🔢 [SignUp] Anonymous ID gerado:', anonymousId)
+      }
 
       // Create user profile in Firestore (remove undefined fields)
+      console.log('📄 [SignUp] Criando perfil no Firestore...')
       const userProfile: any = {
         id: firebaseUser.uid,
         email: firebaseUser.email!,
@@ -282,21 +301,49 @@ export function useFirebaseAuth() {
         userProfile.anonymousId = anonymousId
       }
 
-      await setDoc(doc(db, 'users', firebaseUser.uid), {
-        ...userProfile,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
+      try {
+        await setDoc(doc(db, 'users', firebaseUser.uid), {
+          ...userProfile,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        })
+        console.log('✅ [SignUp] Perfil criado no Firestore com sucesso')
+      } catch (firestoreError) {
+        console.error('❌ [SignUp] Erro ao criar perfil no Firestore:', firestoreError)
+        throw new Error('Erro ao salvar perfil do usuário. Por favor, tente novamente.')
+      }
 
       // If student with course code, enroll in course
       if (role === 'student' && courseCode) {
         await enrollStudentInCourse(firebaseUser.uid, courseCode)
       }
 
+      console.log('🎉 [SignUp] Cadastro concluído com sucesso!')
       return { data: { user: firebaseUser, profile: userProfile }, error: null }
-    } catch (error: unknown) {
-      console.error('Sign up error:', error)
-      return { data: null, error: { message: (error as Error).message } }
+    } catch (error: any) {
+      console.error('❌ [SignUp] Erro no cadastro:', error)
+      
+      // Mensagens de erro mais amigáveis baseadas no código do Firebase
+      let errorMessage = 'Erro ao criar conta. Por favor, tente novamente.'
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'Este email já está cadastrado. Por favor, faça login ou use outro email.'
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'A senha deve ter pelo menos 6 caracteres.'
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Email inválido. Verifique o formato do email.'
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = 'Cadastro de novos usuários está temporariamente desabilitado.'
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      console.error('❌ [SignUp] Código do erro:', error.code)
+      console.error('❌ [SignUp] Mensagem original:', error.message)
+      
+      return { data: null, error: { message: errorMessage } }
     } finally {
       setLoading(false)
     }

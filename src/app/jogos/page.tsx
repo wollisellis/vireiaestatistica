@@ -528,20 +528,38 @@ function JogosPageContent() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-lg relative z-10">
+          transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+          className="bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-lg relative z-10 transition-all duration-300 hover:shadow-xl">
           <div className="max-w-8xl mx-auto px-3 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-3 sm:py-4">
-              {/* Navigation - Esconde texto em mobile */}
-              <div className="flex items-center space-x-2 sm:space-x-4">
-                <Link href="/dashboard-avancado" className="flex items-center space-x-1 sm:space-x-2 text-emerald-600 hover:text-emerald-700">
-                  <Home className="w-5 h-5" />
-                  <span className="font-medium hidden sm:inline">Dashboard</span>
-                </Link>
-                <ChevronRight className="w-4 h-4 text-gray-400 hidden sm:block" />
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  <BookOpen className="w-5 h-5 text-emerald-600" />
-                  <span className="font-semibold text-gray-900 text-sm sm:text-base">Módulos</span>
+              {/* Logo and Navigation */}
+              <div className="flex items-center space-x-3 sm:space-x-6">
+                {/* Platform Logo */}
+                <motion.div 
+                  className="flex flex-col"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                    AvaliaNutri
+                  </h1>
+                  <p className="text-xs text-gray-600 sm:hidden">Avaliação Nutricional</p>
+                  <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Plataforma Educacional de Avaliação Nutricional</p>
+                </motion.div>
+                
+                {/* Navigation - Esconde texto em mobile */}
+                <div className="flex items-center space-x-2 sm:space-x-4">
+                  <div className="w-px h-6 bg-gray-300 hidden sm:block" />
+                  <Link href="/dashboard-avancado" className="group flex items-center space-x-1 sm:space-x-2 text-emerald-600 hover:text-emerald-700 transition-all duration-200 hover:scale-105">
+                    <Home className="w-5 h-5 transition-transform group-hover:rotate-12" />
+                    <span className="font-medium hidden sm:inline">Dashboard</span>
+                  </Link>
+                  <ChevronRight className="w-4 h-4 text-gray-400 hidden sm:block" />
+                  <div className="flex items-center space-x-1 sm:space-x-2">
+                    <BookOpen className="w-5 h-5 text-emerald-600" />
+                    <span className="font-semibold text-gray-900 text-sm sm:text-base">Módulos</span>
+                  </div>
                 </div>
               </div>
               
@@ -597,9 +615,9 @@ function JogosPageContent() {
                   onClick={handleLogout}
                   variant="ghost"
                   size="sm"
-                  className="text-gray-500 hover:text-red-600 p-1 sm:p-2"
+                  className="text-gray-500 hover:text-red-600 p-1 sm:p-2 transition-all duration-200 hover:scale-105 group"
                 >
-                  <LogOut className="w-4 h-4 sm:mr-2" />
+                  <LogOut className="w-4 h-4 sm:mr-2 transition-transform group-hover:translate-x-1" />
                   <span className="hidden sm:inline">Sair</span>
                 </Button>
               </div>
@@ -638,34 +656,59 @@ function JogosPageContent() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-4">
                         <motion.div 
-                          whileHover={{ rotate: 360 }}
-                          transition={{ duration: 0.5 }}
-                          className="p-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl shadow-md"
+                          whileHover={{ rotate: 360, scale: 1.1 }}
+                          animate={{ 
+                            y: [0, -5, 0],
+                          }}
+                          transition={{ 
+                            y: {
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            },
+                            rotate: {
+                              duration: 0.5
+                            }
+                          }}
+                          className="p-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl shadow-md hover:shadow-lg transition-shadow"
                         >
                           <BookOpen className="w-8 h-8 text-purple-600" />
                         </motion.div>
-                        <div>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5, delay: 0.2 }}
+                        >
                           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                             Módulos de Avaliação Nutricional
                           </h1>
-                        </div>
+                        </motion.div>
                       </div>
                       <p className="text-gray-700 text-base sm:text-lg leading-relaxed max-w-2xl">
                         🎯 Aprenda os fundamentos da avaliação nutricional com dados brasileiros através de <span className="font-semibold text-purple-600">módulos interativos</span> e <span className="font-semibold text-pink-600">gamificados</span>.
                       </p>
                       <div className="flex flex-wrap gap-3 mt-4">
-                        <div className="flex items-center space-x-2 text-sm bg-purple-50 px-3 py-1.5 rounded-full">
+                        <motion.div 
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          className="flex items-center space-x-2 text-sm bg-purple-50 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:bg-purple-100 hover:shadow-md"
+                        >
                           <Trophy className="w-4 h-4 text-purple-600" />
                           <span className="text-purple-700 font-medium">Sistema de Pontos</span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm bg-pink-50 px-3 py-1.5 rounded-full">
+                        </motion.div>
+                        <motion.div 
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          className="flex items-center space-x-2 text-sm bg-pink-50 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:bg-pink-100 hover:shadow-md"
+                        >
                           <Star className="w-4 h-4 text-pink-600" />
                           <span className="text-pink-700 font-medium">Ranking em Tempo Real</span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm bg-blue-50 px-3 py-1.5 rounded-full">
+                        </motion.div>
+                        <motion.div 
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          className="flex items-center space-x-2 text-sm bg-blue-50 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:bg-blue-100 hover:shadow-md"
+                        >
                           <Award className="w-4 h-4 text-blue-600" />
                           <span className="text-blue-700 font-medium">Certificados</span>
-                        </div>
+                        </motion.div>
                       </div>
                     </div>
                     <div className="hidden lg:block">
@@ -691,20 +734,31 @@ function JogosPageContent() {
               <div>
 
                 {/* 🎯 GRID DE MÓDULOS RESPONSIVO */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                   <AnimatePresence>
-                    {nutritionalGames.map((module) => (
-                      <EnhancedModuleCard
+                    {nutritionalGames.map((module, index) => (
+                      <motion.div
                         key={module.id}
-                        module={{
-                          ...module,
-                          isLocked: !unlockedModules.includes(module.id)
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{
+                          duration: 0.4,
+                          delay: index * 0.1,
+                          type: "spring",
+                          stiffness: 100
                         }}
-                        userId={getUserId() || null}
-                        onStart={handleModuleStart}
-                        onRetry={handleModuleStart}
-                        showDebugInfo={process.env.NODE_ENV === 'development'}
-                      />
+                      >
+                        <EnhancedModuleCard
+                          module={{
+                            ...module,
+                            isLocked: !unlockedModules.includes(module.id)
+                          }}
+                          userId={getUserId() || null}
+                          onStart={handleModuleStart}
+                          onRetry={handleModuleStart}
+                          showDebugInfo={process.env.NODE_ENV === 'development'}
+                        /></motion.div>
                     ))}
                   </AnimatePresence>
                 </div>
@@ -751,7 +805,18 @@ function JogosPageContent() {
           )}
         </AnimatePresence>
 
-        <Footer />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ 
+            duration: 0.5, 
+            delay: 0.6,
+            type: "spring",
+            stiffness: 80
+          }}
+        >
+          <Footer />
+        </motion.div>
       </div>
   );
 }

@@ -11,6 +11,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.11.2 – 2025-08-04
+
+### ✨ **Features: Onboarding e Melhorias de UX**
+
+#### **Feature 1: Seção de Onboarding na Tela de Login**
+- **Issue**: Usuários não entendiam o propósito da plataforma antes de fazer login
+- **Solution**: Adicionada seção explicativa com benefícios e estatísticas
+- **Files Modified**:
+  - `src/components/auth/AuthForm.tsx` (linhas 186-313)
+- **Technical Details**:
+  - Grid de 4 benefícios com ícones coloridos e hover effects
+  - Estatísticas da plataforma (65+ estudantes, 87% aprovação, 12min/módulo)
+  - Aviso sobre acesso exclusivo UNICAMP
+  - Animações com Framer Motion
+
+#### **Feature 2: Correção do Subtítulo Responsivo**
+- **Issue**: Subtítulo "Plataforma Educacional de Avaliação Nutricional" desaparecia em telas pequenas
+- **Root Cause**: Faltava branding da plataforma no header da página de jogos
+- **Solution**: Adicionado logo "AvaliaNutri" com subtítulo adaptativo
+- **Files Modified**:
+  - `src/app/jogos/page.tsx` (linhas 537-549)
+- **Technical Details**:
+  - Mobile: subtítulo curto "Avaliação Nutricional"
+  - Desktop: subtítulo completo "Plataforma Educacional de Avaliação Nutricional"
+  - Logo com gradiente emerald-teal
+
+#### **Feature 3: Micro-interações e Melhorias de Design**
+- **Issue**: Interface precisava de mais polish visual e feedback interativo
+- **Solution**: Adicionadas animações e transições em elementos-chave
+- **Files Modified**:
+  - `src/app/jogos/page.tsx` (múltiplas seções)
+- **Technical Details**:
+  - Header com spring animation e hover shadow
+  - Links de navegação com scale e rotação de ícones
+  - Hero section com animação flutuante do ícone
+  - Feature badges com hover lift effect
+  - Module cards com staggered entrance animations
+  - Footer com entrada suave
+
+### 🐛 **Fixes: Correções de UX Mobile**
+
+#### **Fix 1: Sobreposição de Cards em Mobile**
+- **Issue**: Cards se sobrepunham ao fazer hover em dispositivos móveis
+- **Root Cause**: Scale animation muito agressiva (1.04) em telas pequenas
+- **Solution**: Reduzido scale para 1.02 e detecção de touch devices
+- **Files Modified**:
+  - `src/components/games/EnhancedModuleCard.tsx` (linhas 106-157)
+  - `src/app/jogos/page.tsx` (linha 737)
+- **Technical Details**:
+  - Adicionado `isTouchDevice` para desabilitar hover em mobile
+  - Aumentado gap do grid de `gap-3` para `gap-4 sm:gap-6 lg:gap-8`
+  - Scale animation apenas em desktop (lg:hover:scale-[1.02])
+
+#### **Fix 2: Diagnóstico de Erro de Cadastro**
+- **Issue**: Usuários não conseguiam criar contas novas
+- **Solution**: Adicionado logging detalhado para debug
+- **Files Modified**:
+  - `src/hooks/useFirebaseAuth.ts` (múltiplas adições de console.log)
+  - `src/components/auth/AuthForm.tsx` (melhor placeholder de email)
+- **Technical Details**:
+  - Logs em cada etapa do processo de signup
+  - Mensagens de erro específicas para cada código Firebase
+  - Mantida validação de email institucional (@dac.unicamp.br/@unicamp.br)
+
+---
+
 ## Version 0.11.1 – 2025-08-04
 
 ### 🐛 **Fixes: Correções de UX e Bugs Críticos**

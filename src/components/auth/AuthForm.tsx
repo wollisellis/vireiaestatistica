@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
 // Removido import de Select - todos são estudantes por padrão
-import { User, Gamepad2, ArrowLeft } from 'lucide-react'
+import { User, Gamepad2, ArrowLeft, Brain, TrendingUp, Users, BarChart3, BookOpen, Target } from 'lucide-react'
 
 // Mock translation function
 const t = (key: string) => {
@@ -190,39 +190,121 @@ export function AuthForm() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          className="w-full max-w-2xl"
         >
-          <Card className="w-full max-w-md">
-            <CardHeader>
+          <Card className="w-full">
+            <CardHeader className="pb-4">
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  AvaliaNutri
-                </h1>
-                <p className="text-gray-600">
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h1 className="text-4xl font-bold text-gray-900 mb-3">
+                    AvaliaNutri
+                  </h1>
+                </motion.div>
+                <p className="text-lg text-gray-700 font-medium">
                   Plataforma Educacional de Avaliação Nutricional
                 </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Escolha como deseja acessar a plataforma
+                <p className="text-sm text-gray-600 mt-2">
+                  Transforme seu aprendizado em nutrição com gamificação e dados reais
                 </p>
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              {/* Single Login Button */}
+            <CardContent className="space-y-6">
+              {/* Features Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <motion.div 
+                  className="flex items-start space-x-3 p-3 rounded-lg bg-blue-50"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Brain className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Aprendizado Gamificado</h3>
+                    <p className="text-xs text-gray-600 mt-1">Módulos interativos com pontuação e ranking</p>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  className="flex items-start space-x-3 p-3 rounded-lg bg-green-50"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <BarChart3 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Dados Brasileiros</h3>
+                    <p className="text-xs text-gray-600 mt-1">IBGE, SISVAN e Ministério da Saúde</p>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  className="flex items-start space-x-3 p-3 rounded-lg bg-purple-50"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <TrendingUp className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Progresso em Tempo Real</h3>
+                    <p className="text-xs text-gray-600 mt-1">Acompanhe seu desempenho instantaneamente</p>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  className="flex items-start space-x-3 p-3 rounded-lg bg-orange-50"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Target className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Casos Práticos</h3>
+                    <p className="text-xs text-gray-600 mt-1">Simulações baseadas em situações reais</p>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Login Button */}
               <Button
                 onClick={handleStartLogin}
-                className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 size="lg"
               >
-                <div className="flex items-center justify-center space-x-4">
-                  <Gamepad2 className="w-6 h-6 text-white" />
-                  <div className="font-semibold text-lg">Entrar na Plataforma</div>
+                <div className="flex items-center justify-center space-x-3">
+                  <Gamepad2 className="w-6 h-6" />
+                  <span className="font-semibold text-lg">Acessar a Plataforma</span>
                 </div>
               </Button>
               
-              <p className="text-sm text-gray-600 text-center mt-4">
-                Use seu email institucional @dac.unicamp.br ou @unicamp.br
-              </p>
+              {/* Institution Notice */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-start space-x-2">
+                  <BookOpen className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="text-gray-700 font-medium">Acesso Exclusivo UNICAMP</p>
+                    <p className="text-gray-600 text-xs mt-1">
+                      Use seu email institucional @dac.unicamp.br ou @unicamp.br para acessar a plataforma
+                    </p>
+                  </div>
+                </div>
+              </div>
 
+              {/* Stats */}
+              <div className="flex justify-center space-x-8 pt-2">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-600">65+</p>
+                  <p className="text-xs text-gray-600">Estudantes Ativos</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-600">87%</p>
+                  <p className="text-xs text-gray-600">Taxa de Aprovação</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-purple-600">12min</p>
+                  <p className="text-xs text-gray-600">Por Módulo</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -270,15 +352,10 @@ export function AuthForm() {
                     {...register('fullName')}
                     type="text"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={isSignUp ? "exemplo@dac.unicamp.br" : t('auth.enterFullName')}
+                    placeholder={t('auth.enterFullName')}
                   />
                   {errors.fullName && (
                     <p className="text-red-500 text-sm mt-1">{String(errors.fullName.message)}</p>
-                  )}
-                  {isSignUp && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Estudantes devem usar email institucional @dac.unicamp.br
-                    </p>
                   )}
                 </div>
               )}
@@ -291,10 +368,15 @@ export function AuthForm() {
                   {...register('email')}
                   type="email"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t('auth.enterEmail')}
+                  placeholder={isSignUp ? "exemplo@dac.unicamp.br" : t('auth.enterEmail')}
                 />
                 {errors.email && (
                   <p className="text-red-500 text-sm mt-1">{String(errors.email.message)}</p>
+                )}
+                {isSignUp && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Use seu email institucional: @dac.unicamp.br ou @unicamp.br
+                  </p>
                 )}
               </div>
 
