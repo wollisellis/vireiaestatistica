@@ -158,10 +158,10 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
                   ? 'border-purple-600 hover:border-purple-700 bg-gradient-to-br from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 hover:ring-4 hover:ring-purple-400/50 shadow-purple-400/50 text-white'
                   : 'border-green-600 hover:border-green-700 bg-gradient-to-br from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 hover:ring-4 hover:ring-green-400/50 shadow-green-400/50 text-white'
               : module.id === 'module-1'
-                ? 'border-blue-300 hover:border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-300/50 dark:hover:ring-blue-500/20'
+                ? 'border-blue-300 hover:border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-500 hover:to-blue-600 hover:text-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 dark:hover:from-blue-700 dark:hover:to-blue-800 hover:ring-4 hover:ring-blue-300/50 dark:hover:ring-blue-500/20 transition-all duration-300 group'
                 : module.id === 'module-2'
-                  ? 'border-emerald-300 hover:border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-emerald-300/50 dark:hover:ring-emerald-500/20'
-                  : 'border-blue-300 hover:border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 hover:ring-4 hover:ring-blue-300/50 dark:hover:ring-blue-500/20'
+                  ? 'border-emerald-300 hover:border-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-500 hover:to-emerald-600 hover:text-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 dark:hover:from-emerald-700 dark:hover:to-emerald-800 hover:ring-4 hover:ring-emerald-300/50 dark:hover:ring-emerald-500/20 transition-all duration-300 group'
+                  : 'border-blue-300 hover:border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-500 hover:to-blue-600 hover:text-white dark:border-gray-500 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-800 dark:hover:from-blue-700 dark:hover:to-blue-800 hover:ring-4 hover:ring-blue-300/50 dark:hover:ring-blue-500/20 transition-all duration-300 group'
         }
         ${className}
       `} onClick={handleClick}>
@@ -254,15 +254,15 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
 
             <div className="flex-1 min-w-0 space-y-2">
               {/* Título com quebra controlada */}
-              <h3 className={`font-bold text-xl leading-tight max-w-[200px] ${
-                state.status === 'completed' ? 'text-white' : 'text-gray-900 dark:text-gray-100'
+              <h3 className={`font-bold text-xl leading-tight max-w-[200px] transition-colors duration-300 ${
+                state.status === 'completed' ? 'text-white' : 'text-gray-900 dark:text-gray-100 group-hover:text-white'
               }`}>
                 {module.title}
               </h3>
 
               {/* Microcopy com tempo estimado e pontos */}
-              <div className={`flex items-center space-x-4 text-sm ${
-                state.status === 'completed' ? 'text-white/90' : 'text-gray-500 dark:text-gray-400'
+              <div className={`flex items-center space-x-4 text-sm transition-colors duration-300 ${
+                state.status === 'completed' ? 'text-white/90' : 'text-gray-500 dark:text-gray-400 group-hover:text-white/90'
               }`}>
                 <div className="flex items-center space-x-1">
                   <Clock className="w-4 h-4" />
@@ -335,8 +335,8 @@ const EnhancedModuleCard = memo<EnhancedModuleCardProps>(({
 
           {/* 🎯 DESCRIÇÃO DO MÓDULO */}
           <div className="flex-1 mb-6">
-            <p className={`text-sm leading-relaxed ${
-              state.status === 'completed' ? 'text-white/80' : 'text-gray-600 dark:text-gray-300'
+            <p className={`text-sm leading-relaxed transition-colors duration-300 ${
+              state.status === 'completed' ? 'text-white/80' : 'text-gray-600 dark:text-gray-300 group-hover:text-white/80'
             }`}>
               {module.description || "Aprenda os conceitos fundamentais da avaliação nutricional com dados brasileiros e exercícios práticos."}
             </p>

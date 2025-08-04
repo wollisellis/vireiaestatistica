@@ -11,6 +11,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 0.11.1 – 2025-08-04
+
+### 🐛 **Fixes: Correções de UX e Bugs Críticos**
+
+#### **Fix 1: Dashboard não carregava corretamente**
+- **Issue**: Ao clicar no logo/ícone de dashboard, página carregava por ~2s e mostrava tela errada
+- **Root Cause**: `handleLogoClick()` em Navigation.tsx estava fazendo logout ao invés de redirecionar
+- **Solution**: Simplificado para apenas redirecionar para '/' sem fazer logout
+- **Files Modified**: 
+  - `src/components/layout/Navigation.tsx` (linhas 70-73, 83)
+- **Technical Details**: Removida lógica de limpeza de cookies/localStorage do handleLogoClick
+
+#### **Fix 2: Google Sign In criando professores incorretamente**
+- **Issue**: Usuários normais estavam sendo cadastrados como "professor" no Firebase
+- **Root Cause**: `signInWithGoogle()` adicionava `autoSetup: true` para role professor sem verificação
+- **Solution**: Removido autoSetup automático - apenas quem usa senha especial vira professor
+- **Files Modified**:
+  - `src/hooks/useFirebaseAuth.ts` (linhas 424-425)
+- **Technical Details**: Comentado código que adicionava flags de professor sem validação
+- **Context**: Sistema já verifica senha 'D0c3nt3' corretamente em DocenteRegistration.tsx
+
+#### **Fix 3: Botão "Precisa de Ajuda?" não funcionava**
+- **Issue**: Clique no botão abria prompt do sistema mas nada acontecia depois
+- **Root Cause**: Link mailto simples sem tratamento de erro ou fallback
+- **Solution**: Implementado botão com onClick, template de email e fallback com alert
+- **Files Modified**:
+  - `src/components/layout/Footer.tsx` (linhas 196-255)
+- **Technical Details**: 
+  - Template pré-preenchido com campos para descrição do problema
+  - Timeout de 2s antes de mostrar opção de copiar email
+  - Clipboard API com fallback para alert
+
+#### **Fix 4: Design da página de módulos muito simples**
+- **Issue**: Visual básico sem hierarquia forte ou elementos atrativos
+- **Root Cause**: Design minimalista demais, sem elementos visuais de destaque
+- **Solution**: Redesign completo com gradientes, animações e hero section
+- **Files Modified**:
+  - `src/app/jogos/page.tsx` (linhas 521-689)
+- **Technical Details**:
+  - Background animado com blur e gradientes
+  - Hero section com gradiente purple/pink/blue
+  - Motion animations no header e cards
+  - Ícones e badges informativos
+  - Emoji animado com loop infinito
+
+#### **Fix 5: Contraste ruim no hover dos módulos**
+- **Issue**: Texto ficava muito claro ao passar mouse, difícil de ler
+- **Root Cause**: Classes hover mudavam para cores muito claras (blue-100/200)
+- **Solution**: Hover agora usa cores escuras (blue-500/600) com texto branco
+- **Files Modified**:
+  - `src/components/games/EnhancedModuleCard.tsx` (linhas 161-164, 257-266, 338-340)
+- **Technical Details**:
+  - Adicionado `hover:text-white` e `transition-all duration-300`
+  - Classes group para propagar hover aos elementos filhos
+  - Dark mode também corrigido com cores apropriadas
+
+#### **Fix 6: Mensagem de feedback escondida abaixo do fold**
+- **Issue**: "Continue tentando!" aparecia só depois de scroll
+- **Root Cause**: Mensagem estava dentro do card de resultados, não no topo
+- **Solution**: Criada seção destacada no topo com motion animation
+- **Files Modified**:
+  - `src/components/quiz/RandomizedQuizComponent.tsx` (linhas 335-357, import motion)
+- **Technical Details**:
+  - Motion div com animação de entrada
+  - Cores diferentes para aprovado/reprovado
+  - Mensagens motivacionais contextuais
+
+#### **Fix 7: Questão e resposta correta não apareciam quando acertava**
+- **Issue**: Só mostrava detalhes quando errava, não quando acertava
+- **Root Cause**: Condição `!feedback.isCorrect` limitava exibição
+- **Solution**: Sempre mostrar questão/resposta, com indicador "Você acertou!"
+- **Files Modified**:
+  - `src/components/quiz/RandomizedQuizComponent.tsx` (linhas 506-512)
+- **Technical Details**:
+  - Removida condição restritiva
+  - Adicionado texto verde confirmando acerto
+  - Mantém contexto educacional sempre visível
+
+### 🎯 **Impact**
+- Melhoria significativa na experiência do usuário
+- Interface mais moderna e atrativa
+- Correção de bugs críticos de navegação e autenticação
+- Feedback mais claro e acessível
+- Melhor hierarquia visual e legibilidade
+
+---
+
 ## Version 0.11.0 – 2025-08-02
 
 ### ✨ **Feature: Module 3 - Anatomical Points Identification**

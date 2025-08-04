@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -333,15 +334,35 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
   if (isSubmitted && results && progressReport) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Mensagem Principal - Sempre Visível no Topo */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className={`p-6 rounded-xl text-center shadow-lg ${
+            results.passed 
+              ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300' 
+              : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-300'
+          }`}
+        >
+          <h2 className={`text-2xl font-bold mb-2 ${
+            results.passed ? 'text-green-700' : 'text-orange-700'
+          }`}>
+            {results.passed ? '🎉 Parabéns! Você foi aprovado!' : '📚 Continue tentando! Você está no caminho certo!'}
+          </h2>
+          <p className={`text-lg ${results.passed ? 'text-green-600' : 'text-orange-600'}`}>
+            {results.passed 
+              ? `Excelente trabalho! Você demonstrou domínio do conteúdo.`
+              : `Não desista! Cada tentativa é uma oportunidade de aprendizado.`}
+          </p>
+        </motion.div>
+
         {/* Header dos Resultados */}
         <Card>
           <CardContent className="p-8 text-center">
             <div className={`text-6xl mb-4 ${results.passed ? 'text-green-500' : 'text-orange-500'}`}>
-              {results.passed ? '🎉' : '📚'}
+              {results.passed ? '🏆' : '💪'}
             </div>
-            <h2 className="text-3xl font-bold mb-2">
-              {results.passed ? 'Parabéns!' : 'Continue tentando!'}
-            </h2>
             <p className="text-gray-600 text-lg mb-6">
               Você acertou {progressReport.summary.correct} de {progressReport.summary.total} questões
             </p>
@@ -503,12 +524,13 @@ export const RandomizedQuizComponent: React.FC<RandomizedQuizComponentProps> = (
                     </div>
                   </div>
                   
-                  {!feedback.isCorrect && (
-                    <div className="text-sm space-y-1">
-                      <p><strong>Sua resposta:</strong> {feedback.studentAnswer}</p>
-                      <p><strong>Resposta correta:</strong> {feedback.correctAnswer}</p>
-                    </div>
-                  )}
+                  <div className="text-sm space-y-1">
+                    <p><strong>Sua resposta:</strong> {feedback.studentAnswer}</p>
+                    <p><strong>Resposta correta:</strong> {feedback.correctAnswer}</p>
+                    {feedback.isCorrect && (
+                      <p className="text-green-600 font-medium">✓ Você acertou!</p>
+                    )}
+                  </div>
                   
                   {showExplanations && (
                     <div className="mt-3 pt-3 border-t border-gray-200">

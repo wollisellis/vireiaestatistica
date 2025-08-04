@@ -518,9 +518,18 @@ function JogosPageContent() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+      </div>
         {/* 🎯 HEADER RESPONSIVO */}
-        <div className="bg-white border-b border-emerald-200 shadow-sm">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-lg relative z-10">
           <div className="max-w-8xl mx-auto px-3 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-3 sm:py-4">
               {/* Navigation - Esconde texto em mobile */}
@@ -596,7 +605,7 @@ function JogosPageContent() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* 🎯 MAIN CONTENT - RESPONSIVO */}
         <div className="max-w-8xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -617,16 +626,69 @@ function JogosPageContent() {
             
             {/* 🎯 MÓDULOS - COL PRINCIPAL RESPONSIVA */}
             <div className="lg:col-span-2 2xl:col-span-3 space-y-4 sm:space-y-6 lg:space-y-8">
-              <div>
-                <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
-                  <div className="p-1.5 sm:p-2 bg-emerald-100 rounded-lg flex-shrink-0">
-                    <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Módulos de Avaliação Nutricional</h1>
-                    <p className="text-gray-600 text-sm sm:text-base mt-0.5 sm:mt-1 hidden sm:block">Aprenda os fundamentos da avaliação nutricional com dados brasileiros</p>
+              {/* Hero Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 p-[2px] rounded-2xl shadow-2xl"
+              >
+                <div className="bg-white rounded-2xl p-6 sm:p-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <motion.div 
+                          whileHover={{ rotate: 360 }}
+                          transition={{ duration: 0.5 }}
+                          className="p-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl shadow-md"
+                        >
+                          <BookOpen className="w-8 h-8 text-purple-600" />
+                        </motion.div>
+                        <div>
+                          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            Módulos de Avaliação Nutricional
+                          </h1>
+                        </div>
+                      </div>
+                      <p className="text-gray-700 text-base sm:text-lg leading-relaxed max-w-2xl">
+                        🎯 Aprenda os fundamentos da avaliação nutricional com dados brasileiros através de <span className="font-semibold text-purple-600">módulos interativos</span> e <span className="font-semibold text-pink-600">gamificados</span>.
+                      </p>
+                      <div className="flex flex-wrap gap-3 mt-4">
+                        <div className="flex items-center space-x-2 text-sm bg-purple-50 px-3 py-1.5 rounded-full">
+                          <Trophy className="w-4 h-4 text-purple-600" />
+                          <span className="text-purple-700 font-medium">Sistema de Pontos</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm bg-pink-50 px-3 py-1.5 rounded-full">
+                          <Star className="w-4 h-4 text-pink-600" />
+                          <span className="text-pink-700 font-medium">Ranking em Tempo Real</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm bg-blue-50 px-3 py-1.5 rounded-full">
+                          <Award className="w-4 h-4 text-blue-600" />
+                          <span className="text-blue-700 font-medium">Certificados</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="hidden lg:block">
+                      <motion.div
+                        animate={{ 
+                          y: [0, -10, 0],
+                          rotate: [0, 5, -5, 0]
+                        }}
+                        transition={{ 
+                          duration: 4,
+                          repeat: Infinity,
+                          repeatType: "loop"
+                        }}
+                        className="text-8xl"
+                      >
+                        🎓
+                      </motion.div>
+                    </div>
                   </div>
                 </div>
+              </motion.div>
+
+              <div>
 
                 {/* 🎯 GRID DE MÓDULOS RESPONSIVO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">

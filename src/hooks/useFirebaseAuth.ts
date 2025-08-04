@@ -421,11 +421,8 @@ export function useFirebaseAuth() {
           userProfile.anonymousId = anonymousId
         }
 
-        // Add autoSetup flag for professors using Google Sign In
-        if (role === 'professor') {
-          userProfile.autoSetup = true
-          userProfile.setupMethod = 'google_signin_v1.0'
-        }
+        // Não adicionar autoSetup para professores via Google Sign In
+        // Apenas quem usa a senha especial deve ser professor
 
         try {
           console.log('📝 Tentando criar documento do usuário...')

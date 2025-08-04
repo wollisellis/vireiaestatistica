@@ -193,18 +193,66 @@ export function Footer() {
 
         {/* Support Button - Destacado no topo */}
         <div className="text-center mt-8 mb-6">
-          <a
-            href="mailto:e165905@dac.unicamp.br?subject=Suporte AvaliaNutri - Dúvida"
+          <button
+            onClick={() => {
+              // Configurar email com informações pré-preenchidas
+              const email = 'e165905@dac.unicamp.br';
+              const subject = encodeURIComponent('Suporte AvaliaNutri - Dúvida');
+              const body = encodeURIComponent(`Olá equipe AvaliaNutri,
+
+Preciso de ajuda com:
+
+[Descreva seu problema ou dúvida aqui]
+
+Informações adicionais:
+- Nome: 
+- Turma/Curso: 
+- Módulo/Página onde ocorreu o problema: 
+- Descrição detalhada: 
+
+Obrigado!`);
+              
+              try {
+                // Tentar abrir o cliente de email
+                window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+                
+                // Mostrar também instrução após 2 segundos
+                setTimeout(() => {
+                  const confirmed = confirm(
+                    `Email de suporte configurado!\n\n` +
+                    `Se o email não abrir automaticamente:\n` +
+                    `📧 Envie para: ${email}\n` +
+                    `📝 Assunto: Suporte AvaliaNutri - Dúvida\n\n` +
+                    `Deseja copiar o email para a área de transferência?`
+                  );
+                  
+                  if (confirmed) {
+                    navigator.clipboard.writeText(email).then(() => {
+                      alert('Email copiado com sucesso!');
+                    }).catch(() => {
+                      alert(`Email: ${email}`);
+                    });
+                  }
+                }, 2000);
+              } catch (error) {
+                // Fallback se houver erro
+                alert(
+                  `Para suporte, envie email para:\n\n` +
+                  `📧 ${email}\n` +
+                  `📝 Assunto: Suporte AvaliaNutri - Dúvida`
+                );
+              }
+            }}
             className="inline-flex items-center space-x-3 bg-gradient-to-r from-emerald-600 to-teal-600 
                      hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl 
                      shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105
-                     font-semibold text-base hover:no-underline"
+                     font-semibold text-base hover:no-underline cursor-pointer"
             title="Clique para enviar email de suporte"
           >
             <HelpCircle className="w-5 h-5" />
             <span>Precisa de Ajuda?</span>
             <MessageCircle className="w-5 h-5" />
-          </a>
+          </button>
           <p className="text-sm text-gray-500 mt-2">
             Entre em contato para tirar dúvidas ou reportar problemas
           </p>

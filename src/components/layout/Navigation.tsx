@@ -67,42 +67,8 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
     window.location.href = '/'
   }
 
-  const handleLogoClick = async () => {
-    // Clear all authentication state
-    if (typeof window !== 'undefined') {
-      // Clear cookies
-      const cookiesToClear = [
-        'auth-token',
-        'firebase-auth-token',
-        'user-role',
-        'user-session'
-      ]
-
-      cookiesToClear.forEach(cookieName => {
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
-      })
-
-      // Clear localStorage and sessionStorage
-      const localStorageKeysToRemove = [
-        'firebase-auth-token',
-        'user-data',
-        'auth-state'
-      ]
-
-      localStorageKeysToRemove.forEach(key => {
-        localStorage.removeItem(key)
-      })
-
-      sessionStorage.clear()
-    }
-
-    // Sign out from Firebase if user is authenticated
-    if (user) {
-      await signOut()
-    }
-
-    // Redirect to login page
+  const handleLogoClick = () => {
+    // Apenas redireciona para a página inicial
     window.location.href = '/'
   }
 
@@ -114,7 +80,7 @@ export function Navigation({ onShowHelp, onShowGlossary }: NavigationProps = {})
             <button
               onClick={handleLogoClick}
               className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
-              title="Sair e voltar ao login"
+              title="Ir para página inicial"
             >
               <motion.div
                 whileHover={{ rotate: 360 }}
