@@ -14,15 +14,15 @@
 AVALIANUTRI: INTELIGÊNCIA ARTIFICIAL E GAMIFICAÇÃO NO ENSINO DE AVALIAÇÃO NUTRICIONAL COM METODOLOGIA EA2 NA UNICAMP
 
 ### **Conteúdo:**
-**Contextualização:** A disciplina NT600 - Avaliação Nutricional da UNICAMP demandava inovação metodológica para engajar estudantes em conteúdos complexos de antropometria e estatística. O modelo tradicional expositivo limitava a aplicação prática e contextualização com dados populacionais brasileiros.
+**Contextualização:** No âmbito do Programa de Estágio Docente (PED), identificou-se oportunidade de transformar estudos dirigidos tradicionais da disciplina NT600 - Avaliação do Estado Nutricional em experiências gamificadas enriquecidas, integrando tecnologias emergentes para complementar aulas presenciais com prática interativa.
 
-**Objetivos:** Desenvolver uma plataforma web educacional gamificada que integre Inteligência Artificial e metodologia EA2 para transformar o ensino de avaliação nutricional, promovendo aprendizagem ativa, personalizada e em conformidade com LGPD.
+**Objetivos:** Desenvolver ecossistema digital flexível integrando IA, gamificação e metodologia EA2, substituindo estudos dirigidos por experiências interativas com feedback automatizado, permitindo criação de módulos personalizados com imagens, gráficos e recursos multimídia conforme demanda docente.
 
-**Descrição da experiência:** O AvaliaNutri foi desenvolvido como plataforma web responsiva com 10 módulos educacionais padrão, expansíveis conforme demanda docente. A plataforma é utilizada flexivelmente durante as aulas (início, meio ou fim conforme objetivo pedagógico) ou para estudos domiciliares. Destacam-se: integração de IA LLM treinada com referências bibliográficas da disciplina; módulo de caso clínico onde a IA simula pacientes reais; aplicação da metodologia EA2 para aprendizagem ativa; sistema de ranking gamificado com anonimização total garantindo conformidade LGPD; 12 datasets brasileiros (IBGE, SISVAN, MS) integrados; feedback pedagógico detalhado ao final de cada módulo. A arquitetura utiliza Next.js 15, TypeScript e Firebase, garantindo experiência fluida em dispositivos móveis e desktop.
+**Descrição da experiência:** AvaliaNutri oferece 10 módulos iniciais expansíveis, cada um com jogos diferentes e tempo médio de 12 minutos. Sistema permite equipe docente criar módulos com elementos visuais personalizados (imagens, gráficos, vídeos). Destaca-se: IA simulando pacientes; dashboard com analytics real-time, enquetes e diagnósticas; pontuações convertíveis em notas; ranking LGPD-compliant; 12 datasets brasileiros; feedback pedagógico rico. Arquitetura Next.js/TypeScript/Firebase adapta-se a momentos pedagógicos diversos.
 
-**Resultados preliminares:** Estudo em andamento com 65 alunos da disciplina NT600 demonstra: 87% dos alunos aprovaram a experiência para fixação de conceitos após as aulas; 100% de conformidade com proteção de dados através da anonimização; simulações com IA proporcionando experiências clínicas realistas; metodologia EA2 facilitando aprendizagem colaborativa; sistema de ranking estimulando competição saudável mantendo privacidade; flexibilidade de uso permitindo adaptação aos diferentes momentos pedagógicos.
+**Resultados preliminares:** Com 65 alunos: 87% aprovam para fixação conceitual; sessões de 12 minutos otimizam engajamento; substituição eficaz de estudos dirigidos; flexibilidade criativa permite docentes incorporarem recursos visuais específicos; pontuações integradas ao sistema avaliativo formal aumentam motivação; dashboard orienta intervenções pedagógicas personalizadas.
 
-**Considerações finais:** O AvaliaNutri, em uso por 65 alunos da NT600, exemplifica a convergência entre IA, gamificação e metodologias ativas no ensino superior em saúde. Os resultados preliminares indicam potencial transformador das tecnologias emergentes para criar ambientes educacionais éticos, inclusivos e eficazes na formação de nutricionistas.
+**Considerações finais:** AvaliaNutri demonstra como IA e gamificação podem revolucionar avaliações tradicionais, oferecendo liberdade criativa docente para personalizar conteúdos visuais mantendo rigor acadêmico, com potencial replicação em outras disciplinas através da arquitetura modular adaptável.
 
 ### **Autor:**
 Ellis Wollis Malta Abhulime - Mestrando em Nutrição, Esporte e Metabolismo, UNICAMP - elliswollismalta@gmail.com
@@ -31,7 +31,7 @@ Ellis Wollis Malta Abhulime - Mestrando em Nutrição, Esporte e Metabolismo, UN
 Relato de experiência
 
 ### **Comentários:**
-Estudo em andamento com 65 alunos da disciplina NT600. Sistema modular permite customização docente e uso flexível (presencial/remoto). Código open-source disponível.
+Originado no PED. 65 alunos NT600. Substitui estudos dirigidos. Pontuações = notas. Módulos expansíveis com recursos visuais personalizáveis. Dashboard analytics.
 
 ### **Trilha:**
 Inteligência Artificial e Metodologias Ativas com Tecnologias Digitais na Educação Superior

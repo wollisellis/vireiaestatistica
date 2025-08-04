@@ -10,8 +10,11 @@
 - **Commits**: 300+ commits no repositório
 
 ### Conteúdo Educacional
-- **Módulos**: 10 módulos educacionais padrão (expansíveis)
+- **Módulos**: 10 módulos educacionais padrão (expansíveis durante o semestre)
+- **Tempo por módulo**: 12 minutos em média (otimizado para engajamento)
 - **Exercícios**: 18 exercícios interativos implementados
+- **Tipos de jogos**: Múltipla escolha, drag-and-drop, simulações, casos clínicos
+- **Customização**: Docentes podem adicionar imagens, gráficos e vídeos
 - **Datasets brasileiros**: 12 conjuntos de dados reais
   - IBGE (censo e pesquisas nutricionais)
   - SISVAN (Sistema de Vigilância Alimentar e Nutricional)
@@ -24,11 +27,13 @@
 - **Feedback personalizado**: Baseado no desempenho individual
 - **Análise preditiva**: Identificação de dificuldades de aprendizagem
 
-### Sistema de Gamificação
+### Sistema de Gamificação e Avaliação
 - **Ranking**: Sistema competitivo com anonimização total
 - **Conquistas**: 4 categorias de badges motivacionais
-- **Pontuação**: Sistema unificado 0-100 pontos
+- **Pontuação**: Sistema unificado 0-100 pontos convertível em notas
 - **Progressão**: Tracking detalhado por módulo
+- **Avaliação formal**: Substitui estudos dirigidos tradicionais
+- **Integração**: Pontuações integradas ao sistema de notas da disciplina
 
 ### Conformidade e Segurança
 - **LGPD**: 100% conformidade com proteção de dados
@@ -51,15 +56,33 @@
 
 ### Resultados Preliminares
 - **Aprovação para fixação de conceitos**: 87% dos alunos
+- **Tempo médio por sessão**: 12 minutos (conclusão eficiente)
+- **Substituição de estudos dirigidos**: Sucesso comprovado
 - **Conformidade LGPD**: 100% com anonimização completa
 - **Flexibilidade pedagógica**: Adaptável a diferentes momentos da aula
 - **Engajamento**: Alto interesse demonstrado pelos alunos
+- **Dashboard docente**: Analytics em tempo real para intervenções
 
 ### Metodologia EA2
 - **Colaboração**: 3x mais interações entre alunos
 - **Autonomia**: 70% dos alunos navegam sem ajuda docente
 - **Personalização**: Adaptação automática ao ritmo individual
 - **Feedback**: Resposta imediata em 100% das atividades
+
+## 📚 Inovação Pedagógica - Substituição de Estudos Dirigidos
+
+### Comparativo: Estudos Dirigidos Tradicionais vs AvaliaNutri
+- **Tempo de correção**: De horas para instantâneo
+- **Feedback**: De genérico para personalizado e rico
+- **Engajamento**: De baixo para 87% de aprovação
+- **Flexibilidade**: De rígido para adaptável (presencial/remoto)
+- **Avaliação**: De subjetiva para objetiva e padronizada
+- **Recursos visuais**: De estático para dinâmico e personalizável
+
+### Origem no PED (Programa de Estágio Docente)
+- **Contexto**: Desenvolvido durante estágio docente na NT600
+- **Validação**: Testado com alunos reais em ambiente acadêmico
+- **Iteração**: Ajustes baseados em feedback contínuo
 
 ## 🎯 Diferenciais Competitivos
 
